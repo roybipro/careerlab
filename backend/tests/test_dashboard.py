@@ -34,6 +34,8 @@ STAT_KEYS = [
     "upcoming_deadlines",
     "pending_follow_ups",
 ]
+# Research project numbers are tested in test_projects_dashboard.py.
+SUMMARY_KEYS = [*STAT_KEYS, "active_research_projects"]
 
 
 def days(n: int) -> date:
@@ -174,7 +176,7 @@ CASES: dict[str, tuple[Seed, Seed]] = {
 
 def test_empty_account_returns_zeros_and_12_empty_months(db):
     user = make_user(db)
-    assert service.summary(db, user, NOW) == dict.fromkeys(STAT_KEYS, 0)
+    assert service.summary(db, user, NOW) == dict.fromkeys(SUMMARY_KEYS, 0)
     assert service.upcoming_deadlines(db, user, NOW) == []
     assert service.recent_activities(db, user) == []
 
@@ -347,7 +349,7 @@ def test_dashboard_excludes_other_users_records(db):
     db.add(ActivityLog(user_id=bob.id, entity_type="job", entity_id=uuid.uuid4(), action="x"))
     db.commit()
 
-    assert service.summary(db, ana, NOW) == dict.fromkeys(STAT_KEYS, 0)
+    assert service.summary(db, ana, NOW) == dict.fromkeys(SUMMARY_KEYS, 0)
     assert service.upcoming_deadlines(db, ana, NOW) == []
     assert service.recent_activities(db, ana) == []
     analytics = service.analytics(db, ana, NOW)
@@ -399,7 +401,7 @@ def test_endpoints_require_login(client):
 def test_endpoints_shape_for_a_new_account(ana):
     summary = ana.get(f"{DASHBOARD}/summary")
     assert summary.status_code == 200
-    assert summary.json() == dict.fromkeys(STAT_KEYS, 0)
+    assert summary.json() == dict.fromkeys(SUMMARY_KEYS, 0)
     assert ana.get(f"{DASHBOARD}/upcoming-deadlines").json() == []
     assert ana.get(f"{DASHBOARD}/recent-activities").json() == []
     analytics = ana.get(f"{DASHBOARD}/analytics").json()
@@ -421,7 +423,9 @@ def test_endpoints_reflect_created_records(ana):
     assert [(i["kind"], i["due"], i["title"]) for i in items] == [
         ("job_deadline", due, "Dev at Acme")
     ]
-    assert set(items[0]) == {"kind", "id", "title", "due", "related_type", "related_id"}
+    assert set(items[0]) == {
+        "kind", "id", "title", "due", "related_type", "related_id", "project_id", "project_title",
+    }  # fmt: skip
     assert ana.get(f"{DASHBOARD}/recent-activities").json()[0]["entity_type"] == "job"
     assert ana.get(f"{DASHBOARD}/analytics").json()["monthly"][-1]["jobs"] == 1
 
