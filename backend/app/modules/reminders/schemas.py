@@ -3,9 +3,9 @@ import uuid
 from datetime import datetime
 from typing import Annotated
 
-from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from app.core.schemas import Name
+from app.core.schemas import BoundedDatetime, Name
 from app.modules.entity_types import EntityType
 
 Description = Annotated[str, Field(max_length=50_000)]
@@ -20,7 +20,7 @@ class ReminderState(enum.StrEnum):
 class ReminderCreate(BaseModel):
     title: Name
     description: Description | None = None
-    due_at: AwareDatetime
+    due_at: BoundedDatetime
     related_type: EntityType | None = None
     related_id: uuid.UUID | None = None
 
@@ -36,7 +36,7 @@ class ReminderUpdate(BaseModel):
 
     title: Name | None = None
     description: Description | None = None
-    due_at: AwareDatetime | None = None
+    due_at: BoundedDatetime | None = None
     related_type: EntityType | None = None
     related_id: uuid.UUID | None = None
     is_completed: bool | None = None

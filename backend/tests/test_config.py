@@ -49,3 +49,39 @@ def test_register_rate_limit_setting_is_honoured_by_the_register_limiter(
         monkeypatch.delenv("RATE_LIMIT_REGISTER_PER_MINUTE")
         get_settings.cache_clear()
         importlib.reload(router)
+
+
+COMPOSE_FALLBACK = "dev-only-secret-do-not-use-outside-local-compose"
+CI_SECRET = "ci-only-secret-not-for-real-use-0123456789"
+TEST_SECRET = "test-only-secret-not-for-real-use-0123456789"
+
+
+@pytest.mark.parametrize("secret", [COMPOSE_FALLBACK, CI_SECRET, TEST_SECRET])
+def test_public_jwt_secret_is_rejected_with_secure_cookies(secret: str) -> None:
+    with pytest.raises(ValidationError, match="published in this repository"):
+        Settings(_env_file=None, DATABASE_URL=DB_URL, JWT_SECRET=secret, COOKIE_SECURE=True)
+
+
+@pytest.mark.parametrize("secret", [COMPOSE_FALLBACK, CI_SECRET, TEST_SECRET])
+def test_public_jwt_secret_is_rejected_on_render(
+    secret: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("RENDER", "true")
+    with pytest.raises(ValidationError, match="published in this repository"):
+        Settings(_env_file=None, DATABASE_URL=DB_URL, JWT_SECRET=secret)
+
+
+def test_public_jwt_secret_is_still_accepted_for_local_development(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("RENDER", raising=False)
+    settings = Settings(_env_file=None, DATABASE_URL=DB_URL, JWT_SECRET=COMPOSE_FALLBACK)
+    assert settings.JWT_SECRET == COMPOSE_FALLBACK
+
+
+def test_private_jwt_secret_is_accepted_when_deployed(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("RENDER", "true")
+    settings = Settings(
+        _env_file=None, DATABASE_URL=DB_URL, JWT_SECRET="r" * 48, COOKIE_SECURE=True
+    )
+    assert settings.JWT_SECRET == "r" * 48

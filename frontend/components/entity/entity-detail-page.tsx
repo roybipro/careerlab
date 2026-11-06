@@ -65,6 +65,7 @@ export function EntityDetailPage<T extends { id: string }>({
       // Drop the detail first so nothing refetches a record that no longer exists.
       client.removeQueries({ queryKey: keys.detail(type, id) });
       void client.invalidateQueries({ queryKey: [resource, "list"] });
+      void client.invalidateQueries({ queryKey: ["link-options"] });
       void client.invalidateQueries({ queryKey: ["reminders"] });
       void client.invalidateQueries({ queryKey: ["contacts"] });
       void client.invalidateQueries({ queryKey: keys.dashboard });

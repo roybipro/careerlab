@@ -1,3 +1,6 @@
+import threading
+from collections.abc import Iterator
+from contextlib import contextmanager
 from datetime import UTC, datetime, timedelta
 from functools import lru_cache
 from typing import TYPE_CHECKING, Any
@@ -19,16 +22,34 @@ _ALGORITHM = "HS256"
 
 _hasher = PasswordHasher()
 
+# Each Argon2 run takes tens of MiB, and the login limiters can be sidestepped with spoofed
+# client IPs. Cap how many run at once and answer 429 when a request cannot get a slot soon.
+MAX_CONCURRENT_HASHES = 4
+SLOT_WAIT_SECONDS = 2.0
+_hash_slots = threading.BoundedSemaphore(MAX_CONCURRENT_HASHES)
+
+
+@contextmanager
+def _hash_slot() -> Iterator[None]:
+    if not _hash_slots.acquire(timeout=SLOT_WAIT_SECONDS):
+        raise AppError(429, "rate_limited", "The server is busy, try again in a moment")
+    try:
+        yield
+    finally:
+        _hash_slots.release()
+
 
 def hash_password(password: str) -> str:
-    return _hasher.hash(password)
+    with _hash_slot():
+        return _hasher.hash(password)
 
 
 def verify_password(password: str, password_hash: str) -> bool:
-    try:
-        return _hasher.verify(password_hash, password)
-    except (VerificationError, InvalidHashError):
-        return False
+    with _hash_slot():
+        try:
+            return _hasher.verify(password_hash, password)
+        except (VerificationError, InvalidHashError):
+            return False
 
 
 @lru_cache

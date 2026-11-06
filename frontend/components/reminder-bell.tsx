@@ -61,7 +61,7 @@ export function ReminderBell() {
           query.data?.items.map((r) => {
             const overdue = new Date(r.due_at).getTime() < now;
             return (
-              <DropdownMenuItem key={r.id} render={<Link href="/reminders" />} className="flex-col items-start gap-0.5">
+              <DropdownMenuItem key={r.id} render={<Link href={overdue ? "/reminders?state=overdue" : "/reminders"} />} className="flex-col items-start gap-0.5">
                 <span className="w-full truncate text-sm font-medium">{r.title}</span>
                 <span className={overdue ? "text-xs text-destructive" : "text-xs text-muted-foreground"}>
                   {overdue ? "Overdue, " : "Due "}

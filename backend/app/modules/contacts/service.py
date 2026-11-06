@@ -1,5 +1,5 @@
 import uuid
-from datetime import UTC, datetime
+from datetime import date
 from typing import Any
 
 from sqlalchemy import select
@@ -43,7 +43,7 @@ SORT_FIELDS = {
 
 
 def list_contacts(
-    db: Session, user: User, params: ListParams, filters: ContactFilters
+    db: Session, user: User, params: ListParams, filters: ContactFilters, today: date
 ) -> Page[Any]:
     stmt = select(Contact).where(Contact.user_id == user.id)
     if params.q:
@@ -63,8 +63,8 @@ def list_contacts(
             linked = linked.where(ContactLink.entity_id == filters.entity_id)
         stmt = stmt.where(Contact.id.in_(linked))
     if filters.follow_up_due:
-        # Due today or earlier; a contact with no follow-up date is never due.
-        stmt = stmt.where(Contact.next_follow_up_at <= datetime.now(UTC).date())
+        # Due on the client's today or earlier; a contact with no follow-up date is never due.
+        stmt = stmt.where(Contact.next_follow_up_at <= today)
     return paginate(db, stmt, params, SORT_FIELDS, "name")
 
 
@@ -95,6 +95,8 @@ def _link_labels(db: Session, user: User, links: list[ContactLink]) -> list[Cont
         )
     }
     labels = {"job": jobs, "research": research}
+    # A link whose target row is gone (ids are not foreign keys) has no label; skip it
+    # rather than fail the whole contact.
     return [
         ContactLinkOut(
             id=x.id,
@@ -103,6 +105,7 @@ def _link_labels(db: Session, user: User, links: list[ContactLink]) -> list[Cont
             label=labels[x.entity_type][x.entity_id],
         )
         for x in links
+        if x.entity_id in labels[x.entity_type]
     ]
 
 

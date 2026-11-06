@@ -47,3 +47,11 @@ export function formatSalary(min: number | null, max: number | null, currency: s
   const range = min !== null && max !== null ? `${n(min)} - ${n(max)}` : min !== null ? `from ${n(min)}` : `up to ${n(max as number)}`;
   return currency ? `${range} ${currency}` : range;
 }
+
+/**
+ * The browser's local date as "YYYY-MM-DD". The API has no user time zone, so date-only
+ * comparisons ("due today") use this, sent as the `today` query parameter.
+ */
+export function localToday(now: Date = new Date()): string {
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+}

@@ -11,6 +11,7 @@ import { TextField } from "@/components/text-field";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { WakingHint } from "@/components/waking-hint";
 import { api, applyServerErrors } from "@/lib/api";
 import { safeNextPath } from "@/lib/auth";
 import { hardNavigate } from "@/lib/navigation";
@@ -76,6 +77,7 @@ export function LoginForm() {
           <Button type="submit" className="w-full" size="lg" disabled={login.isPending || login.isSuccess}>
             {login.isPending ? "Logging in..." : "Log in"}
           </Button>
+          {login.isPending ? <WakingHint className="text-center text-sm text-muted-foreground" /> : null}
         </form>
         <p className="mt-4 text-center text-sm text-muted-foreground">
           No account yet?{" "}

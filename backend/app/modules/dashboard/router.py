@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 
-from app.core.deps import CurrentUser, DbSession, require_csrf
+from app.core.deps import ClientToday, CurrentUser, DbSession, require_csrf
 from app.modules.activity.models import ActivityLog
 from app.modules.activity.schemas import ActivityOut
 from app.modules.dashboard import service
@@ -10,13 +10,15 @@ router = APIRouter(prefix="/dashboard", tags=["dashboard"], dependencies=[Depend
 
 
 @router.get("/summary", response_model=SummaryOut)
-def get_summary(user: CurrentUser, db: DbSession) -> dict[str, int]:
-    return service.summary(db, user)
+def get_summary(user: CurrentUser, db: DbSession, today: ClientToday) -> dict[str, int]:
+    return service.summary(db, user, today=today)
 
 
 @router.get("/upcoming-deadlines", response_model=list[DeadlineOut])
-def get_upcoming_deadlines(user: CurrentUser, db: DbSession) -> list[dict[str, object]]:
-    return service.upcoming_deadlines(db, user)
+def get_upcoming_deadlines(
+    user: CurrentUser, db: DbSession, today: ClientToday
+) -> list[dict[str, object]]:
+    return service.upcoming_deadlines(db, user, today=today)
 
 
 @router.get("/recent-activities", response_model=list[ActivityOut])

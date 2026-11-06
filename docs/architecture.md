@@ -94,6 +94,11 @@ sequenceDiagram
 - TanStack Query handles data fetching and caching. Every data view has a loading skeleton, an
   empty state and an error state with a retry button.
 - List filters, sort order, page and view (table or Kanban) are kept in the URL.
+- Date-only comparisons ("due today") use the browser's local date, sent as `today` on the
+  dashboard summary, the upcoming deadlines and the contacts follow-up filter. The API only
+  knows UTC, so it accepts a date within one day of UTC and falls back to the UTC date.
+- A `2xx` response that is not JSON (a hosting page for a sleeping server) becomes an
+  `ApiError` with status `502`, which gets the same retry as other gateway errors.
 - Kanban drag and drop uses dnd-kit. A move updates the card at once and rolls back with an error
   message if the save fails.
 - The security headers `X-Frame-Options`, `X-Content-Type-Options` and `Referrer-Policy` are set
@@ -102,7 +107,8 @@ sequenceDiagram
 ## Docker and CI
 
 - `docker compose up` starts `db` (PostgreSQL 16, also creates the `careerlab_test` database on
-  first start), `api` (port 8000) and `web` (port 3000).
+  first start), `api` (port 8000) and `web` (port 3000). The database and API ports are published on
+  `127.0.0.1` only.
 - The API image contains the application, the migrations and `scripts/`, and leaves out tests.
   It runs as a non-root user.
 - `.github/workflows/ci.yml` runs backend lint, type checks and tests, the frontend lint,

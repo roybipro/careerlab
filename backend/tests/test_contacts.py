@@ -190,3 +190,46 @@ def test_filter_contacts_by_linked_entity_and_follow_up_due(ana):
     assert names(ana, entity_type="job", entity_id=research["id"]) == []
     assert names(ana, entity_type="job", entity_id=job["id"], follow_up_due="true") == ["Overdue"]
     assert ana.get(CONTACTS, params={"entity_type": "contact"}).status_code == 422
+
+
+def test_follow_up_due_uses_the_clients_today(ana):
+    utc_today = datetime.now(UTC).date()
+    # Due on the client's today (UTC is a day ahead of a browser west of UTC) and on UTC today.
+    behind = utc_today - timedelta(days=1)
+    make_contact(ana, name="Due", next_follow_up_at=str(utc_today))
+    make_contact(ana, name="Earlier", next_follow_up_at=str(behind))
+    assert sorted(names(ana, follow_up_due="true")) == ["Due", "Earlier"]
+    assert names(ana, follow_up_due="true", today=str(behind)) == ["Earlier"]
+    ahead = utc_today + timedelta(days=1)
+    assert sorted(names(ana, follow_up_due="true", today=str(ahead))) == ["Due", "Earlier"]
+
+
+def test_follow_up_due_rejects_a_today_out_of_range(ana):
+    bad = datetime.now(UTC).date() + timedelta(days=3)
+    r = ana.get(CONTACTS, params={"follow_up_due": "true", "today": str(bad)})
+    assert r.status_code == 422
+    assert r.json()["error"]["code"] == "validation_error"
+
+
+def test_contact_with_an_orphaned_link_still_loads_and_patches(ana, db):
+    from sqlalchemy import delete
+
+    from app.modules.jobs.models import JobApplication
+
+    contact = make_contact(ana)
+    job = make_job(ana)
+    kept = make_research(ana)
+    assert link(ana, contact["id"], "job", job["id"]).status_code == 201
+    assert link(ana, contact["id"], "research", kept["id"]).status_code == 201
+    # Delete the target row directly, leaving the link behind.
+    db.execute(delete(JobApplication).where(JobApplication.id == uuid.UUID(job["id"])))
+    db.commit()
+
+    url = f"{CONTACTS}/{contact['id']}"
+    got = ana.get(url)
+    assert got.status_code == 200
+    assert [x["entity_id"] for x in got.json()["links"]] == [kept["id"]]
+    patched = ana.patch(url, json={"position": "Professor"})
+    assert patched.status_code == 200
+    assert patched.json()["position"] == "Professor"
+    assert [x["entity_id"] for x in patched.json()["links"]] == [kept["id"]]

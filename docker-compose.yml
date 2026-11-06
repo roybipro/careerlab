@@ -6,7 +6,8 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-careerlab}
       POSTGRES_DB: careerlab
     ports:
-      - "5433:5432"
+      # Bound to this machine only: the database has a default password that is public in this repo.
+      - "127.0.0.1:5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./docker/postgres/init-test-db.sql:/docker-entrypoint-initdb.d/init-test-db.sql:ro
@@ -32,7 +33,7 @@ services:
       # Production keeps the default of 5. CI raises it so the e2e suite can register several users.
       RATE_LIMIT_REGISTER_PER_MINUTE: ${RATE_LIMIT_REGISTER_PER_MINUTE:-5}
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
 
   web:
     build:

@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { api } from "@/lib/api";
 import { CONTACT_TYPES, optionLabel, type Option } from "@/lib/enums";
-import { formatDateOnly } from "@/lib/format";
+import { formatDateOnly, localToday } from "@/lib/format";
 import { keys } from "@/lib/keys";
 import type { Contact, Paginated } from "@/lib/types";
 
@@ -57,7 +57,8 @@ export function ContactsList() {
   const filterValues = Object.fromEntries(["q", ...FILTERS.map((f) => f.key)].map((k) => [k, get(k)]));
   const sort = SORT_OPTIONS.some((o) => o.value === get("sort")) ? get("sort") : "";
   const filtersActive = Object.values(filterValues).some(Boolean);
-  const params = { ...filterValues, sort, page, page_size: PAGE_SIZE };
+  // "Due today" follows the browser's date, sent only when that filter is on.
+  const params = { ...filterValues, sort, page, page_size: PAGE_SIZE, today: filterValues.follow_up_due ? localToday() : "" };
 
   const query = useQuery({
     queryKey: keys.list("contact", params),

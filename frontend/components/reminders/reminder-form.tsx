@@ -10,13 +10,14 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { api, applyServerErrors } from "@/lib/api";
-import { fromDatetimeLocal } from "@/lib/format";
+import { fromDatetimeLocal, toDatetimeLocal } from "@/lib/format";
 import { invalidateReminders } from "@/lib/keys";
 import type { Reminder } from "@/lib/types";
 
 type Values = { title: string; description: string; due_at: string };
 
-function ReminderFormBody({ onDone }: { onDone: () => void }) {
+/** With `reminder` the form edits it (PATCH); without, it adds a new one. */
+function ReminderFormBody({ onDone, reminder }: { onDone: () => void; reminder?: Reminder }) {
   const client = useQueryClient();
   const [formError, setFormError] = useState<string | null>(null);
   const {
@@ -24,22 +25,26 @@ function ReminderFormBody({ onDone }: { onDone: () => void }) {
     handleSubmit,
     setError,
     formState: { errors },
-  } = useForm<Values>({ defaultValues: { title: "", description: "", due_at: "" } });
+  } = useForm<Values>({
+    defaultValues: reminder
+      ? { title: reminder.title, description: reminder.description ?? "", due_at: toDatetimeLocal(reminder.due_at) }
+      : { title: "", description: "", due_at: "" },
+  });
 
   const save = useMutation({
-    mutationFn: (v: Values) =>
-      api<Reminder>("/reminders", {
-        method: "POST",
-        // datetime-local has no offset; the API rejects timestamps without one.
-        body: {
-          title: v.title.trim(),
-          due_at: fromDatetimeLocal(v.due_at),
-          ...(v.description.trim() ? { description: v.description.trim() } : {}),
-        },
-      }),
+    mutationFn: (v: Values) => {
+      // datetime-local has no offset; the API rejects timestamps without one.
+      const body = { title: v.title.trim(), due_at: fromDatetimeLocal(v.due_at) };
+      const description = v.description.trim();
+      if (reminder) {
+        // An emptied description is sent as null, which clears it.
+        return api<Reminder>(`/reminders/${reminder.id}`, { method: "PATCH", body: { ...body, description: description || null } });
+      }
+      return api<Reminder>("/reminders", { method: "POST", body: { ...body, ...(description ? { description } : {}) } });
+    },
     onSuccess: async () => {
       await invalidateReminders(client);
-      toast.success("Reminder added");
+      toast.success(reminder ? "Reminder updated" : "Reminder added");
       onDone();
     },
     onError: (e) => setFormError(applyServerErrors(e, setError, ["title", "description", "due_at"])),
@@ -72,23 +77,34 @@ function ReminderFormBody({ onDone }: { onDone: () => void }) {
           Cancel
         </Button>
         <Button type="submit" disabled={save.isPending}>
-          {save.isPending ? "Adding..." : "Add reminder"}
+          {save.isPending ? "Saving..." : reminder ? "Save changes" : "Add reminder"}
         </Button>
       </div>
     </form>
   );
 }
 
-/** Adds a reminder that is not tied to a record. Reminders on a record are added from its page. */
-export function ReminderFormDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+/**
+ * Adds a reminder that is not tied to a record (reminders on a record are added from its page),
+ * or, with `reminder`, edits one. Editing leaves the record it belongs to untouched.
+ */
+export function ReminderFormDialog({
+  open,
+  onOpenChange,
+  reminder,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  reminder?: Reminder;
+}) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Add a reminder</DialogTitle>
+          <DialogTitle>{reminder ? "Edit reminder" : "Add a reminder"}</DialogTitle>
           <DialogDescription>Title and due time are required.</DialogDescription>
         </DialogHeader>
-        <ReminderFormBody onDone={() => onOpenChange(false)} />
+        <ReminderFormBody key={reminder?.id ?? "new"} reminder={reminder} onDone={() => onOpenChange(false)} />
       </DialogContent>
     </Dialog>
   );

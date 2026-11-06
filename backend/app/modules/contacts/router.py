@@ -3,7 +3,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query
 
-from app.core.deps import CurrentUser, DbSession, require_csrf
+from app.core.deps import ClientToday, CurrentUser, DbSession, require_csrf
 from app.core.lists import ListQuery, Page
 from app.modules.contacts import service
 from app.modules.contacts.schemas import (
@@ -21,9 +21,13 @@ router = APIRouter(prefix="/contacts", tags=["contacts"], dependencies=[Depends(
 
 @router.get("", response_model=Page[ContactOut])
 def list_contacts(
-    params: ListQuery, filters: Annotated[ContactFilters, Query()], user: CurrentUser, db: DbSession
+    params: ListQuery,
+    filters: Annotated[ContactFilters, Query()],
+    user: CurrentUser,
+    db: DbSession,
+    today: ClientToday,
 ) -> Page[ContactOut]:
-    return service.list_contacts(db, user, params, filters)
+    return service.list_contacts(db, user, params, filters, today)
 
 
 @router.post("", status_code=201, response_model=ContactDetail)
