@@ -1,11 +1,7 @@
-from typing import Annotated
-
 from fastapi import APIRouter, Depends, Request, Response
-from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
-from app.core.db import get_db
-from app.core.deps import current_user, require_csrf
+from app.core.deps import CurrentUser, DbSession, require_csrf
 from app.core.rate_limit import RateLimiter, client_ip
 from app.core.security import COOKIE_NAME, SESSION_SECONDS, create_token
 from app.modules.auth import service
@@ -24,9 +20,6 @@ _register_ip_limiter = RateLimiter(limit=5, window_seconds=60)
 _register_global_limiter = RateLimiter(limit=30, window_seconds=60)
 _login_ip_limiter = RateLimiter(limit=10, window_seconds=60)
 _login_email_limiter = RateLimiter(limit=5, window_seconds=60)
-
-DbSession = Annotated[Session, Depends(get_db)]
-CurrentUser = Annotated[User, Depends(current_user)]
 
 
 def _set_session_cookie(response: Response, user: User) -> None:

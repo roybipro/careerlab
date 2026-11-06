@@ -1,7 +1,7 @@
 from collections.abc import Iterator
 
 import pytest
-from sqlalchemy import Integer, String, select
+from sqlalchemy import Integer, String, event, select
 from sqlalchemy.orm import Mapped, Session, mapped_column
 
 from app.core.db import Base, TimestampMixin
@@ -92,3 +92,36 @@ def test_paginate_rejects_unknown_sort(db, widgets):
     with pytest.raises(AppError) as exc:
         paginate(db, select(Widget), ListParams(sort="password"), SORTS, "name")
     assert exc.value.status == 422 and exc.value.code == "validation_error"
+
+
+def test_paginate_orders_by_primary_key_after_the_sort_column(db, widgets):
+    statements: list[str] = []
+
+    def capture(conn, cursor, statement, *args):
+        statements.append(statement)
+
+    engine = db.get_bind()
+    event.listen(engine, "before_cursor_execute", capture)
+    try:
+        paginate(db, select(Widget), ListParams(), {"bucket": Widget.id % 3}, "bucket")
+    finally:
+        event.remove(engine, "before_cursor_execute", capture)
+    page_query = next(s for s in statements if "LIMIT" in s)
+    order_by = page_query.split("ORDER BY")[1].split("LIMIT")[0]
+    # Once inside the sort expression (id % 3) and once as the tiebreaker.
+    assert order_by.count("_test_widgets.id") == 2
+    assert order_by.rstrip().endswith("_test_widgets.id")
+
+
+def test_paginate_pages_cover_every_row_when_sort_values_tie(db, widgets):
+    seen: list[int] = []
+    for page in range(1, 6):
+        result = paginate(
+            db,
+            select(Widget),
+            ListParams(page=page, page_size=5),
+            {"bucket": Widget.id % 3},
+            "bucket",
+        )
+        seen += [w.id for w in result.items]
+    assert sorted(seen) == sorted(set(seen)) and len(seen) == 25
