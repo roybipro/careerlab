@@ -1,5 +1,5 @@
 import uuid
-from datetime import date, timedelta
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from fastapi.testclient import TestClient
@@ -173,7 +173,7 @@ def test_link_to_another_users_job_returns_404(ana, second_client):
 
 
 def test_filter_contacts_by_linked_entity_and_follow_up_due(ana):
-    today = date.today()
+    today = datetime.now(UTC).date()
     job = make_job(ana)
     research = make_research(ana)
     overdue = make_contact(ana, name="Overdue", next_follow_up_at=str(today - timedelta(days=3)))
