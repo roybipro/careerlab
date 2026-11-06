@@ -31,3 +31,7 @@ def current_user(request: Request, db: Annotated[Session, Depends(get_db)]) -> U
     if user is None or user.token_version != payload["ver"]:
         raise unauthorized
     return user
+
+
+DbSession = Annotated[Session, Depends(get_db)]
+CurrentUser = Annotated[User, Depends(current_user)]
