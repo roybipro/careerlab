@@ -96,3 +96,36 @@ export type Activity = {
   metadata: Record<string, unknown>;
   created_at: string;
 };
+
+export type PublicationLink = { title: string; url: string };
+export type RequiredDocument = { name: string; done: boolean };
+
+export type Research = {
+  id: string;
+  title: string;
+  organization: string;
+  opportunity_type: string | null;
+  country: string | null;
+  department: string | null;
+  laboratory: string | null;
+  research_area: string | null;
+  professor_name: string | null;
+  professor_email: string | null;
+  professor_website: string | null;
+  description: string | null;
+  eligibility: string | null;
+  language_test_requirements: string | null;
+  notes: string | null;
+  website: string | null;
+  application_url: string | null;
+  funding_status: string;
+  funding_amount: string | null;
+  research_interests: string[];
+  publication_links: PublicationLink[];
+  required_documents: RequiredDocument[];
+  status: string;
+  application_date: string | null;
+  deadline: string | null;
+  created_at: string;
+  updated_at: string;
+};
