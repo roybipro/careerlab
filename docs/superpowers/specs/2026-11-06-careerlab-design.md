@@ -112,7 +112,7 @@ key to `users` with `ON DELETE CASCADE`. Main tables have `created_at` and `upda
 | `source` | enum | optional, where the posting was found: `linkedin`, `company_website`, `referral`, `job_board`, `university_career_center`, `recruiter`, `other` |
 | `start_date`, `end_date` | date | optional, `end_date >= start_date` enforced by API (on merged stored values for `PATCH`, as for salary) and `CHECK` |
 | `visa_sponsorship` | enum | optional: `yes`, `no`, `unknown` |
-| `academic_credit` | boolean | optional (null, true or false). The form offers it for `internship` and `co_op` only |
+| `academic_credit` | boolean | optional (null, true or false). The form offers it as a Not set / Yes / No select for `internship` and `co_op` only, and clears it when the type changes away |
 | `status` | enum | `wishlist`, `preparing`, `applied`, `assessment`, `interview`, `offer`, `rejected`, `withdrawn`; default `wishlist` |
 | `priority` | enum | `low`, `medium`, `high`; default `medium` |
 | `resume_version`, `cover_letter_ref` | text | optional; a name, link or text reference |

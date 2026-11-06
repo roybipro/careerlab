@@ -15,7 +15,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { api, applyServerErrors } from "@/lib/api";
-import { EMPLOYMENT_TYPES, INTERNSHIP_TYPES, JOB_SOURCES, JOB_STATUSES, JOB_TYPES, PAY_PERIODS, PRIORITIES, VISA_SPONSORSHIP } from "@/lib/enums";
+import { ACADEMIC_CREDIT, EMPLOYMENT_TYPES, INTERNSHIP_TYPES, JOB_SOURCES, JOB_STATUSES, JOB_TYPES, PAY_PERIODS, PRIORITIES, VISA_SPONSORSHIP } from "@/lib/enums";
 import { formatDuration, fromDatetimeLocal, toDatetimeLocal } from "@/lib/format";
 import { invalidateEntity } from "@/lib/keys";
 import type { Job } from "@/lib/types";
@@ -40,7 +40,7 @@ const schema = z
     employment_type: z.string(),
     source: z.string(),
     visa_sponsorship: z.string(),
-    // "true", "false" or "" (not set). Only shown for internships and co-ops.
+    // "true", "false" or "" (not set). Only offered for internships and co-ops.
     academic_credit: z.string(),
     location: z.string().max(200, "At most 200 characters"),
     job_url: url,
@@ -172,7 +172,6 @@ function JobFormBody({ job, onDone }: { job?: Job; onDone: () => void }) {
     handleSubmit,
     setError,
     control,
-    setValue,
     formState: { errors, dirtyFields, submitCount },
   } = useForm<Values>({ resolver: zodResolver(schema), defaultValues: job ? toValues(job) : EMPTY });
 
@@ -187,9 +186,9 @@ function JobFormBody({ job, onDone }: { job?: Job; onDone: () => void }) {
     onError: (e) => setFormError(applyServerErrors(e, setError, FIELDS)),
   });
 
-  const [employmentType, payPeriod, startDate, endDate, academicCredit] = useWatch({
+  const [employmentType, payPeriod, startDate, endDate] = useWatch({
     control,
-    name: ["employment_type", "pay_period", "start_date", "end_date", "academic_credit"],
+    name: ["employment_type", "pay_period", "start_date", "end_date"],
   });
   const creditApplies = INTERNSHIP_TYPES.includes(employmentType);
   const duration = formatDuration(startDate, endDate);
@@ -197,7 +196,7 @@ function JobFormBody({ job, onDone }: { job?: Job; onDone: () => void }) {
   function onSubmit(raw: Values) {
     setFormError(null);
     // Academic credit only applies to internships and co-ops. Once the type is something else the
-    // checkbox is gone, so a value left in it is cleared.
+    // select is gone, so a value left in it is cleared.
     const values = creditApplies ? raw : { ...raw, academic_credit: "" };
     if (!job) return save.mutate(buildBody(values, FIELDS, true));
     // Edit: only send what changed.
@@ -238,16 +237,7 @@ function JobFormBody({ job, onDone }: { job?: Job; onDone: () => void }) {
           <NativeSelect label="Source" icon={Megaphone} options={JOB_SOURCES} placeholder="Not set" error={err("source")} {...register("source")} />
           <NativeSelect label="Visa sponsorship" icon={Plane} options={VISA_SPONSORSHIP} placeholder="Not set" error={err("visa_sponsorship")} {...register("visa_sponsorship")} />
           {creditApplies ? (
-            <label className="flex cursor-pointer items-center gap-2 py-2 text-sm sm:col-span-2">
-              <input
-                type="checkbox"
-                className="size-4 shrink-0 accent-primary"
-                checked={academicCredit === "true"}
-                onChange={(e) => setValue("academic_credit", e.target.checked ? "true" : "false", { shouldDirty: true })}
-              />
-              <GraduationCap className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-              Counts for academic credit
-            </label>
+            <NativeSelect label="Academic credit" icon={GraduationCap} options={ACADEMIC_CREDIT} placeholder="Not set" error={err("academic_credit")} {...register("academic_credit")} />
           ) : null}
         </FormSection>
 

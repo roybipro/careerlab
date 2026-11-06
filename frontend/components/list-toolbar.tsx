@@ -49,6 +49,17 @@ function TextFilter({ filter }: { filter: { key: string; label: string } }) {
 
 export type ViewMode = "table" | "kanban";
 
+/** A filter's value from the URL. A select value that is not one of its options (a stale or hand-typed link) counts as unset, so the API is never sent a value it would reject. */
+export function filterValue(get: (key: string) => string, filter: ToolbarFilter): string {
+  const value = get(filter.key);
+  return filter.type === "select" && !filter.options.some((o) => o.value === value) ? "" : value;
+}
+
+/** `q` and every filter, as the list request wants them. */
+export function filterValues(get: (key: string) => string, filters: ToolbarFilter[]): Record<string, string> {
+  return Object.fromEntries([["q", get("q")], ...filters.map((f) => [f.key, filterValue(get, f)])]);
+}
+
 /** Look of one button in a segmented switch (the Table / Kanban toggle and the job category switch). */
 export function segmentClass(active: boolean): string {
   return active ? "bg-card text-foreground shadow-card hover:bg-card dark:bg-accent dark:hover:bg-accent" : "text-muted-foreground";
@@ -146,7 +157,7 @@ export function ListToolbar({ filters, searchPlaceholder = "Search", viewToggle,
     }, 300);
   }
 
-  const activeCount = filters.filter((f) => get(f.key)).length;
+  const activeCount = filters.filter((f) => filterValue(get, f)).length;
   const [open, setOpen] = useState(activeCount > 0);
   const anyActive = activeCount > 0 || urlQ !== "";
 
@@ -217,7 +228,7 @@ export function ListToolbar({ filters, searchPlaceholder = "Search", viewToggle,
                 label={f.label}
                 options={f.options}
                 placeholder="Any"
-                value={get(f.key)}
+                value={filterValue(get, f)}
                 onChange={(e) => update({ [f.key]: e.target.value })}
               />
             ) : f.type === "text" ? (

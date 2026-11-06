@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { ContactFormDialog } from "@/components/contacts/contact-form";
 import { DataState, EmptyState } from "@/components/data-state";
-import { ListToolbar, useListParams, usePageClamp, type ToolbarFilter } from "@/components/list-toolbar";
+import { ListToolbar, filterValues as readFilterValues, useListParams, usePageClamp, type ToolbarFilter } from "@/components/list-toolbar";
 import { PageHeader } from "@/components/page-header";
 import { Pagination } from "@/components/pagination";
 import { ContactTypeBadge } from "@/components/contacts/contact-type-badge";
@@ -55,7 +55,7 @@ export function ContactsList() {
   const { get, page, update } = useListParams();
   const [adding, setAdding] = useState(false);
 
-  const filterValues = Object.fromEntries(["q", ...FILTERS.map((f) => f.key)].map((k) => [k, get(k)]));
+  const filterValues = readFilterValues(get, FILTERS);
   const sort = SORT_OPTIONS.some((o) => o.value === get("sort")) ? get("sort") : "";
   const filtersActive = Object.values(filterValues).some(Boolean);
   // "Due today" follows the browser's date, sent only when that filter is on.

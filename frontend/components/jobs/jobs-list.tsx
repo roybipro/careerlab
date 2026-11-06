@@ -1,14 +1,14 @@
 "use client";
 
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { Briefcase, Plus, SearchX } from "lucide-react";
+import { Briefcase, GraduationCap, Plus, SearchX } from "lucide-react";
 import { useState } from "react";
 import { DataState, EmptyState } from "@/components/data-state";
 import { CategorySwitch, readCategory } from "@/components/jobs/category-switch";
 import { JobFormDialog } from "@/components/jobs/job-form";
 import { JobKanbanCard, JobsTable } from "@/components/jobs/jobs-table";
 import { KanbanBoard } from "@/components/kanban-board";
-import { ListToolbar, useListParams, usePageClamp, type ToolbarFilter } from "@/components/list-toolbar";
+import { ListToolbar, filterValues as readFilterValues, useListParams, usePageClamp, type ToolbarFilter } from "@/components/list-toolbar";
 import { PageHeader } from "@/components/page-header";
 import { Pagination } from "@/components/pagination";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -61,7 +61,7 @@ export function JobsList() {
 
   // The board shows every status as a column, so a status filter makes no sense there.
   const filters = view === "kanban" ? FILTERS.filter((f) => f.key !== "status") : FILTERS;
-  const filterValues = Object.fromEntries(["q", ...filters.map((f) => f.key)].map((k) => [k, get(k)]));
+  const filterValues = readFilterValues(get, filters);
   const sort = SORT_OPTIONS.some((o) => o.value === get("sort")) ? get("sort") : "";
   // The category switch sits outside the toolbar and applies to the table and the board alike.
   const category = readCategory(get("category"));
@@ -80,7 +80,18 @@ export function JobsList() {
 
   const move = useStatusMove<Job>("job", "/jobs", (job) => job.company_name);
 
-  const empty = filtersActive ? (
+  const empty = category !== "" && !Object.values(filterValues).some(Boolean) ? (
+    <EmptyState
+      icon={category === "internships" ? GraduationCap : Briefcase}
+      title={category === "internships" ? "No internships yet" : "No jobs yet"}
+      description={category === "internships" ? "Nothing here is an internship or a co-op. Show everything, or add one." : "Everything you track is an internship or a co-op. Show everything, or add a job."}
+      action={
+        <Button variant="outline" onClick={() => update({ category: null })}>
+          Show all
+        </Button>
+      }
+    />
+  ) : filtersActive ? (
     <EmptyState icon={SearchX} title="No jobs match" description="Try different search words, or clear the filters." />
   ) : (
     <EmptyState

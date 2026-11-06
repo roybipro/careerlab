@@ -13,9 +13,12 @@ test("an internship with dates shows its duration, and the category switch split
   await dialog.getByLabel("Position", { exact: true }).fill("Summer Intern");
 
   await dialog.locator("summary", { hasText: /^Role/ }).click();
-  await expect(dialog.getByLabel("Counts for academic credit")).toBeHidden();
+  await expect(dialog.getByLabel("Academic credit")).toBeHidden();
   await dialog.getByLabel("Employment type").selectOption("internship");
-  await expect(dialog.getByLabel("Counts for academic credit")).toBeVisible();
+  const credit = dialog.getByLabel("Academic credit");
+  await expect(credit).toBeVisible();
+  await expect(credit).toHaveValue("");
+  await credit.selectOption("false");
 
   await dialog.locator("summary", { hasText: /^Dates/ }).click();
   await dialog.getByLabel("Start date").fill("2030-06-01");
@@ -50,4 +53,25 @@ test("an internship with dates shows its duration, and the category switch split
   await expect(page).toHaveURL(/category=jobs/);
   await expect(page.getByRole("link", { name: regular })).toBeVisible();
   await expect(page.getByRole("link", { name: internship })).toBeHidden();
+});
+
+test("a link with a value the filters do not know still shows the list", async ({ page }) => {
+  await registerUser(page);
+  const company = uniqueName("Plain Co");
+  await addJob(page, company, "Engineer");
+  await page.goto("/jobs?source=foo&employment_type=bar&category=baz");
+  await expect(page.getByRole("link", { name: company })).toBeVisible();
+  await expect(page.getByText("Could not load")).toBeHidden();
+});
+
+test("an empty category says so and Show all clears it", async ({ page }) => {
+  await registerUser(page);
+  const company = uniqueName("Only Co");
+  await addJob(page, company, "Engineer");
+  await page.goto("/jobs?category=internships");
+  await expect(page.getByRole("heading", { name: "No internships yet" })).toBeVisible();
+  await page.getByRole("button", { name: "Show all" }).click();
+  await expect(page.getByRole("link", { name: company })).toBeVisible();
+  await expect(page.getByRole("button", { name: "All", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await expect(page).not.toHaveURL(/category=/);
 });

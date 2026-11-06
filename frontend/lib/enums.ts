@@ -165,6 +165,11 @@ export const VISA_SPONSORSHIP: Option[] = [
   { value: "unknown", label: "Unknown" },
 ];
 
+export const ACADEMIC_CREDIT: Option[] = [
+  { value: "true", label: "Yes" },
+  { value: "false", label: "No" },
+];
+
 /** The All / Jobs / Internships switch above the job list. "" means All. */
 export const JOB_CATEGORIES: Option[] = [
   { value: "", label: "All" },
