@@ -176,7 +176,7 @@ def _user(db: Session, email: str = "ana@x.com") -> User:
 
 def _add_submission(db: Session, user: User, project_id: str, **fields) -> ProjectSubmission:
     s = ProjectSubmission(
-        user_id=user.id, project_id=uuid.UUID(project_id), venue_name="NeurIPS", **fields
+        user_id=user.id, project_id=uuid.UUID(project_id), venue_name="Lakeside Symposium", **fields
     )
     db.add(s)
     db.commit()
@@ -228,6 +228,38 @@ def test_counts_and_next_deadline(ana, db):
     assert listing[p["id"]]["next_deadline"] == t.isoformat()
     assert listing[other["id"]]["next_deadline"] is None
     assert listing[other["id"]]["milestones_total"] == 1
+
+
+def test_next_deadline_follows_client_today(ana, db):
+    user = _user(db)
+    p = make_project(ana)
+    t = today()
+    _add_milestone(db, user, p["id"], due_date=t - timedelta(days=1))
+    url = f"{PROJECTS}/{p['id']}"
+    assert ana.get(url).json()["next_deadline"] is None
+    # A client one day behind UTC is still on the day the milestone falls due.
+    behind = (t - timedelta(days=1)).isoformat()
+    assert ana.get(url, params={"today": behind}).json()["next_deadline"] == behind
+    listed = ana.get(PROJECTS, params={"today": behind}).json()["items"][0]
+    assert listed["next_deadline"] == behind
+    # A client one day ahead no longer counts it.
+    ahead = (t + timedelta(days=1)).isoformat()
+    assert ana.get(url, params={"today": ahead}).json()["next_deadline"] is None
+    r = ana.patch(url, json={"topic": "x"}, params={"today": behind})
+    assert r.json()["next_deadline"] == behind
+    # Omitting `today` uses the UTC date.
+    _add_milestone(db, user, p["id"], due_date=t)
+    assert ana.get(url).json()["next_deadline"] == t.isoformat()
+
+
+def test_today_out_of_range_returns_422(ana):
+    p = make_project(ana)
+    far = (today() + timedelta(days=3)).isoformat()
+    for url in (PROJECTS, f"{PROJECTS}/{p['id']}"):
+        r = ana.get(url, params={"today": far})
+        assert r.status_code == 422, r.text
+        assert r.json()["error"]["code"] == "validation_error"
+    assert ana.post(PROJECTS, json={"title": "T"}, params={"today": far}).status_code == 422
 
 
 def test_list_uses_fixed_query_count(ana, db):

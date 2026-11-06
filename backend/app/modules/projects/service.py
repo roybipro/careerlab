@@ -1,6 +1,6 @@
 import uuid
 from collections.abc import Sequence
-from datetime import UTC, date, datetime
+from datetime import date
 from typing import Any, cast
 
 from sqlalchemy import ColumnElement, Select, Subquery, func, literal, select, union_all
@@ -35,8 +35,8 @@ SORT_FIELDS = {
 }
 
 
-# Open research items. The dashboard (summary, upcoming and overdue lists) and the project's
-# next deadline all read these two definitions, so they cannot disagree.
+# Open research items: the definitions below are shared by a project's next deadline and the
+# dashboard (Task 3), which should read them too. Both take "today" from the client's local date.
 
 
 def active_project_clause() -> ColumnElement[bool]:
@@ -97,11 +97,9 @@ def open_milestones(user: User) -> Select[Any]:
     return cast("Select[Any]", stmt)
 
 
-def _today() -> date:
-    return datetime.now(UTC).date()
-
-
-def _counts(db: Session, user: User, ids: Sequence[uuid.UUID]) -> dict[uuid.UUID, dict[str, Any]]:
+def _counts(
+    db: Session, user: User, ids: Sequence[uuid.UUID], today: date
+) -> dict[uuid.UUID, dict[str, Any]]:
     """Counts and next deadline for a page of projects, in a fixed number of queries."""
     if not ids:
         return {}
@@ -134,20 +132,22 @@ def _counts(db: Session, user: User, ids: Sequence[uuid.UUID]) -> dict[uuid.UUID
     ).subquery("open_items")
     for project_id, due in db.execute(
         select(open_items.c.project_id, func.min(open_items.c.due))
-        .where(open_items.c.project_id.in_(ids), open_items.c.due >= _today())
+        .where(open_items.c.project_id.in_(ids), open_items.c.due >= today)
         .group_by(open_items.c.project_id)
     ):
         result[project_id].update(next_deadline=due)
     return result
 
 
-def _out(db: Session, user: User, projects: Sequence[ResearchProject]) -> list[ProjectOut]:
-    counts = _counts(db, user, [p.id for p in projects])
+def _out(
+    db: Session, user: User, projects: Sequence[ResearchProject], today: date
+) -> list[ProjectOut]:
+    counts = _counts(db, user, [p.id for p in projects], today)
     return [ProjectOut.model_validate(p).model_copy(update=counts[p.id]) for p in projects]
 
 
 def list_projects(
-    db: Session, user: User, params: ListParams, filters: ProjectFilters
+    db: Session, user: User, params: ListParams, filters: ProjectFilters, today: date
 ) -> Page[ProjectOut]:
     stmt = select(ResearchProject).where(ResearchProject.user_id == user.id)
     if params.q:
@@ -164,7 +164,7 @@ def list_projects(
         stmt = stmt.where(active_project_clause())
     page = paginate(db, stmt, params, SORT_FIELDS, "-created_at")
     return Page(
-        items=_out(db, user, page.items),
+        items=_out(db, user, page.items, today),
         total=page.total,
         page=page.page,
         page_size=page.page_size,
@@ -182,21 +182,21 @@ def get_project(db: Session, user: User, project_id: uuid.UUID) -> ResearchProje
     return project
 
 
-def read_project(db: Session, user: User, project_id: uuid.UUID) -> ProjectOut:
-    return _out(db, user, [get_project(db, user, project_id)])[0]
+def read_project(db: Session, user: User, project_id: uuid.UUID, today: date) -> ProjectOut:
+    return _out(db, user, [get_project(db, user, project_id)], today)[0]
 
 
-def create_project(db: Session, user: User, data: ProjectCreate) -> ProjectOut:
+def create_project(db: Session, user: User, data: ProjectCreate, today: date) -> ProjectOut:
     project = ResearchProject(user_id=user.id, **data.model_dump())
     db.add(project)
     db.flush()
     log_activity(db, user, ENTITY, project.id, "created", project_label(project))
     db.commit()
-    return _out(db, user, [project])[0]
+    return _out(db, user, [project], today)[0]
 
 
 def update_project(
-    db: Session, user: User, project_id: uuid.UUID, data: ProjectUpdate
+    db: Session, user: User, project_id: uuid.UUID, data: ProjectUpdate, today: date
 ) -> ProjectOut:
     project = get_project(db, user, project_id)
     # exclude_unset: omitted fields stay as stored, explicit nulls clear them.
@@ -219,7 +219,7 @@ def update_project(
                 new=project.stage.value,
             )
         db.commit()
-    return _out(db, user, [project])[0]
+    return _out(db, user, [project], today)[0]
 
 
 def delete_project(db: Session, user: User, project_id: uuid.UUID) -> None:
