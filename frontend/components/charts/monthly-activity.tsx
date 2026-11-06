@@ -71,7 +71,9 @@ export function MonthlyActivity({ data }: { data: MonthlyCount[] }) {
           </BarChart>
         </ResponsiveContainer>
       </div>
-      <table className="sr-only">
+      {/* The wrapper clips the table: a table ignores sr-only's size and would stretch the page. */}
+      <div className="sr-only">
+      <table>
         <caption>Applications per month, last 12 months</caption>
         <thead>
           <tr>
@@ -90,6 +92,7 @@ export function MonthlyActivity({ data }: { data: MonthlyCount[] }) {
           ))}
         </tbody>
       </table>
+      </div>
     </figure>
   );
 }

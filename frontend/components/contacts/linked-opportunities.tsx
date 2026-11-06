@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Unlink } from "lucide-react";
+import { Link2, Plus, Unlink } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -81,7 +81,10 @@ export function LinkedOpportunities({ contact }: { contact: ContactDetail }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Linked opportunities</CardTitle>
+        <CardTitle>
+          <Link2 aria-hidden="true" />
+          Linked opportunities
+        </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         <Button
@@ -98,9 +101,9 @@ export function LinkedOpportunities({ contact }: { contact: ContactDetail }) {
         {contact.links.length === 0 ? (
           <p className="text-sm text-muted-foreground">Not linked to any job or research opportunity yet. Use the button above to link one.</p>
         ) : (
-          <ul className="space-y-2">
+          <ul className="divide-y">
             {contact.links.map((l) => (
-              <li key={l.id} className="flex items-center gap-2 rounded-lg border p-3">
+              <li key={l.id} className="flex items-center gap-2 py-2.5">
                 <Link href={entityHref(l.entity_type, l.entity_id)} className="flex min-w-0 flex-1 items-center gap-3 hover:underline">
                   <Badge variant="secondary">{l.entity_type === "job" ? "Job" : "Research"}</Badge>
                   <span className="min-w-0 flex-1 text-sm break-words">{l.label}</span>

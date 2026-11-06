@@ -1,7 +1,7 @@
 "use client";
 
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
+import { Briefcase, Plus, SearchX } from "lucide-react";
 import { useState } from "react";
 import { DataState, EmptyState } from "@/components/data-state";
 import { JobFormDialog } from "@/components/jobs/job-form";
@@ -74,9 +74,10 @@ export function JobsList() {
   const move = useStatusMove<Job>("job", "/jobs", (job) => job.company_name);
 
   const empty = filtersActive ? (
-    <EmptyState title="No jobs match" description="Try different search words, or clear the filters." />
+    <EmptyState icon={SearchX} title="No jobs match" description="Try different search words, or clear the filters." />
   ) : (
     <EmptyState
+      icon={Briefcase}
       title="No job applications yet"
       description="Add the roles you are looking at, then move them from saved to offer as you go."
       action={
@@ -92,6 +93,7 @@ export function JobsList() {
     <>
       <PageHeader
         title="Job Applications"
+        icon={Briefcase}
         description="Track every application from saved to offer."
         actions={
           <Button onClick={() => setAdding(true)}>

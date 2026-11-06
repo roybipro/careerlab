@@ -1,6 +1,6 @@
 "use client";
 
-import { Kanban, ListFilter, Search, Table2, X } from "lucide-react";
+import { ArrowUpDown, Kanban, ListFilter, Search, Table2, X } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { NativeSelect } from "@/components/native-select";
@@ -154,9 +154,9 @@ export function ListToolbar({ filters, searchPlaceholder = "Search", viewToggle,
   }
 
   return (
-    <div className="mb-4 space-y-3">
+    <div className="mb-5 space-y-3">
       <div className="flex flex-wrap items-center gap-2">
-        <div className="relative min-w-48 flex-1">
+        <div className="relative min-w-full flex-1 sm:min-w-48">
           <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
           <Input
             type="search"
@@ -164,7 +164,7 @@ export function ListToolbar({ filters, searchPlaceholder = "Search", viewToggle,
             placeholder={searchPlaceholder}
             value={text}
             onChange={(e) => onSearch(e.target.value)}
-            className="pl-8"
+            className="pl-8.5"
           />
         </div>
         {filters.length > 0 ? (
@@ -183,19 +183,20 @@ export function ListToolbar({ filters, searchPlaceholder = "Search", viewToggle,
           <NativeSelect
             label="Sort by"
             hideLabel
-            className="w-44"
+            icon={ArrowUpDown}
+            className="w-52"
             options={sortOptions}
             value={get("sort") || sortOptions[0].value}
             onChange={(e) => update({ sort: e.target.value === sortOptions[0].value ? null : e.target.value })}
           />
         ) : null}
         {viewToggle ? (
-          <div className="ml-auto flex rounded-lg border p-0.5" role="group" aria-label="View">
-            <Button variant={view === "table" ? "secondary" : "ghost"} size="sm" aria-pressed={view === "table"} onClick={() => update({ view: null })}>
+          <div className="ml-auto flex gap-0.5 rounded-xl bg-muted p-1" role="group" aria-label="View">
+            <Button variant="ghost" size="sm" className={view === "table" ? "bg-card text-foreground shadow-card hover:bg-card dark:bg-accent dark:hover:bg-accent" : "text-muted-foreground"} aria-pressed={view === "table"} onClick={() => update({ view: null })}>
               <Table2 data-icon="inline-start" />
               Table
             </Button>
-            <Button variant={view === "kanban" ? "secondary" : "ghost"} size="sm" aria-pressed={view === "kanban"} onClick={() => update({ view: "kanban" })}>
+            <Button variant="ghost" size="sm" className={view === "kanban" ? "bg-card text-foreground shadow-card hover:bg-card dark:bg-accent dark:hover:bg-accent" : "text-muted-foreground"} aria-pressed={view === "kanban"} onClick={() => update({ view: "kanban" })}>
               <Kanban data-icon="inline-start" />
               Kanban
             </Button>
@@ -203,7 +204,7 @@ export function ListToolbar({ filters, searchPlaceholder = "Search", viewToggle,
         ) : null}
       </div>
       {open && filters.length > 0 ? (
-        <div className="grid gap-3 rounded-xl border p-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 rounded-2xl border bg-card p-4 shadow-card sm:grid-cols-2 lg:grid-cols-4">
           {filters.map((f) =>
             f.type === "select" ? (
               <NativeSelect

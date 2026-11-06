@@ -14,7 +14,7 @@ export function Pagination({ page, pageSize, total, onPageChange }: PaginationPr
   const from = (page - 1) * pageSize + 1;
   const to = Math.min(page * pageSize, total);
   return (
-    <nav aria-label="Pagination" className="mt-4 flex items-center justify-between gap-3">
+    <nav aria-label="Pagination" className="mt-5 flex flex-wrap items-center justify-between gap-3">
       <p className="text-sm text-muted-foreground" aria-live="polite">
         {from}-{to} of {total}
       </p>

@@ -1,6 +1,6 @@
 "use client";
 
-import { ExternalLink, Trash2 } from "lucide-react";
+import { BookOpen, ExternalLink, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { z } from "zod";
 import { TextField } from "@/components/text-field";
@@ -44,7 +44,10 @@ export function PublicationLinks({ research }: { research: Research }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Publication links</CardTitle>
+        <CardTitle>
+          <BookOpen aria-hidden="true" />
+          Publication links
+        </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {error ? (
@@ -63,9 +66,9 @@ export function PublicationLinks({ research }: { research: Research }) {
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium break-words">{link.title}</p>
                     {href ? (
-                      <a href={href} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-sm break-all underline underline-offset-4">
+                      <a href={href} target="_blank" rel="noopener noreferrer" className="text-sm break-all text-link underline-offset-4 hover:underline">
                         {href}
-                        <ExternalLink className="size-3 shrink-0" aria-hidden="true" />
+                        <ExternalLink className="ml-1 inline size-3 align-baseline" aria-hidden="true" />
                       </a>
                     ) : (
                       <p className="text-sm break-all text-muted-foreground">{link.url}</p>
@@ -87,7 +90,7 @@ export function PublicationLinks({ research }: { research: Research }) {
             add();
           }}
         >
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <TextField label="Title" value={title} error={errors.title} onChange={(e) => setTitle(e.target.value)} />
             <TextField label="URL" type="url" placeholder="https://" value={url} error={errors.url} onChange={(e) => setUrl(e.target.value)} />
           </div>

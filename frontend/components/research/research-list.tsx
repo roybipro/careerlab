@@ -1,7 +1,7 @@
 "use client";
 
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
+import { FlaskConical, Plus, SearchX } from "lucide-react";
 import { useState } from "react";
 import { DataState, EmptyState } from "@/components/data-state";
 import { KanbanBoard } from "@/components/kanban-board";
@@ -74,9 +74,10 @@ export function ResearchList() {
   const move = useStatusMove<Research>("research", "/research", (item) => item.title);
 
   const empty = filtersActive ? (
-    <EmptyState title="No opportunities match" description="Try different search words, or clear the filters." />
+    <EmptyState icon={SearchX} title="No opportunities match" description="Try different search words, or clear the filters." />
   ) : (
     <EmptyState
+      icon={FlaskConical}
       title="No research opportunities yet"
       description="Add the labs, programs and fellowships you are looking at, then move them along as you go."
       action={
@@ -92,6 +93,7 @@ export function ResearchList() {
     <>
       <PageHeader
         title="Research Opportunities"
+        icon={FlaskConical}
         description="Labs, fellowships and programs you are pursuing."
         actions={
           <Button onClick={() => setAdding(true)}>

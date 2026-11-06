@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { Archive, ArrowRightLeft, CalendarClock, CalendarPlus, Circle, History, Plus, Trash2, UserPlus, type LucideIcon } from "lucide-react";
 import { DataState } from "@/components/data-state";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { api } from "@/lib/api";
@@ -39,6 +40,26 @@ export function describeActivity(a: Activity): string {
   }
 }
 
+const ACTION_ICON: Record<string, LucideIcon> = {
+  created: Plus,
+  status_changed: ArrowRightLeft,
+  deadline_updated: CalendarClock,
+  interview_scheduled: CalendarPlus,
+  contact_added: UserPlus,
+  archived: Archive,
+  deleted: Trash2,
+};
+
+/** The round icon for one event on a timeline. The text beside it says the same thing. */
+export function ActivityIcon({ action }: { action: string }) {
+  const Icon = ACTION_ICON[action] ?? Circle;
+  return (
+    <span className="relative flex size-8 shrink-0 items-center justify-center rounded-full bg-accent text-accent-foreground">
+      <Icon className="size-4" aria-hidden="true" />
+    </span>
+  );
+}
+
 /** Newest-first history of one record. Works for any entity type. */
 export function ActivityTimeline({ entityType, entityId }: { entityType: EntityType; entityId: string }) {
   const query = useQuery({
@@ -52,18 +73,24 @@ export function ActivityTimeline({ entityType, entityId }: { entityType: EntityT
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Activity</CardTitle>
+        <CardTitle>
+          <History aria-hidden="true" />
+          Activity
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <DataState query={query} empty={<p className="text-sm text-muted-foreground">No activity yet.</p>}>
           {(data) => (
             <>
-              <ol className="space-y-3 border-l pl-4">
-                {data.items.map((a) => (
-                  <li key={a.id} className="relative">
-                    <span className="absolute top-1.5 -left-[1.3rem] size-2 rounded-full bg-border" aria-hidden="true" />
-                    <p className="text-sm">{describeActivity(a)}</p>
-                    <p className="text-xs text-muted-foreground">{formatDateTime(a.created_at)}</p>
+              <ol>
+                {data.items.map((a, i) => (
+                  <li key={a.id} className="relative flex gap-3 pb-4 last:pb-0">
+                    {i < data.items.length - 1 ? <span className="absolute top-8 bottom-0 left-3.75 w-px bg-border" aria-hidden="true" /> : null}
+                    <ActivityIcon action={a.action} />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm break-words">{describeActivity(a)}</p>
+                      <p className="text-xs text-muted-foreground">{formatDateTime(a.created_at)}</p>
+                    </div>
                   </li>
                 ))}
               </ol>

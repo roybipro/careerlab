@@ -1,5 +1,6 @@
 "use client";
 
+import { KeyRound } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
@@ -45,7 +46,10 @@ export function PasswordForm() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Change password</CardTitle>
+        <CardTitle>
+          <KeyRound aria-hidden="true" />
+          Change password
+        </CardTitle>
         <CardDescription>Use 10 to 128 characters. Changing it signs out your other devices.</CardDescription>
       </CardHeader>
       <CardContent>

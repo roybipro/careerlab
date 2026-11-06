@@ -16,6 +16,7 @@ import { MoreVertical } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuGroup, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { statusMeta } from "@/lib/enums";
 import { cn } from "@/lib/utils";
 
 export type KanbanColumn = { id: string; label: string };
@@ -34,14 +35,17 @@ type KanbanBoardProps<T extends KanbanItem> = {
 
 function Column({ column, count, children }: { column: KanbanColumn; count: number; children: ReactNode }) {
   const { setNodeRef, isOver } = useDroppable({ id: column.id });
+  const meta = statusMeta(column.id);
   return (
     <section
       ref={setNodeRef}
       aria-label={`${column.label}, ${count} cards`}
-      className={cn("flex w-72 shrink-0 flex-col rounded-xl bg-muted/50 p-2 transition-colors", isOver && "bg-muted ring-2 ring-ring/40")}
+      className={cn("flex w-64 shrink-0 flex-col rounded-2xl p-2 transition-shadow", meta.tint, isOver && "ring-2 ring-ring")}
     >
-      <h3 className="px-2 py-1.5 text-sm font-medium">
-        {column.label} <span className="font-normal text-muted-foreground">{count}</span>
+      <h3 className="flex items-center gap-2 px-2 py-2 text-sm font-semibold">
+        <span className={cn("size-2.5 shrink-0 rounded-full", meta.dot)} aria-hidden="true" />
+        <span className="min-w-0 flex-1 truncate">{column.label}</span>
+        <span className="font-normal text-muted-foreground tabular-nums">{count}</span>
       </h3>
       <div className="flex min-h-16 flex-col gap-2">{children}</div>
     </section>
@@ -63,29 +67,37 @@ function Card<T extends KanbanItem>({
 }) {
   const { setNodeRef, listeners, isDragging } = useDraggable({ id: item.id });
   return (
-    <div ref={setNodeRef} className={cn("relative", isDragging && "opacity-40")}>
-      {/* Drag listeners sit on the card body only, so the menu button is a separate control. */}
-      <div {...listeners}>{children}</div>
-      <DropdownMenu>
-        <DropdownMenuTrigger
-          aria-label={`Move ${label} to another status`}
-          render={<Button variant="ghost" size="icon-sm" className="absolute top-1.5 right-1.5" />}
-        >
-          <MoreVertical />
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-48">
-          <DropdownMenuGroup>
-            <DropdownMenuLabel>Move to</DropdownMenuLabel>
-            {columns
-              .filter((c) => c.id !== item.status)
-              .map((c) => (
-                <DropdownMenuItem key={c.id} onClick={() => onMove(item, c.id)}>
-                  {c.label}
-                </DropdownMenuItem>
-              ))}
-          </DropdownMenuGroup>
-        </DropdownMenuContent>
-      </DropdownMenu>
+    // The lift is on the inner element: dnd-kit measures the outer node, which must not move on hover.
+    <div ref={setNodeRef} className={cn(isDragging && "opacity-40")}>
+      <div
+        className={cn(
+          "relative rounded-xl shadow-card transition-[transform,box-shadow] duration-150",
+          !isDragging && "hover:shadow-lift motion-safe:hover:-translate-y-0.5",
+        )}
+      >
+        {/* Drag listeners sit on the card body only, so the menu button is a separate control. */}
+        <div {...listeners}>{children}</div>
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            aria-label={`Move ${label} to another status`}
+            render={<Button variant="ghost" size="icon-sm" className="absolute top-0.5 right-0.5 text-muted-foreground md:top-1.5 md:right-1.5" />}
+          >
+            <MoreVertical />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuGroup>
+              <DropdownMenuLabel>Move to</DropdownMenuLabel>
+              {columns
+                .filter((c) => c.id !== item.status)
+                .map((c) => (
+                  <DropdownMenuItem key={c.id} onClick={() => onMove(item, c.id)}>
+                    {c.label}
+                  </DropdownMenuItem>
+                ))}
+            </DropdownMenuGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
     </div>
   );
 }
@@ -130,7 +142,7 @@ export function KanbanBoard<T extends KanbanItem>({ columns, items, onMove, rend
           );
         })}
       </div>
-      <DragOverlay>{active ? <div className="cursor-grabbing shadow-lg">{renderCard(active)}</div> : null}</DragOverlay>
+      <DragOverlay>{active ? <div className="cursor-grabbing rounded-xl shadow-lift">{renderCard(active)}</div> : null}</DragOverlay>
     </DndContext>
   );
 }

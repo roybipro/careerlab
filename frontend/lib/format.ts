@@ -55,3 +55,41 @@ export function formatSalary(min: number | null, max: number | null, currency: s
 export function localToday(now: Date = new Date()): string {
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
 }
+
+/** Calendar days from today to a date-only value or timestamp, in the browser's time zone. Negative means past. */
+export function daysFromToday(value: string, now: Date = new Date()): number {
+  const m = DATE_ONLY.exec(value);
+  const d = m ? null : new Date(value);
+  const due = m ? Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : Date.UTC(d!.getFullYear(), d!.getMonth(), d!.getDate());
+  return Math.round((due - Date.UTC(now.getFullYear(), now.getMonth(), now.getDate())) / 86_400_000);
+}
+
+/** How soon a due date is, in words. */
+export function dueLabel(days: number): string {
+  if (days === 0) return "Today";
+  if (days === 1) return "Tomorrow";
+  if (days > 1) return `In ${days} days`;
+  return days === -1 ? "1 day late" : `${-days} days late`;
+}
+
+/** Month and day for a date chip, from a date-only value or a timestamp. */
+export function dateChipParts(value: string): { month: string; day: string } {
+  const m = DATE_ONLY.exec(value);
+  const date = m ? new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]))) : new Date(value);
+  const timeZone = m ? "UTC" : undefined;
+  return {
+    month: new Intl.DateTimeFormat(undefined, { month: "short", timeZone }).format(date),
+    day: new Intl.DateTimeFormat(undefined, { day: "numeric", timeZone }).format(date),
+  };
+}
+
+/** "Alex Demo" -> "AD". */
+export function initials(name: string | undefined): string {
+  if (!name) return "?";
+  return name
+    .split(/\s+/)
+    .filter((part) => part && !/^(dr|prof|mr|mrs|ms)\.?$/i.test(part))
+    .slice(0, 2)
+    .map((part) => part[0]!.toUpperCase())
+    .join("");
+}

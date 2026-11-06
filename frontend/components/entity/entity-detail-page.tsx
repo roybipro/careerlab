@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Pencil, Trash2 } from "lucide-react";
+import { ArrowLeft, FileQuestion, Pencil, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
@@ -83,6 +83,7 @@ export function EntityDetailPage<T extends { id: string }>({
   if (query.isError && query.data === undefined && error instanceof ApiError && (error.status === 404 || error.status === 422)) {
     return (
       <EmptyState
+        icon={FileQuestion}
         title={`${noun.charAt(0).toUpperCase()}${noun.slice(1)} not found`}
         description="It may have been deleted, or the link is wrong."
         action={
@@ -97,7 +98,7 @@ export function EntityDetailPage<T extends { id: string }>({
 
   return (
     <>
-      <Link href={path} className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "mb-3 -ml-2.5")}>
+      <Link href={path} className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "mb-3 -ml-2.5 text-muted-foreground")}>
         <ArrowLeft data-icon="inline-start" />
         {backLabel}
       </Link>
@@ -109,18 +110,18 @@ export function EntityDetailPage<T extends { id: string }>({
               description={description(item)}
               actions={
                 <>
-                  <Button variant="outline" onClick={() => setEditing(true)}>
+                  <Button onClick={() => setEditing(true)}>
                     <Pencil data-icon="inline-start" />
                     Edit
                   </Button>
-                  <Button variant="destructive" onClick={() => setConfirmingDelete(true)}>
+                  <Button variant="ghost" className="text-destructive hover:bg-destructive-soft hover:text-destructive" onClick={() => setConfirmingDelete(true)}>
                     <Trash2 data-icon="inline-start" />
                     Delete
                   </Button>
                 </>
               }
             />
-            <div className="mb-6 flex flex-wrap gap-2">{badges(item)}</div>
+            <div className="-mt-4 mb-6 flex flex-wrap gap-2">{badges(item)}</div>
             {children(item)}
             {renderEdit(item, editing, setEditing)}
             <ConfirmDialog

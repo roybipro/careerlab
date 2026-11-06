@@ -1,10 +1,12 @@
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, type LucideIcon } from "lucide-react";
 import { useId, type ComponentProps } from "react";
 import type { Option } from "@/lib/enums";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
 type NativeSelectProps = Omit<ComponentProps<"select">, "id"> & {
+  /** Optional decorative icon inside the control. */
+  icon?: LucideIcon;
   label: string;
   options: Option[];
   /** Text of the empty choice. Omit it for a required field. */
@@ -18,7 +20,7 @@ type NativeSelectProps = Omit<ComponentProps<"select">, "id"> & {
  * A styled native <select>: keyboard and touch work out of the box, and it works with
  * `register()` and with controlled `value`/`onChange` alike.
  */
-export function NativeSelect({ label, options, placeholder, error, hideLabel, className, ...props }: NativeSelectProps) {
+export function NativeSelect({ icon: Icon, label, options, placeholder, error, hideLabel, className, ...props }: NativeSelectProps) {
   const id = useId();
   return (
     <div className="space-y-1.5">
@@ -26,11 +28,13 @@ export function NativeSelect({ label, options, placeholder, error, hideLabel, cl
         {label}
       </Label>
       <div className="relative">
+        {Icon ? <Icon className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" /> : null}
         <select
           id={id}
           aria-invalid={error ? true : undefined}
           className={cn(
-            "h-8 w-full appearance-none rounded-lg border border-input bg-transparent pr-8 pl-2.5 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:border-destructive dark:bg-input/30 [&>option]:bg-popover [&>option]:text-popover-foreground",
+            "h-10 w-full appearance-none rounded-lg border border-input bg-field pr-8 pl-3 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:border-destructive md:h-9 [&>option]:bg-popover [&>option]:text-popover-foreground",
+            Icon && "pl-8",
             className,
           )}
           {...props}

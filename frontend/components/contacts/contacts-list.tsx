@@ -1,7 +1,7 @@
 "use client";
 
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
+import { Plus, SearchX, Users } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { ContactFormDialog } from "@/components/contacts/contact-form";
@@ -9,12 +9,13 @@ import { DataState, EmptyState } from "@/components/data-state";
 import { ListToolbar, useListParams, usePageClamp, type ToolbarFilter } from "@/components/list-toolbar";
 import { PageHeader } from "@/components/page-header";
 import { Pagination } from "@/components/pagination";
-import { Badge } from "@/components/ui/badge";
+import { ContactTypeBadge } from "@/components/contacts/contact-type-badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { api } from "@/lib/api";
-import { CONTACT_TYPES, optionLabel, type Option } from "@/lib/enums";
-import { formatDateOnly, localToday } from "@/lib/format";
+import { CONTACT_TYPES, type Option } from "@/lib/enums";
+import { formatDateOnly, initials, localToday } from "@/lib/format";
 import { keys } from "@/lib/keys";
 import type { Contact, Paginated } from "@/lib/types";
 
@@ -68,9 +69,10 @@ export function ContactsList() {
   usePageClamp(query, page, update);
 
   const empty = filtersActive ? (
-    <EmptyState title="No contacts match" description="Try different search words, or clear the filters." />
+    <EmptyState icon={SearchX} title="No contacts match" description="Try different search words, or clear the filters." />
   ) : (
     <EmptyState
+      icon={Users}
       title="No contacts yet"
       description="Keep track of recruiters, professors and anyone who can help, then link them to your applications."
       action={
@@ -86,6 +88,7 @@ export function ContactsList() {
     <>
       <PageHeader
         title="Contacts"
+        icon={Users}
         description="People who can help with your search."
         actions={
           <Button onClick={() => setAdding(true)}>
@@ -98,7 +101,7 @@ export function ContactsList() {
       <DataState query={query} empty={empty}>
         {(data) => (
           <>
-            <div className="hidden md:block">
+            <div className="hidden lg:block">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -113,27 +116,32 @@ export function ContactsList() {
                   {data.items.map((c) => (
                     <TableRow key={c.id}>
                       <TableCell className="font-medium">
-                        <Link href={`/contacts/${c.id}`} className="underline-offset-4 hover:underline">
-                          {c.name}
-                        </Link>
+                        <span className="flex items-center gap-2.5">
+                          <Avatar size="sm" aria-hidden="true">
+                            <AvatarFallback className="bg-accent font-medium text-accent-foreground">{initials(c.name)}</AvatarFallback>
+                          </Avatar>
+                          <Link href={`/contacts/${c.id}`} className="underline-offset-4 hover:text-link hover:underline">
+                            {c.name}
+                          </Link>
+                        </span>
                       </TableCell>
-                      <TableCell>{optionLabel(CONTACT_TYPES, c.contact_type) ?? "-"}</TableCell>
-                      <TableCell>{subtitle(c) || "-"}</TableCell>
-                      <TableCell>{formatDateOnly(c.last_contacted_at) ?? "-"}</TableCell>
-                      <TableCell>{formatDateOnly(c.next_follow_up_at) ?? "-"}</TableCell>
+                      <TableCell>{c.contact_type ? <ContactTypeBadge type={c.contact_type} /> : <span className="text-muted-foreground">-</span>}</TableCell>
+                      <TableCell className="max-w-72 whitespace-normal text-muted-foreground">{subtitle(c) || "-"}</TableCell>
+                      <TableCell className="text-muted-foreground tabular-nums">{formatDateOnly(c.last_contacted_at) ?? "-"}</TableCell>
+                      <TableCell className="text-muted-foreground tabular-nums">{formatDateOnly(c.next_follow_up_at) ?? "-"}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
             </div>
-            <ul className="space-y-3 md:hidden">
+            <ul className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:hidden">
               {data.items.map((c) => (
                 <li key={c.id}>
-                  <Link href={`/contacts/${c.id}`} className="block rounded-xl border p-3 hover:bg-muted/50">
-                    <p className="font-medium break-words">{c.name}</p>
+                  <Link href={`/contacts/${c.id}`} className="block h-full rounded-2xl border bg-card p-4 shadow-card transition-shadow hover:shadow-lift">
+                    <p className="font-semibold break-words">{c.name}</p>
                     {subtitle(c) ? <p className="text-sm break-words text-muted-foreground">{subtitle(c)}</p> : null}
-                    <div className="mt-2 flex flex-wrap items-center gap-2">
-                      {c.contact_type ? <Badge variant="secondary">{optionLabel(CONTACT_TYPES, c.contact_type)}</Badge> : null}
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                      {c.contact_type ? <ContactTypeBadge type={c.contact_type} /> : null}
                       {c.next_follow_up_at ? <span className="text-xs text-muted-foreground">Follow up {formatDateOnly(c.next_follow_up_at)}</span> : null}
                     </div>
                   </Link>

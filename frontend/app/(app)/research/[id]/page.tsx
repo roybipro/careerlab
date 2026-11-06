@@ -1,5 +1,6 @@
 "use client";
 
+import { Banknote, Building2, CalendarClock, Coins, FlaskConical, Globe, GraduationCap, Info, Link2, Mail, MapPin, Microscope, Send, Tag } from "lucide-react";
 import { use } from "react";
 import { ActivityTimeline } from "@/components/entity/activity-timeline";
 import { Field, TextSection, UrlValue } from "@/components/entity/detail-parts";
@@ -21,24 +22,27 @@ function ResearchDetails({ item }: { item: Research }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Details</CardTitle>
+        <CardTitle>
+          <Info aria-hidden="true" />
+          Details
+        </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
-        <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <Field label="Type">{optionLabel(OPPORTUNITY_TYPES, item.opportunity_type)}</Field>
-          <Field label="Funding">{optionLabel(FUNDING_STATUSES, item.funding_status)}</Field>
-          <Field label="Funding amount">{item.funding_amount}</Field>
-          <Field label="Country">{item.country}</Field>
-          <Field label="Department">{item.department}</Field>
-          <Field label="Laboratory">{item.laboratory}</Field>
-          <Field label="Research area">{item.research_area}</Field>
-          <Field label="Application date">{formatDateOnly(item.application_date)}</Field>
-          <Field label="Deadline">{formatDateOnly(item.deadline)}</Field>
-          <Field label="Professor">{item.professor_name}</Field>
-          <Field label="Professor email">{item.professor_email}</Field>
-          <Field label="Professor website">{item.professor_website ? <UrlValue value={item.professor_website} /> : null}</Field>
-          <Field label="Website">{item.website ? <UrlValue value={item.website} /> : null}</Field>
-          <Field label="Application URL">{item.application_url ? <UrlValue value={item.application_url} /> : null}</Field>
+        <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <Field label="Type" icon={Tag}>{optionLabel(OPPORTUNITY_TYPES, item.opportunity_type)}</Field>
+          <Field label="Funding" icon={Banknote}>{optionLabel(FUNDING_STATUSES, item.funding_status)}</Field>
+          <Field label="Funding amount" icon={Coins}>{item.funding_amount}</Field>
+          <Field label="Country" icon={MapPin}>{item.country}</Field>
+          <Field label="Department" icon={Building2}>{item.department}</Field>
+          <Field label="Laboratory" icon={FlaskConical}>{item.laboratory}</Field>
+          <Field label="Research area" icon={Microscope}>{item.research_area}</Field>
+          <Field label="Application date" icon={Send}>{formatDateOnly(item.application_date)}</Field>
+          <Field label="Deadline" icon={CalendarClock}>{formatDateOnly(item.deadline)}</Field>
+          <Field label="Professor" icon={GraduationCap}>{item.professor_name}</Field>
+          <Field label="Professor email" icon={Mail}>{item.professor_email}</Field>
+          <Field label="Professor website" icon={Globe}>{item.professor_website ? <UrlValue value={item.professor_website} /> : null}</Field>
+          <Field label="Website" icon={Globe}>{item.website ? <UrlValue value={item.website} /> : null}</Field>
+          <Field label="Application URL" icon={Link2}>{item.application_url ? <UrlValue value={item.application_url} /> : null}</Field>
         </dl>
         {item.research_interests.length > 0 ? (
           <section>
@@ -79,7 +83,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
       renderEdit={(item, open, onOpenChange) => <ResearchFormDialog open={open} onOpenChange={onOpenChange} research={item} />}
     >
       {(item) => (
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <div className="lg:col-span-2">
             <ResearchDetails item={item} />
           </div>

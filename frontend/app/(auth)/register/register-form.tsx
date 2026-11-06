@@ -2,6 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
+import { KeyRound } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
@@ -10,7 +11,6 @@ import { z } from "zod";
 import { TextField } from "@/components/text-field";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { WakingHint } from "@/components/waking-hint";
 import { ApiError, api, applyServerErrors } from "@/lib/api";
 import { safeNextPath } from "@/lib/auth";
@@ -53,12 +53,10 @@ export function RegisterForm() {
   const loginHref = next ? `/login?next=${encodeURIComponent(next)}` : "/login";
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg">Create your account</CardTitle>
-        <CardDescription>Start tracking applications and research opportunities.</CardDescription>
-      </CardHeader>
-      <CardContent>
+    <div>
+      <h1 className="text-2xl font-semibold tracking-tight">Create your account</h1>
+      <p className="mt-1 mb-6 text-sm text-muted-foreground">Start tracking applications and research opportunities.</p>
+      <div>
         <form
           noValidate
           // Before hydration a native submit must not put credentials in the URL: POST to this page.
@@ -85,21 +83,22 @@ export function RegisterForm() {
             error={errors.password?.message}
             {...register("password")}
           />
-          <p className="text-sm text-muted-foreground">
-            There is no password reset yet, so keep your password somewhere safe. If you lose it, you lose access to your data.
+          <p className="flex gap-2 text-xs text-muted-foreground">
+            <KeyRound className="mt-px size-4 shrink-0" aria-hidden="true" />
+            There is no password reset yet. Keep your password somewhere safe. If you lose it, you lose access to your data.
           </p>
           <Button type="submit" className="w-full" size="lg" disabled={signUp.isPending || signUp.isSuccess}>
             {signUp.isPending ? "Creating account..." : "Create account"}
           </Button>
           {signUp.isPending ? <WakingHint className="text-center text-sm text-muted-foreground" /> : null}
         </form>
-        <p className="mt-4 text-center text-sm text-muted-foreground">
+        <p className="mt-3 text-center text-sm text-muted-foreground">
           Already have an account?{" "}
-          <Link href={loginHref} className="font-medium text-foreground underline underline-offset-4">
+          <Link href={loginHref} className="inline-flex min-h-10 items-center font-medium text-link underline underline-offset-4">
             Log in
           </Link>
         </p>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
