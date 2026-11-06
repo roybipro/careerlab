@@ -21,6 +21,7 @@ from app.modules.auth.schemas import (
 router = APIRouter(prefix="/auth", tags=["auth"], dependencies=[Depends(require_csrf)])
 
 _register_ip_limiter = RateLimiter(limit=5, window_seconds=60)
+_register_global_limiter = RateLimiter(limit=30, window_seconds=60)
 _login_ip_limiter = RateLimiter(limit=10, window_seconds=60)
 _login_email_limiter = RateLimiter(limit=5, window_seconds=60)
 
@@ -43,6 +44,8 @@ def _set_session_cookie(response: Response, user: User) -> None:
 @router.post("/register", status_code=201, response_model=UserOut)
 def register(body: RegisterIn, request: Request, response: Response, db: DbSession) -> User:
     _register_ip_limiter.check(client_ip(request))
+    # Backstop in case forwarded client IPs are spoofed.
+    _register_global_limiter.check("all")
     user = service.register(db, body.full_name, body.email, body.password)
     _set_session_cookie(response, user)
     return user

@@ -126,7 +126,12 @@ def test_change_password_requires_current_password(client: TestClient) -> None:
         f"{BASE}/change-password",
         json={"current_password": "wrong-wrong-wrong", "new_password": "brand-new-password"},
     )
-    assert response.status_code == 401
+    assert response.status_code == 422
+    error = response.json()["error"]
+    assert error["code"] == "validation_error"
+    assert error["details"][0]["loc"] == ["body", "current_password"]
+    # The session is still valid: a wrong password must not look like an expired login.
+    assert client.get(f"{BASE}/me").status_code == 200
     client.post(f"{BASE}/logout")
     ok = client.post(f"{BASE}/login", json={"email": "ana@x.com", "password": PASSWORD})
     assert ok.status_code == 200
@@ -270,3 +275,22 @@ def test_client_ip_uses_forwarded_for_only_when_proxy_is_trusted(
     monkeypatch.setattr(get_settings(), "TRUST_PROXY", True)
     assert client_ip(request) == "203.0.113.7"
     assert client_ip(_request({})) == "10.0.0.1"
+
+
+def test_register_global_backstop_returns_429(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(get_settings(), "TRUST_PROXY", True)
+    for i in range(30):
+        response = client.post(
+            f"{BASE}/register",
+            headers={"X-Forwarded-For": f"203.0.113.{i}"},
+            json={"full_name": "Ana", "email": f"user{i}@x.com", "password": PASSWORD},
+        )
+        assert response.status_code == 201, i
+    blocked = client.post(
+        f"{BASE}/register",
+        headers={"X-Forwarded-For": "198.51.100.99"},
+        json={"full_name": "Ana", "email": "user99@x.com", "password": PASSWORD},
+    )
+    assert blocked.status_code == 429

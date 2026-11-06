@@ -55,7 +55,19 @@ def update_profile(db: Session, user: User, full_name: str | None, email: str | 
 
 def change_password(db: Session, user: User, current_password: str, new_password: str) -> None:
     if not verify_password(current_password, user.password_hash):
-        raise AppError(401, "unauthorized", "Current password is incorrect")
+        # Not 401: the frontend treats 401 as an expired session and redirects to login.
+        raise AppError(
+            422,
+            "validation_error",
+            "Current password is incorrect",
+            [
+                {
+                    "loc": ["body", "current_password"],
+                    "message": "Current password is incorrect",
+                    "type": "incorrect_password",
+                }
+            ],
+        )
     user.password_hash = hash_password(new_password)
     user.token_version += 1
     db.commit()
