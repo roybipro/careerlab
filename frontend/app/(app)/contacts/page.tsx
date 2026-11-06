@@ -1,11 +1,14 @@
-import { EmptyState } from "@/components/data-state";
-import { PageHeader } from "@/components/page-header";
+import { Suspense } from "react";
+import { ContactsList } from "@/components/contacts/contacts-list";
+import { DataSkeleton } from "@/components/data-state";
+
+export const metadata = { title: "Contacts" };
 
 export default function Page() {
+  // ContactsList reads the URL search parameters, which needs a Suspense boundary.
   return (
-    <>
-      <PageHeader title="Contacts" description="People who can help with your search." />
-      <EmptyState title="Coming soon" description="This page is not built yet." />
-    </>
+    <Suspense fallback={<DataSkeleton />}>
+      <ContactsList />
+    </Suspense>
   );
 }

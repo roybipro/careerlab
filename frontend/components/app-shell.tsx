@@ -6,6 +6,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import { toast } from "sonner";
+import { ReminderBell } from "@/components/reminder-bell";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -149,6 +150,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </Sheet>
           <span className="text-base font-semibold tracking-tight md:hidden">CareerLab</span>
           <div className="ml-auto flex items-center gap-1">
+            <ReminderBell />
             <ThemeToggle />
             <UserMenu />
           </div>

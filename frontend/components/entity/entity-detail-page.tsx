@@ -66,6 +66,7 @@ export function EntityDetailPage<T extends { id: string }>({
       client.removeQueries({ queryKey: keys.detail(type, id) });
       void client.invalidateQueries({ queryKey: [resource, "list"] });
       void client.invalidateQueries({ queryKey: ["reminders"] });
+      void client.invalidateQueries({ queryKey: ["contacts"] });
       void client.invalidateQueries({ queryKey: keys.dashboard });
       toast.success(`${noun.charAt(0).toUpperCase()}${noun.slice(1)} deleted`);
       router.replace(path);

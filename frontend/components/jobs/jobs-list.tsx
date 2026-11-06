@@ -7,7 +7,7 @@ import { DataState, EmptyState } from "@/components/data-state";
 import { JobFormDialog } from "@/components/jobs/job-form";
 import { JobKanbanCard, JobsTable } from "@/components/jobs/jobs-table";
 import { KanbanBoard } from "@/components/kanban-board";
-import { ListToolbar, useListParams, type ToolbarFilter } from "@/components/list-toolbar";
+import { ListToolbar, useListParams, usePageClamp, type ToolbarFilter } from "@/components/list-toolbar";
 import { PageHeader } from "@/components/page-header";
 import { Pagination } from "@/components/pagination";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -69,6 +69,7 @@ export function JobsList() {
     queryFn: () => api<Paginated<Job>>("/jobs", { query: params }),
     placeholderData: keepPreviousData,
   });
+  usePageClamp(query, page, update, view !== "kanban");
 
   const move = useStatusMove<Job>("job", "/jobs", (job) => job.company_name);
 

@@ -17,19 +17,30 @@ import { formatDateTime } from "@/lib/format";
 import { keys } from "@/lib/keys";
 import type { Note, Paginated } from "@/lib/types";
 
+type NotesPanelProps = {
+  entityType: EntityType;
+  entityId: string;
+  /** Show and add only this kind of note (for example "communication"). Omit to show every kind, grouped. */
+  kind?: string;
+  /** Card heading. Defaults to "Notes". */
+  title?: string;
+};
+
 /** Notes written on one record, grouped by kind, with a form to add one. Works for any entity type. */
-export function NotesPanel({ entityType, entityId }: { entityType: EntityType; entityId: string }) {
+export function NotesPanel({ entityType, entityId, kind: fixedKind, title = "Notes" }: NotesPanelProps) {
   const client = useQueryClient();
-  const queryKey = keys.notes(entityType, entityId);
+  const baseKey = keys.notes(entityType, entityId);
+  const queryKey = fixedKind ? [...baseKey, fixedKind] : baseKey;
   const query = useQuery({
     queryKey,
     queryFn: () =>
       api<Paginated<Note>>("/notes", {
-        query: { entity_type: entityType, entity_id: entityId, page_size: 100, sort: "-created_at" },
+        query: { entity_type: entityType, entity_id: entityId, kind: fixedKind, page_size: 100, sort: "-created_at" },
       }),
   });
 
-  const [kind, setKind] = useState("note");
+  const [pickedKind, setKind] = useState("note");
+  const kind = fixedKind ?? pickedKind;
   const [content, setContent] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<Note | null>(null);
@@ -39,7 +50,7 @@ export function NotesPanel({ entityType, entityId }: { entityType: EntityType; e
     onSuccess: () => {
       setContent("");
       setFormError(null);
-      void client.invalidateQueries({ queryKey });
+      void client.invalidateQueries({ queryKey: baseKey });
     },
     onError: (e) => setFormError(e instanceof ApiError ? e.message : "Could not save the note."),
   });
@@ -48,7 +59,7 @@ export function NotesPanel({ entityType, entityId }: { entityType: EntityType; e
     mutationFn: (note: Note) => api<void>(`/notes/${note.id}`, { method: "DELETE" }),
     onSuccess: () => {
       setDeleting(null);
-      void client.invalidateQueries({ queryKey });
+      void client.invalidateQueries({ queryKey: baseKey });
     },
     onError: (e) => {
       setDeleting(null);
@@ -59,7 +70,7 @@ export function NotesPanel({ entityType, entityId }: { entityType: EntityType; e
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Notes</CardTitle>
+        <CardTitle>{title}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <form
@@ -75,14 +86,14 @@ export function NotesPanel({ entityType, entityId }: { entityType: EntityType; e
               <AlertDescription>{formError}</AlertDescription>
             </Alert>
           ) : null}
-          <NativeSelect label="Kind" options={NOTE_KINDS} value={kind} onChange={(e) => setKind(e.target.value)} />
-          <Textarea aria-label="Note" placeholder="Add a note" value={content} onChange={(e) => setContent(e.target.value)} />
+          {fixedKind ? null : <NativeSelect label="Kind" options={NOTE_KINDS} value={kind} onChange={(e) => setKind(e.target.value)} />}
+          <Textarea aria-label={fixedKind ? title : "Note"} placeholder={fixedKind ? "Log a call, email or message" : "Add a note"} value={content} onChange={(e) => setContent(e.target.value)} />
           <Button type="submit" size="sm" disabled={add.isPending}>
-            {add.isPending ? "Saving..." : "Add note"}
+            {add.isPending ? "Saving..." : fixedKind ? "Add entry" : "Add note"}
           </Button>
         </form>
 
-        <DataState query={query} empty={<p className="text-sm text-muted-foreground">No notes yet. Add one above.</p>}>
+        <DataState query={query} empty={<p className="text-sm text-muted-foreground">{fixedKind ? "Nothing logged yet. Add the first entry above." : "No notes yet. Add one above."}</p>}>
           {(data) => (
             <div className="space-y-4">
               {NOTE_KINDS.filter((k) => data.items.some((n) => n.kind === k.value)).map((k) => (
