@@ -21,7 +21,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { Fragment, useState, type ReactNode } from "react";
 import { ContactFormDialog } from "@/components/contacts/contact-form";
 import { DataState, EmptyState } from "@/components/data-state";
 import { ActivityIcon, describeActivity } from "@/components/entity/activity-timeline";
@@ -40,6 +40,7 @@ import { dateChipParts, daysFromToday, dueLabel, formatDateOnly, formatDateTime,
 import { keys } from "@/lib/keys";
 import { entityHref } from "@/lib/navigation";
 import type { Activity, Analytics, DashboardSummary, Deadline, Paginated, Reminder, StatusCount } from "@/lib/types";
+import { useMediaQuery } from "@/lib/use-media-query";
 import { cn } from "@/lib/utils";
 
 type StatCard = { key: keyof DashboardSummary; label: string; hint: string; icon: LucideIcon };
@@ -104,14 +105,14 @@ function SummaryCards() {
               </li>
             ))}
           </ul>
-          <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <ul className="grid grid-cols-2 gap-4 lg:grid-cols-4">
             {COMPACT_CARDS.map((c) => (
-              <li key={c.key} className="flex items-start gap-3 rounded-2xl border bg-card p-4 shadow-card">
+              <li key={c.key} className="flex flex-wrap items-start gap-x-3 gap-y-1 rounded-2xl border bg-card p-4 shadow-card sm:flex-nowrap">
                 <c.icon className="mt-1 size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
                 <p className="min-w-5 shrink-0 text-xl leading-6 font-semibold tabular-nums" data-testid={`card-${c.key}`}>
                   {data[c.key]}
                 </p>
-                <div className="min-w-0">
+                <div className="w-full min-w-0 sm:w-auto">
                   <p className="text-sm leading-6 font-medium">{c.label}</p>
                   <p className="text-xs text-muted-foreground">{c.hint}</p>
                 </div>
@@ -164,14 +165,16 @@ function Pipeline({ title, icon: Icon, counts, basePath }: { title: string; icon
 function Pipelines() {
   const query = useQuery({ queryKey: keys.dashboardPart("analytics"), queryFn: () => api<Analytics>("/dashboard/analytics") });
   return (
-    <DataState query={query} isEmpty={() => false}>
-      {(data) => (
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          <Pipeline title="Job pipeline" icon={Briefcase} counts={data.job_status} basePath="/jobs" />
-          <Pipeline title="Research pipeline" icon={FlaskConical} counts={data.research_status} basePath="/research" />
-        </div>
-      )}
-    </DataState>
+    <div className="min-w-0 lg:col-span-2">
+      <DataState query={query} isEmpty={() => false}>
+        {(data) => (
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <Pipeline title="Job pipeline" icon={Briefcase} counts={data.job_status} basePath="/jobs" />
+            <Pipeline title="Research pipeline" icon={FlaskConical} counts={data.research_status} basePath="/research" />
+          </div>
+        )}
+      </DataState>
+    </div>
   );
 }
 
@@ -258,11 +261,17 @@ function OverdueReminders() {
     refetchInterval: 60_000,
   });
   if (query.isPending) return null;
-  if (query.isError && !query.data) return <DataState query={query}>{() => null}</DataState>;
+  if (query.isError && !query.data) {
+    return (
+      <div className="min-w-0 lg:col-span-2">
+        <DataState query={query}>{() => null}</DataState>
+      </div>
+    );
+  }
   const data = query.data;
   if (!data || data.total === 0) return null;
   return (
-    <Card data-testid="overdue-section" className="border-destructive/50">
+    <Card data-testid="overdue-section" className="border-destructive/50 lg:col-span-2">
       <CardHeader>
         <CardTitle className="text-destructive [&>svg]:text-destructive">
           <TriangleAlert aria-hidden="true" />
@@ -353,10 +362,25 @@ function RecentActivity({ onAddJob }: { onAddJob: () => void }) {
   );
 }
 
+// When the page is one column, what is due comes first. The order is in the DOM, not CSS `order`,
+// so tab order and screen readers follow what is on screen at every width.
+const DESKTOP_ORDER = ["pipelines", "overdue", "deadlines", "activity"] as const;
+const STACKED_ORDER = ["overdue", "deadlines", "pipelines", "activity"] as const;
+
+/** Quiet on desktop. Below that the actions stack, so they need a border to read as buttons. */
+const SECONDARY_ACTION = "max-lg:border-border max-lg:bg-card max-lg:hover:bg-muted";
+
 export default function DashboardPage() {
   const user = useCurrentUser();
   const [adding, setAdding] = useState<"job" | "research" | "contact" | "reminder" | null>(null);
   const close = (open: boolean) => !open && setAdding(null);
+  const isDesktop = useMediaQuery("(min-width: 64rem)", true);
+  const sections: Record<(typeof DESKTOP_ORDER)[number], ReactNode> = {
+    pipelines: <Pipelines />,
+    overdue: <OverdueReminders />,
+    deadlines: <Deadlines />,
+    activity: <RecentActivity onAddJob={() => setAdding("job")} />,
+  };
 
   return (
     <>
@@ -365,34 +389,33 @@ export default function DashboardPage() {
         description="Your pipeline at a glance."
         icon={LayoutDashboard}
         actions={
-          <>
+          <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:flex-wrap lg:justify-end">
             <Button onClick={() => setAdding("job")}>
               <Briefcase data-icon="inline-start" />
               Add job
             </Button>
-            <Button variant="ghost" onClick={() => setAdding("research")}>
+            <Button variant="ghost" className={SECONDARY_ACTION} onClick={() => setAdding("research")}>
               <FlaskConical data-icon="inline-start" />
               Add research
             </Button>
-            <Button variant="ghost" onClick={() => setAdding("contact")}>
+            <Button variant="ghost" className={SECONDARY_ACTION} onClick={() => setAdding("contact")}>
               <Contact data-icon="inline-start" />
               Add contact
             </Button>
-            <Button variant="ghost" onClick={() => setAdding("reminder")}>
+            <Button variant="ghost" className={SECONDARY_ACTION} onClick={() => setAdding("reminder")}>
               <BellPlus data-icon="inline-start" />
               Add reminder
             </Button>
-          </>
+          </div>
         }
       />
-      <div className="space-y-6">
-        <SummaryCards />
-        <Pipelines />
-        <OverdueReminders />
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          <Deadlines />
-          <RecentActivity onAddJob={() => setAdding("job")} />
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div className="min-w-0 lg:col-span-2">
+          <SummaryCards />
         </div>
+        {(isDesktop ? DESKTOP_ORDER : STACKED_ORDER).map((key) => (
+          <Fragment key={key}>{sections[key]}</Fragment>
+        ))}
       </div>
       <JobFormDialog open={adding === "job"} onOpenChange={close} />
       <ResearchFormDialog open={adding === "research"} onOpenChange={close} />
