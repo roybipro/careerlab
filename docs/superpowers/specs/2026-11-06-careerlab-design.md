@@ -82,6 +82,10 @@ authorization and validation. The frontend only calls the documented REST API.
   `.env.example` documents each variable with no real values.
 - **Search input:** `%` and `_` are escaped before `ILIKE` matching, and all SQL is
   parameterized.
+- **Response headers:** the frontend sets `X-Frame-Options: DENY`,
+  `X-Content-Type-Options: nosniff` and `Referrer-Policy: strict-origin-when-cross-origin`.
+- **Secret scanning:** CI runs gitleaks over the full history, because the repo is public.
+- **Stored URLs:** only `http` and `https` values are accepted.
 
 ## 4. Data model
 
