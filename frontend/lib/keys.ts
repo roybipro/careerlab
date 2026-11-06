@@ -13,7 +13,8 @@ import type { EntityType } from "@/lib/enums";
  *   ["reminders", "related", relatedType, relatedId]
  *   ["contacts", "list", params]                   ["contacts", "detail", id]
  *   ["reminders", "list", params]                  ["reminders", "bell"]
- *   ["dashboard", "summary" | "deadlines" | "activity" | "analytics"]
+ *   ["dashboard", "summary" | "deadlines", today]  ["dashboard", "overdue" | "activity" | "analytics"]
+ *   ["link-options", kind, search]                 (job and research pickers, see invalidateEntity)
  */
 const RESOURCE: Record<EntityType, string> = { job: "jobs", research: "research", contact: "contacts" };
 
@@ -28,7 +29,10 @@ export const keys = {
   contactOptions: (search: string) => ["contacts", "options", search] as const,
   reminders: (type: EntityType, id: string) => ["reminders", "related", type, id] as const,
   dashboard: ["dashboard"] as const,
-  dashboardPart: (part: "summary" | "deadlines" | "activity" | "analytics") => ["dashboard", part] as const,
+  // `today` is part of the key for the date-sensitive parts, so a page left open across
+  // midnight asks again (with the new date) the next time it renders.
+  dashboardPart: (part: "summary" | "deadlines" | "activity" | "analytics" | "overdue", today?: string) =>
+    (today ? (["dashboard", part, today] as const) : (["dashboard", part] as const)),
   reminderBell: ["reminders", "bell"] as const,
   reminderList: (params: unknown) => ["reminders", "list", params] as const,
 };
@@ -37,6 +41,8 @@ export const keys = {
 export function invalidateEntity(client: QueryClient, type: EntityType, id: string) {
   return Promise.all([
     client.invalidateQueries({ queryKey: [RESOURCE[type]] }),
+    // The contact link picker lists jobs and research, so it must not keep a stale list.
+    client.invalidateQueries({ queryKey: ["link-options"] }),
     client.invalidateQueries({ queryKey: ["activity", type, id] }),
     client.invalidateQueries({ queryKey: keys.dashboard }),
   ]);

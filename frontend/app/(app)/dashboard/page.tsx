@@ -17,10 +17,10 @@ import { Badge } from "@/components/ui/badge";
 import { api } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth";
 import { statusLabel } from "@/lib/enums";
-import { formatDateOnly, formatDateTime } from "@/lib/format";
+import { formatDateOnly, formatDateTime, localToday } from "@/lib/format";
 import { keys } from "@/lib/keys";
 import { entityHref } from "@/lib/navigation";
-import type { Activity, Analytics, DashboardSummary, Deadline, StatusCount } from "@/lib/types";
+import type { Activity, Analytics, DashboardSummary, Deadline, Paginated, Reminder, StatusCount } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const CARDS: { key: keyof DashboardSummary; label: string; hint: string }[] = [
@@ -35,7 +35,12 @@ const CARDS: { key: keyof DashboardSummary; label: string; hint: string }[] = [
 ];
 
 function SummaryCards() {
-  const query = useQuery({ queryKey: keys.dashboardPart("summary"), queryFn: () => api<DashboardSummary>("/dashboard/summary") });
+  // The browser's date, so "due today" means today where the user is (the API only knows UTC).
+  const today = localToday();
+  const query = useQuery({
+    queryKey: keys.dashboardPart("summary", today),
+    queryFn: () => api<DashboardSummary>("/dashboard/summary", { query: { today } }),
+  });
   return (
     <DataState query={query} isEmpty={() => false}>
       {(data) => (
@@ -108,7 +113,11 @@ function deadlineHref(d: Deadline): string {
 }
 
 function Deadlines() {
-  const query = useQuery({ queryKey: keys.dashboardPart("deadlines"), queryFn: () => api<Deadline[]>("/dashboard/upcoming-deadlines") });
+  const today = localToday();
+  const query = useQuery({
+    queryKey: keys.dashboardPart("deadlines", today),
+    queryFn: () => api<Deadline[]>("/dashboard/upcoming-deadlines", { query: { today } }),
+  });
   return (
     <Card>
       <CardHeader>
@@ -132,6 +141,48 @@ function Deadlines() {
             </ul>
           )}
         </DataState>
+      </CardContent>
+    </Card>
+  );
+}
+
+const OVERDUE_HREF = "/reminders?state=overdue";
+const OVERDUE_SHOWN = 5;
+
+/** Incomplete reminders already past due. Shows nothing at all when there are none. */
+function OverdueReminders() {
+  const query = useQuery({
+    queryKey: keys.dashboardPart("overdue"),
+    queryFn: () => api<Paginated<Reminder>>("/reminders", { query: { state: "overdue", sort: "due_at", page_size: OVERDUE_SHOWN } }),
+    // Overdue is judged when the list is fetched, so look again every minute.
+    refetchInterval: 60_000,
+  });
+  if (query.isPending) return null;
+  if (query.isError && !query.data) return <DataState query={query}>{() => null}</DataState>;
+  const data = query.data;
+  if (!data || data.total === 0) return null;
+  return (
+    <Card data-testid="overdue-section" className="border-destructive/40">
+      <CardHeader>
+        <CardTitle className="text-destructive">Overdue ({data.total})</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        <ul className="space-y-2">
+          {data.items.map((r) => (
+            <li key={r.id}>
+              <Link href={OVERDUE_HREF} className="flex items-start gap-3 rounded-lg border p-3 hover:bg-muted/50">
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium break-words">{r.title}</p>
+                  <p className="text-xs text-destructive">Was due {formatDateTime(r.due_at)}</p>
+                </div>
+                <Badge variant="destructive">Overdue</Badge>
+              </Link>
+            </li>
+          ))}
+        </ul>
+        <Link href={OVERDUE_HREF} className="inline-block text-sm underline underline-offset-4">
+          {data.total > OVERDUE_SHOWN ? `View all ${data.total} overdue reminders` : "View in reminders"}
+        </Link>
       </CardContent>
     </Card>
   );
@@ -221,6 +272,7 @@ export default function DashboardPage() {
       <div className="space-y-6">
         <SummaryCards />
         <Pipelines />
+        <OverdueReminders />
         <div className="grid gap-6 lg:grid-cols-2">
           <Deadlines />
           <RecentActivity onAddJob={() => setAdding("job")} />
