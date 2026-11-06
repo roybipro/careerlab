@@ -105,14 +105,21 @@ key to `users` with `ON DELETE CASCADE`. Main tables have `created_at` and `upda
 | `company_website`, `company_logo_url`, `job_url` | text | optional URLs |
 | `job_description`, `location`, `notes` | text | optional |
 | `job_type` | enum | `on_site`, `remote`, `hybrid` |
-| `employment_type` | enum | `full_time`, `part_time`, `internship`, `contract`, `temporary` |
+| `employment_type` | enum | `full_time`, `part_time`, `internship`, `contract`, `temporary`, `co_op`, `apprenticeship`, `freelance`, `graduate_program` |
 | `salary_min`, `salary_max` | integer | optional, min ≤ max enforced by API and `CHECK` |
 | `salary_currency` | text | optional |
+| `pay_period` | enum | optional: `hourly`, `monthly`, `yearly`, `stipend`, `unpaid`. Saying `unpaid` does not erase salary values |
+| `source` | enum | optional, where the posting was found: `linkedin`, `company_website`, `referral`, `job_board`, `university_career_center`, `recruiter`, `other` |
+| `start_date`, `end_date` | date | optional, `end_date >= start_date` enforced by API (on merged stored values for `PATCH`, as for salary) and `CHECK` |
+| `visa_sponsorship` | enum | optional: `yes`, `no`, `unknown` |
+| `academic_credit` | boolean | optional (null, true or false). The form offers it for `internship` and `co_op` only |
 | `status` | enum | `wishlist`, `preparing`, `applied`, `assessment`, `interview`, `offer`, `rejected`, `withdrawn`; default `wishlist` |
 | `priority` | enum | `low`, `medium`, `high`; default `medium` |
 | `resume_version`, `cover_letter_ref` | text | optional; a name, link or text reference |
 | `application_date`, `deadline`, `follow_up_date` | date | optional |
 | `interview_at` | timestamptz | optional |
+
+The job options fields are all optional, so existing records keep working with nulls. They are added by migration `0005`.
 
 The PRD lists "job type" and "employment type" without defining them. Here `job_type`
 is the work arrangement and `employment_type` is the contract type. `location` is
@@ -197,8 +204,10 @@ The base path is `/api/v1`. The PRD's routes are kept, and the additions are mar
 `-deadline`, checked against an allowlist), `q` and resource filters. They return
 `{items, total, page, page_size}`.
 
-- **Jobs filters:** company, position, status, priority, job type, application date
-  range, deadline range.
+- **Jobs filters:** company, position, status, priority, job type, employment type, source,
+  category, application date range, deadline range. `category=internships` means
+  `employment_type` of `internship` or `co_op`; `category=jobs` means every other record,
+  including those with no employment type. Jobs also sort by `start_date`.
 - **Research filters:** status, opportunity type, funding status, country, deadline range.
 - **Contacts filters:** contact type, linked entity, follow-up due.
 - **Reminders filters:** `state` (`overdue`, `upcoming`, `completed`), related entity.

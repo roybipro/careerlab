@@ -67,6 +67,12 @@ erDiagram
         int salary_min
         int salary_max
         string salary_currency
+        string pay_period
+        string source
+        date start_date
+        date end_date
+        string visa_sponsorship
+        boolean academic_credit
         string status
         string priority
         string resume_version
@@ -178,8 +184,17 @@ Name, unique lowercase email, Argon2 hash and `token_version`. Changing the pass
   `rejected`, `withdrawn`.
 - `priority`: `low`, `medium` (default), `high`.
 - `job_type` is the work arrangement (`on_site`, `remote`, `hybrid`). `employment_type` is the
-  contract (`full_time`, `part_time`, `internship`, `contract`, `temporary`).
-- A `CHECK` constraint requires `salary_min <= salary_max` when both are set.
+  contract (`full_time`, `part_time`, `internship`, `contract`, `temporary`, `co_op`,
+  `apprenticeship`, `freelance`, `graduate_program`).
+- Optional job options, all null on older rows: `pay_period` (`hourly`, `monthly`, `yearly`,
+  `stipend`, `unpaid`), `source` (`linkedin`, `company_website`, `referral`, `job_board`,
+  `university_career_center`, `recruiter`, `other`), `start_date`, `end_date`,
+  `visa_sponsorship` (`yes`, `no`, `unknown`) and `academic_credit` (boolean).
+- A `CHECK` constraint requires `salary_min <= salary_max` when both are set, and another
+  requires `start_date <= end_date` when both are set. Each enum column has its own `CHECK`.
+- Migration `0005` adds these. Its downgrade sets `employment_type` to NULL for rows using
+  `co_op`, `apprenticeship`, `freelance` or `graduate_program` before restoring the old `CHECK`,
+  and drops the new columns with their data.
 
 ### research_opportunities
 
