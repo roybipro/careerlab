@@ -11,7 +11,41 @@ import type { Option } from "@/lib/enums";
 
 export type ToolbarFilter =
   | { type: "select"; key: string; label: string; options: Option[] }
-  | { type: "date"; key: string; label: string };
+  | { type: "date"; key: string; label: string }
+  | { type: "text"; key: string; label: string };
+
+/** A free-text filter. Typing waits 300 ms before it reaches the URL; an outside change (Clear, Back) replaces the text. */
+function TextFilter({ filter }: { filter: { key: string; label: string } }) {
+  const { get, update } = useListParams();
+  const urlValue = get(filter.key);
+  const [text, setText] = useState(urlValue);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastSent = useRef(urlValue);
+
+  useEffect(() => {
+    if (timer.current || urlValue === lastSent.current) return;
+    lastSent.current = urlValue;
+    setText(urlValue);
+  }, [urlValue]);
+  useEffect(() => () => void (timer.current && clearTimeout(timer.current)), []);
+
+  return (
+    <TextField
+      label={filter.label}
+      value={text}
+      onChange={(e) => {
+        const value = e.target.value;
+        setText(value);
+        if (timer.current) clearTimeout(timer.current);
+        timer.current = setTimeout(() => {
+          timer.current = null;
+          lastSent.current = value.trim();
+          update({ [filter.key]: lastSent.current });
+        }, 300);
+      }}
+    />
+  );
+}
 
 export type ViewMode = "table" | "kanban";
 
@@ -155,6 +189,8 @@ export function ListToolbar({ filters, searchPlaceholder = "Search", viewToggle,
                 value={get(f.key)}
                 onChange={(e) => update({ [f.key]: e.target.value })}
               />
+            ) : f.type === "text" ? (
+              <TextFilter key={f.key} filter={f} />
             ) : (
               <TextField key={f.key} label={f.label} type="date" value={get(f.key)} onChange={(e) => update({ [f.key]: e.target.value })} />
             ),

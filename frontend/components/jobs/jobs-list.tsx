@@ -1,9 +1,8 @@
 "use client";
 
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { useState } from "react";
-import { toast } from "sonner";
 import { DataState, EmptyState } from "@/components/data-state";
 import { JobFormDialog } from "@/components/jobs/job-form";
 import { JobKanbanCard, JobsTable } from "@/components/jobs/jobs-table";
@@ -13,9 +12,10 @@ import { PageHeader } from "@/components/page-header";
 import { Pagination } from "@/components/pagination";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { api, ApiError } from "@/lib/api";
-import { JOB_STATUSES, JOB_TYPES, PRIORITIES, statusLabel, type Option } from "@/lib/enums";
-import { invalidateEntity, keys } from "@/lib/keys";
+import { api } from "@/lib/api";
+import { JOB_STATUSES, JOB_TYPES, PRIORITIES, type Option } from "@/lib/enums";
+import { keys } from "@/lib/keys";
+import { useStatusMove } from "@/lib/use-status-move";
 import type { Job, Paginated } from "@/lib/types";
 
 const TABLE_PAGE_SIZE = 20;
@@ -51,7 +51,6 @@ const SORT_OPTIONS: Option[] = [
 
 /** Needs a Suspense boundary above it: the toolbar reads the URL search parameters. */
 export function JobsList() {
-  const client = useQueryClient();
   const { get, page, view, update } = useListParams();
   const [adding, setAdding] = useState(false);
 
@@ -71,26 +70,7 @@ export function JobsList() {
     placeholderData: keepPreviousData,
   });
 
-  const move = useMutation({
-    mutationFn: ({ job, status }: { job: Job; status: string }) => api<Job>(`/jobs/${job.id}`, { method: "PATCH", body: { status } }),
-    onMutate: async ({ job, status }) => {
-      // Stop in-flight refetches from overwriting the optimistic status.
-      await client.cancelQueries({ queryKey: ["jobs"] });
-      setStatusInLists(job.id, status);
-    },
-    onError: (error, { job, status }) => {
-      setStatusInLists(job.id, job.status);
-      const reason = error instanceof ApiError ? error.message : "Something went wrong.";
-      toast.error(`Could not move ${job.company_name} to ${statusLabel(status)}. ${reason}`);
-    },
-    onSettled: (_data, _error, { job }) => invalidateEntity(client, "job", job.id),
-  });
-
-  function setStatusInLists(id: string, status: string) {
-    client.setQueriesData<Paginated<Job>>({ queryKey: ["jobs", "list"] }, (old) =>
-      old ? { ...old, items: old.items.map((j) => (j.id === id ? { ...j, status } : j)) } : old,
-    );
-  }
+  const move = useStatusMove<Job>("job", "/jobs", (job) => job.company_name);
 
   const empty = filtersActive ? (
     <EmptyState title="No jobs match" description="Try different search words, or clear the filters." />
@@ -135,7 +115,7 @@ export function JobsList() {
                 columns={COLUMNS}
                 items={data.items}
                 getItemLabel={(job) => `${job.company_name}, ${job.position_title}`}
-                onMove={(job, status) => move.mutate({ job, status })}
+                onMove={(job, status) => move.mutate({ item: job, status })}
                 renderCard={(job) => <JobKanbanCard job={job} />}
               />
             </>

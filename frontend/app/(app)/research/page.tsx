@@ -1,11 +1,14 @@
-import { EmptyState } from "@/components/data-state";
-import { PageHeader } from "@/components/page-header";
+import { Suspense } from "react";
+import { DataSkeleton } from "@/components/data-state";
+import { ResearchList } from "@/components/research/research-list";
+
+export const metadata = { title: "Research Opportunities" };
 
 export default function Page() {
+  // ResearchList reads the URL search parameters, which needs a Suspense boundary.
   return (
-    <>
-      <PageHeader title="Research Opportunities" description="Labs, fellowships and programs you are pursuing." />
-      <EmptyState title="Coming soon" description="This page is not built yet." />
-    </>
+    <Suspense fallback={<DataSkeleton />}>
+      <ResearchList />
+    </Suspense>
   );
 }

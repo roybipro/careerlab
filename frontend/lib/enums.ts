@@ -104,3 +104,33 @@ export function optionLabel(list: Option[], value: string | null | undefined): s
   if (!value) return null;
   return list.find((o) => o.value === value)?.label ?? humanize(value);
 }
+
+export const RESEARCH_STATUSES = options([
+  "discovered",
+  "interested",
+  "contacted_professor",
+  "preparing_documents",
+  "applied",
+  "interview",
+  "accepted",
+  "rejected",
+  "archived",
+]);
+
+export const OPPORTUNITY_TYPES: Option[] = [
+  { value: "research_assistant", label: "Research assistant" },
+  { value: "research_internship", label: "Research internship" },
+  { value: "graduate_research_program", label: "Graduate research program" },
+  { value: "fully_funded_phd", label: "Fully funded PhD" },
+  { value: "masters_scholarship", label: "Master's scholarship" },
+  { value: "fellowship", label: "Fellowship" },
+  { value: "research_collaboration", label: "Research collaboration" },
+  { value: "visiting_researcher", label: "Visiting researcher" },
+];
+
+export const FUNDING_STATUSES: Option[] = [
+  { value: "fully_funded", label: "Fully funded" },
+  { value: "partially_funded", label: "Partially funded" },
+  { value: "self_funded", label: "Self funded" },
+  { value: "unknown", label: "Unknown" },
+];
