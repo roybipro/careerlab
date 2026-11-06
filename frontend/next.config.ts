@@ -3,6 +3,11 @@ import type { NextConfig } from "next";
 // Where the FastAPI backend lives. In production this is set by the host.
 const API_URL = process.env.API_URL ?? "http://localhost:8000";
 
+// Rewrites are baked in at build time, so a production build without API_URL would proxy to localhost.
+if (process.env.NODE_ENV === "production" && !process.env.API_URL) {
+  console.warn("[careerlab] API_URL is not set: /api/v1/* will be proxied to http://localhost:8000. Set API_URL before `next build`.");
+}
+
 const nextConfig: NextConfig = {
   turbopack: {
     // Pin the root so a stray lockfile in a parent folder is not picked up.

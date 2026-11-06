@@ -69,9 +69,28 @@ export function EmptyState({ title, description, action }: { title: string; desc
  */
 export function DataState<T>({ query, skeleton, empty, isEmpty = defaultIsEmpty, children }: DataStateProps<T>) {
   if (query.isPending) return <>{skeleton ?? <DataSkeleton />}</>;
-  if (query.isError) {
-    return <ErrorState error={query.error} onRetry={() => void query.refetch()} retrying={query.isFetching} />;
+  const retry = () => void query.refetch();
+  // No data at all: full error state.
+  if (query.isError && query.data === undefined) {
+    return <ErrorState error={query.error} onRetry={retry} retrying={query.isFetching} />;
   }
-  if (isEmpty(query.data)) return <>{empty ?? <EmptyState title="Nothing here yet" />}</>;
-  return <>{children(query.data)}</>;
+  // A background refetch failed but earlier data is still here: keep the view and say so.
+  const stale = query.isError ? (
+    <Alert variant="destructive" className="mb-4">
+      <AlertCircle />
+      <AlertDescription className="flex flex-wrap items-center gap-3">
+        <span>Could not refresh. Showing the last loaded data.</span>
+        <Button variant="outline" size="sm" onClick={retry} disabled={query.isFetching}>
+          {query.isFetching ? "Retrying..." : "Retry"}
+        </Button>
+      </AlertDescription>
+    </Alert>
+  ) : null;
+  const body = isEmpty(query.data as T) ? (empty ?? <EmptyState title="Nothing here yet" />) : children(query.data as T);
+  return (
+    <>
+      {stale}
+      {body}
+    </>
+  );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { ApiError } from "@/lib/api";
 import { hardNavigate } from "@/lib/navigation";
 
@@ -33,6 +33,9 @@ function makeClient() {
     mutationCache: new MutationCache({ onError: (error) => handleUnauthorized(error, client) }),
     defaultOptions: {
       queries: {
+        // "always": when the browser is offline, fetch fails and the error/retry paths run,
+        // instead of the query pausing forever in a loading state.
+        networkMode: "always",
         staleTime: 30_000,
         // Never retry 4xx. Retry network and 5xx errors twice.
         retry: (failureCount, error) => {
@@ -40,7 +43,7 @@ function makeClient() {
           return failureCount < 2;
         },
       },
-      mutations: { retry: false },
+      mutations: { retry: false, networkMode: "always" },
     },
   });
   return client;
@@ -48,5 +51,17 @@ function makeClient() {
 
 export function QueryProvider({ children }: { children: ReactNode }) {
   const [client] = useState(makeClient);
+
+  // A page restored from the back-forward cache keeps its old DOM and JS state (including a
+  // signed-in view after logout, and the `redirecting` flag above). Reload so it is rebuilt
+  // from the server, which redirects signed-out visitors to /login.
+  useEffect(() => {
+    const onPageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) window.location.reload();
+    };
+    window.addEventListener("pageshow", onPageShow);
+    return () => window.removeEventListener("pageshow", onPageShow);
+  }, []);
+
   return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
 }
