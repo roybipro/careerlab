@@ -15,6 +15,8 @@ RUN python -c "import tomllib; print('\n'.join(tomllib.load(open('pyproject.toml
 COPY alembic.ini ./
 COPY alembic ./alembic
 COPY app ./app
+# Operational scripts, such as the demo seed. Tests stay out of the image.
+COPY scripts ./scripts
 
 RUN useradd --create-home --uid 10001 careerlab
 USER careerlab
