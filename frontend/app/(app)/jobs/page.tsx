@@ -1,11 +1,14 @@
-import { EmptyState } from "@/components/data-state";
-import { PageHeader } from "@/components/page-header";
+import { Suspense } from "react";
+import { DataSkeleton } from "@/components/data-state";
+import { JobsList } from "@/components/jobs/jobs-list";
+
+export const metadata = { title: "Job Applications" };
 
 export default function Page() {
+  // JobsList reads the URL search parameters, which needs a Suspense boundary.
   return (
-    <>
-      <PageHeader title="Job Applications" description="Track every application from saved to offer." />
-      <EmptyState title="Coming soon" description="This page is not built yet." />
-    </>
+    <Suspense fallback={<DataSkeleton />}>
+      <JobsList />
+    </Suspense>
   );
 }
