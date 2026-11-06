@@ -89,8 +89,13 @@ jobs:
         run: docker compose up -d --build --wait
       - name: Wait for the site and the API
         run: |
-          curl --retry 30 --retry-delay 2 --retry-connrefused -fsS http://localhost:8000/health
-          curl --retry 30 --retry-delay 2 --retry-connrefused -fsS -o /dev/null http://localhost:3000/login
+          for url in http://localhost:8000/health http://localhost:3000/login; do
+            for attempt in $(seq 1 30); do
+              curl -fsS -o /dev/null "$url" && break
+              [ "$attempt" -eq 30 ] && { echo "$url never became ready"; exit 1; }
+              sleep 2
+            done
+          done
       - name: Install dependencies and Chromium
         working-directory: frontend
         run: |
