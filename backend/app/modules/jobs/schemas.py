@@ -1,6 +1,6 @@
 import uuid
 from datetime import date, datetime
-from typing import Annotated
+from typing import Annotated, Literal
 
 from pydantic import (
     BaseModel,
@@ -10,7 +10,15 @@ from pydantic import (
 )
 
 from app.core.schemas import BoundedDatetime, HttpUrl, Name
-from app.modules.jobs.models import EmploymentType, JobStatus, JobType, Priority
+from app.modules.jobs.models import (
+    EmploymentType,
+    JobSource,
+    JobStatus,
+    JobType,
+    PayPeriod,
+    Priority,
+    VisaSponsorship,
+)
 
 Salary = Annotated[int, Field(ge=0, le=2_000_000_000)]
 
@@ -29,6 +37,12 @@ class _JobFields(BaseModel):
     salary_min: Salary | None = None
     salary_max: Salary | None = None
     salary_currency: Annotated[str, Field(max_length=10)] | None = None
+    pay_period: PayPeriod | None = None
+    source: JobSource | None = None
+    start_date: date | None = None
+    end_date: date | None = None
+    visa_sponsorship: VisaSponsorship | None = None
+    academic_credit: bool | None = None
     resume_version: Annotated[str, Field(max_length=500)] | None = None
     cover_letter_ref: Annotated[str, Field(max_length=50_000)] | None = None
     application_date: date | None = None
@@ -77,6 +91,12 @@ class JobOut(BaseModel):
     salary_min: int | None
     salary_max: int | None
     salary_currency: str | None
+    pay_period: PayPeriod | None
+    source: JobSource | None
+    start_date: date | None
+    end_date: date | None
+    visa_sponsorship: VisaSponsorship | None
+    academic_credit: bool | None
     status: JobStatus
     priority: Priority
     resume_version: str | None
@@ -95,6 +115,10 @@ class JobFilters(BaseModel):
     status: JobStatus | None = None
     priority: Priority | None = None
     job_type: JobType | None = None
+    employment_type: EmploymentType | None = None
+    source: JobSource | None = None
+    # "internships" is internship and co_op; "jobs" is every other record, including no type.
+    category: Literal["jobs", "internships"] | None = None
     application_date_from: date | None = None
     application_date_to: date | None = None
     deadline_from: date | None = None

@@ -146,10 +146,10 @@ and `/health` needs a session.
 | `GET /auth/me` | Current user | |
 | `PATCH /auth/me` | Edit name or email | |
 | `POST /auth/change-password` | Change password | `204`. Wrong current password is `422` |
-| `GET /jobs` | List jobs | Filters: `company`, `position`, `status`, `priority`, `job_type`, `application_date_from`, `application_date_to`, `deadline_from`, `deadline_to` |
-| `POST /jobs` | Create a job | `201` |
+| `GET /jobs` | List jobs | Filters: `company`, `position`, `status`, `priority`, `job_type`, `employment_type`, `source`, `category`, `application_date_from`, `application_date_to`, `deadline_from`, `deadline_to`. `category` is `jobs` or `internships`: `internships` is `employment_type` `internship` or `co_op`, `jobs` is every other record including those with no type. `sort` also accepts `start_date` |
+| `POST /jobs` | Create a job | `201`. Optional `employment_type` (adds `co_op`, `apprenticeship`, `freelance`, `graduate_program`), `source`, `start_date`, `end_date`, `pay_period`, `visa_sponsorship`, `academic_credit`. `end_date` before `start_date` is `422` |
 | `GET /jobs/{id}` | Get a job | |
-| `PATCH /jobs/{id}` | Update a job | `salary_min` above `salary_max` is `422` |
+| `PATCH /jobs/{id}` | Update a job | `salary_min` above `salary_max` is `422`. `end_date` before `start_date` is `422`, checked against the stored other date when only one is sent |
 | `DELETE /jobs/{id}` | Delete a job | `204` |
 | `GET /research` | List research opportunities | Filters: `status`, `opportunity_type`, `funding_status`, `country`, `deadline_from`, `deadline_to` |
 | `POST /research` | Create | `201` |

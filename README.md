@@ -17,6 +17,7 @@ The screenshots in this repo use invented data from the demo seed script.
   reminders and notes.
 - Move jobs and research opportunities between statuses from a form or by dragging cards
   on a Kanban board. Each card also has a status menu that works from the keyboard.
+- Jobs and internships: an All / Jobs / Internships switch, co-ops, apprenticeships, freelance and graduate programs, plus optional source, start and end dates with a duration, pay period, visa sponsorship and academic credit.
 - Research detail pages have a required-documents checklist and publication links.
 - Reminders have overdue, upcoming and completed views, with search and sorting. The header
   bell shows incomplete reminders that are overdue or due in the next 3 days.

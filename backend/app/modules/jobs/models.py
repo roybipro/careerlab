@@ -3,6 +3,7 @@ import uuid
 from datetime import date, datetime
 
 from sqlalchemy import (
+    Boolean,
     CheckConstraint,
     Date,
     DateTime,
@@ -30,6 +31,38 @@ class EmploymentType(enum.StrEnum):
     internship = "internship"
     contract = "contract"
     temporary = "temporary"
+    co_op = "co_op"
+    apprenticeship = "apprenticeship"
+    freelance = "freelance"
+    graduate_program = "graduate_program"
+
+
+# The "internships" category in the job list.
+INTERNSHIP_TYPES = (EmploymentType.internship, EmploymentType.co_op)
+
+
+class JobSource(enum.StrEnum):
+    linkedin = "linkedin"
+    company_website = "company_website"
+    referral = "referral"
+    job_board = "job_board"
+    university_career_center = "university_career_center"
+    recruiter = "recruiter"
+    other = "other"
+
+
+class PayPeriod(enum.StrEnum):
+    hourly = "hourly"
+    monthly = "monthly"
+    yearly = "yearly"
+    stipend = "stipend"
+    unpaid = "unpaid"
+
+
+class VisaSponsorship(enum.StrEnum):
+    yes = "yes"
+    no = "no"
+    unknown = "unknown"
 
 
 class JobStatus(enum.StrEnum):
@@ -56,6 +89,10 @@ class JobApplication(TimestampMixin, Base):
             "salary_min IS NULL OR salary_max IS NULL OR salary_min <= salary_max",
             name="ck_job_applications_salary_range",
         ),
+        CheckConstraint(
+            "start_date IS NULL OR end_date IS NULL OR start_date <= end_date",
+            name="ck_job_applications_date_range",
+        ),
         Index("ix_job_applications_user_status", "user_id", "status"),
         Index("ix_job_applications_user_deadline", "user_id", "deadline"),
         Index("ix_job_applications_user_created", "user_id", "created_at"),
@@ -76,6 +113,12 @@ class JobApplication(TimestampMixin, Base):
     salary_min: Mapped[int | None] = mapped_column(Integer)
     salary_max: Mapped[int | None] = mapped_column(Integer)
     salary_currency: Mapped[str | None] = mapped_column(String(10))
+    pay_period: Mapped[PayPeriod | None] = mapped_column(str_enum(PayPeriod))
+    source: Mapped[JobSource | None] = mapped_column(str_enum(JobSource, length=30))
+    start_date: Mapped[date | None] = mapped_column(Date)
+    end_date: Mapped[date | None] = mapped_column(Date)
+    visa_sponsorship: Mapped[VisaSponsorship | None] = mapped_column(str_enum(VisaSponsorship))
+    academic_credit: Mapped[bool | None] = mapped_column(Boolean)
     status: Mapped[JobStatus] = mapped_column(
         str_enum(JobStatus), default=JobStatus.wishlist, server_default=JobStatus.wishlist.value
     )

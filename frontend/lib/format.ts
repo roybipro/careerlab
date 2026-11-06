@@ -41,11 +41,44 @@ export function safeHttpUrl(value: string | null | undefined): string | null {
   return value && /^https?:\/\//i.test(value.trim()) ? value.trim() : null;
 }
 
-export function formatSalary(min: number | null, max: number | null, currency: string | null): string | null {
+const PERIOD_SUFFIX: Record<string, string> = { hourly: " / hour", monthly: " / month", yearly: " / year", stipend: " (stipend)" };
+
+/**
+ * The salary range with its pay period: "20 - 25 USD / hour", "1,800 - 2,200 EUR (stipend)". Unpaid is
+ * "Unpaid" whatever amounts are stored. Without amounts and not unpaid there is nothing to show.
+ */
+export function formatSalary(min: number | null, max: number | null, currency: string | null, period: string | null = null): string | null {
+  if (period === "unpaid") return "Unpaid";
   if (min === null && max === null) return null;
   const n = (v: number) => v.toLocaleString();
   const range = min !== null && max !== null ? `${n(min)} - ${n(max)}` : min !== null ? `from ${n(min)}` : `up to ${n(max as number)}`;
-  return currency ? `${range} ${currency}` : range;
+  return `${currency ? `${range} ${currency}` : range}${period ? (PERIOD_SUFFIX[period] ?? "") : ""}`;
+}
+
+const MS_PER_DAY = 86_400_000;
+
+function dateOnlyUtc(value: string): number | null {
+  const m = DATE_ONLY.exec(value);
+  return m ? Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : null;
+}
+
+/**
+ * How long a start-to-end span is, in words: "5 days", "6 weeks", "3 months", "1 year". Both ends
+ * count (June 1 to August 31 is 3 months). Works on the parts of the "YYYY-MM-DD" strings, never on
+ * a Date in the viewer's time zone. Null when either date is missing or the end is before the start.
+ */
+export function formatDuration(start: string | null | undefined, end: string | null | undefined): string | null {
+  if (!start || !end) return null;
+  const from = dateOnlyUtc(start);
+  const to = dateOnlyUtc(end);
+  if (from === null || to === null || to < from) return null;
+  const days = Math.round((to - from) / MS_PER_DAY) + 1;
+  const plural = (n: number, unit: string) => `${n} ${unit}${n === 1 ? "" : "s"}`;
+  if (days < 14) return plural(days, "day");
+  if (days < 60) return plural(Math.round(days / 7), "week");
+  const months = Math.round(days / 30.44);
+  if (months >= 12 && months % 12 === 0) return plural(months / 12, "year");
+  return plural(months, "month");
 }
 
 /**

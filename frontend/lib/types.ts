@@ -34,6 +34,12 @@ export type Job = {
   salary_min: number | null;
   salary_max: number | null;
   salary_currency: string | null;
+  pay_period: string | null;
+  source: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  visa_sponsorship: string | null;
+  academic_credit: boolean | null;
   status: string;
   priority: string;
   resume_version: string | null;

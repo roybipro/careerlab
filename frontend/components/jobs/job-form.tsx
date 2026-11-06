@@ -2,9 +2,9 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Banknote, CalendarDays, FileText, Link2, MapPin } from "lucide-react";
+import { Banknote, CalendarCheck, CalendarDays, CalendarX, FileText, GraduationCap, Link2, MapPin, Megaphone, Plane, Wallet } from "lucide-react";
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 import { NativeSelect } from "@/components/native-select";
@@ -15,8 +15,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { api, applyServerErrors } from "@/lib/api";
-import { EMPLOYMENT_TYPES, JOB_STATUSES, JOB_TYPES, PRIORITIES } from "@/lib/enums";
-import { fromDatetimeLocal, toDatetimeLocal } from "@/lib/format";
+import { ACADEMIC_CREDIT, EMPLOYMENT_TYPES, INTERNSHIP_TYPES, JOB_SOURCES, JOB_STATUSES, JOB_TYPES, PAY_PERIODS, PRIORITIES, VISA_SPONSORSHIP } from "@/lib/enums";
+import { formatDuration, fromDatetimeLocal, toDatetimeLocal } from "@/lib/format";
 import { invalidateEntity } from "@/lib/keys";
 import type { Job } from "@/lib/types";
 
@@ -38,6 +38,10 @@ const schema = z
     priority: z.string(),
     job_type: z.string(),
     employment_type: z.string(),
+    source: z.string(),
+    visa_sponsorship: z.string(),
+    // "true", "false" or "" (not set). Only offered for internships and co-ops.
+    academic_credit: z.string(),
     location: z.string().max(200, "At most 200 characters"),
     job_url: url,
     company_website: url,
@@ -45,6 +49,9 @@ const schema = z
     salary_min: salary,
     salary_max: salary,
     salary_currency: z.string().max(10, "At most 10 characters"),
+    pay_period: z.string(),
+    start_date: z.string(),
+    end_date: z.string(),
     application_date: z.string(),
     deadline: z.string(),
     follow_up_date: z.string(),
@@ -58,6 +65,10 @@ const schema = z
     // Client-side twin of the API's check. The server's message is shown too if it ever disagrees.
     if (v.salary_min.trim() && v.salary_max.trim() && Number(v.salary_min) > Number(v.salary_max)) {
       ctx.addIssue({ code: "custom", path: ["salary_min"], message: "Minimum salary cannot be above the maximum" });
+    }
+    // Both are "YYYY-MM-DD", so comparing the strings compares the days.
+    if (v.start_date && v.end_date && v.end_date < v.start_date) {
+      ctx.addIssue({ code: "custom", path: ["end_date"], message: "End date cannot be before the start date" });
     }
   });
 
@@ -74,6 +85,9 @@ const EMPTY: Values = {
   priority: "medium",
   job_type: "",
   employment_type: "",
+  source: "",
+  visa_sponsorship: "",
+  academic_credit: "",
   location: "",
   job_url: "",
   company_website: "",
@@ -81,6 +95,9 @@ const EMPTY: Values = {
   salary_min: "",
   salary_max: "",
   salary_currency: "",
+  pay_period: "",
+  start_date: "",
+  end_date: "",
   application_date: "",
   deadline: "",
   follow_up_date: "",
@@ -99,6 +116,9 @@ function toValues(job: Job): Values {
     priority: job.priority,
     job_type: job.job_type ?? "",
     employment_type: job.employment_type ?? "",
+    source: job.source ?? "",
+    visa_sponsorship: job.visa_sponsorship ?? "",
+    academic_credit: job.academic_credit === null ? "" : String(job.academic_credit),
     location: job.location ?? "",
     job_url: job.job_url ?? "",
     company_website: job.company_website ?? "",
@@ -106,6 +126,9 @@ function toValues(job: Job): Values {
     salary_min: job.salary_min?.toString() ?? "",
     salary_max: job.salary_max?.toString() ?? "",
     salary_currency: job.salary_currency ?? "",
+    pay_period: job.pay_period ?? "",
+    start_date: job.start_date ?? "",
+    end_date: job.end_date ?? "",
     application_date: job.application_date ?? "",
     deadline: job.deadline ?? "",
     follow_up_date: job.follow_up_date ?? "",
@@ -120,17 +143,18 @@ function toValues(job: Job): Values {
 const REQUIRED: Field[] = ["company_name", "position_title", "status", "priority"];
 
 /** One form value as the API wants it: "" becomes null (clears the field), numbers and timestamps are converted. */
-function toApiValue(field: Field, value: string): string | number | null {
+function toApiValue(field: Field, value: string): string | number | boolean | null {
   const v = value.trim();
   if (REQUIRED.includes(field)) return v;
   if (v === "") return null;
   if (NUMBER_FIELDS.includes(field)) return Number(v);
+  if (field === "academic_credit") return v === "true";
   if (field === "interview_at") return fromDatetimeLocal(v);
   return v;
 }
 
 function buildBody(values: Values, fields: Field[], isCreate: boolean) {
-  const body: Record<string, string | number | null> = {};
+  const body: Record<string, string | number | boolean | null> = {};
   for (const field of fields) {
     const apiValue = toApiValue(field, values[field]);
     // Create leaves empty optional fields out. Edit sends null for them, which clears the stored value.
@@ -147,6 +171,7 @@ function JobFormBody({ job, onDone }: { job?: Job; onDone: () => void }) {
     register,
     handleSubmit,
     setError,
+    control,
     formState: { errors, dirtyFields, submitCount },
   } = useForm<Values>({ resolver: zodResolver(schema), defaultValues: job ? toValues(job) : EMPTY });
 
@@ -161,11 +186,24 @@ function JobFormBody({ job, onDone }: { job?: Job; onDone: () => void }) {
     onError: (e) => setFormError(applyServerErrors(e, setError, FIELDS)),
   });
 
-  function onSubmit(values: Values) {
+  const [employmentType, payPeriod, startDate, endDate] = useWatch({
+    control,
+    name: ["employment_type", "pay_period", "start_date", "end_date"],
+  });
+  const creditApplies = INTERNSHIP_TYPES.includes(employmentType);
+  const duration = formatDuration(startDate, endDate);
+
+  function onSubmit(raw: Values) {
     setFormError(null);
+    // Academic credit only applies to internships and co-ops. Once the type is something else the
+    // select is gone, so a value left in it is cleared.
+    const values = creditApplies ? raw : { ...raw, academic_credit: "" };
     if (!job) return save.mutate(buildBody(values, FIELDS, true));
     // Edit: only send what changed.
     const changed = FIELDS.filter((f) => dirtyFields[f]);
+    if (!creditApplies && dirtyFields.employment_type && job.academic_credit !== null && !changed.includes("academic_credit")) {
+      changed.push("academic_credit");
+    }
     if (changed.length === 0) return onDone();
     save.mutate(buildBody(values, changed, false));
   }
@@ -192,23 +230,32 @@ function JobFormBody({ job, onDone }: { job?: Job; onDone: () => void }) {
       </fieldset>
 
       <div className="border-b">
-        <FormSection submitCount={submitCount} icon={MapPin} title="Role" hint="Job type, employment type and location" defaultOpen={filled("job_type", "employment_type", "location")} hasError={invalid("job_type", "employment_type", "location")}>
+        <FormSection submitCount={submitCount} icon={MapPin} title="Role" hint="Type, location, source and visa sponsorship" defaultOpen={filled("job_type", "employment_type", "location", "source", "visa_sponsorship", "academic_credit")} hasError={invalid("job_type", "employment_type", "location", "source", "visa_sponsorship", "academic_credit")}>
           <NativeSelect label="Job type" options={JOB_TYPES} placeholder="Not set" error={err("job_type")} {...register("job_type")} />
           <NativeSelect label="Employment type" options={EMPLOYMENT_TYPES} placeholder="Not set" error={err("employment_type")} {...register("employment_type")} />
           <TextField label="Location" error={err("location")} {...register("location")} />
+          <NativeSelect label="Source" icon={Megaphone} options={JOB_SOURCES} placeholder="Not set" error={err("source")} {...register("source")} />
+          <NativeSelect label="Visa sponsorship" icon={Plane} options={VISA_SPONSORSHIP} placeholder="Not set" error={err("visa_sponsorship")} {...register("visa_sponsorship")} />
+          {creditApplies ? (
+            <NativeSelect label="Academic credit" icon={GraduationCap} options={ACADEMIC_CREDIT} placeholder="Not set" error={err("academic_credit")} {...register("academic_credit")} />
+          ) : null}
         </FormSection>
 
-        <FormSection submitCount={submitCount} icon={CalendarDays} title="Dates" hint="Applied, deadline, follow-up and interview" defaultOpen={filled("application_date", "deadline", "follow_up_date", "interview_at")} hasError={invalid("application_date", "deadline", "follow_up_date", "interview_at")}>
+        <FormSection submitCount={submitCount} icon={CalendarDays} title="Dates" hint="Start, end, applied, deadline, follow-up and interview" defaultOpen={filled("start_date", "end_date", "application_date", "deadline", "follow_up_date", "interview_at")} hasError={invalid("start_date", "end_date", "application_date", "deadline", "follow_up_date", "interview_at")}>
+          <TextField label="Start date" type="date" icon={CalendarCheck} error={err("start_date")} {...register("start_date", { deps: ["end_date"] })} />
+          <TextField label="End date" type="date" icon={CalendarX} hint={duration ? `Duration: ${duration}` : undefined} error={err("end_date")} {...register("end_date", { deps: ["start_date"] })} />
           <TextField label="Application date" type="date" error={err("application_date")} {...register("application_date")} />
           <TextField label="Deadline" type="date" error={err("deadline")} {...register("deadline")} />
           <TextField label="Follow-up date" type="date" error={err("follow_up_date")} {...register("follow_up_date")} />
           <TextField label="Interview" type="datetime-local" hint="In your time zone" error={err("interview_at")} {...register("interview_at")} />
         </FormSection>
 
-        <FormSection submitCount={submitCount} icon={Banknote} title="Salary" hint="Range and currency" className="grid grid-cols-1 gap-4 sm:grid-cols-3" defaultOpen={filled("salary_min", "salary_max", "salary_currency")} hasError={invalid("salary_min", "salary_max", "salary_currency")}>
+        <FormSection submitCount={submitCount} icon={Banknote} title="Salary" hint="Range, currency and pay period" defaultOpen={filled("salary_min", "salary_max", "salary_currency", "pay_period")} hasError={invalid("salary_min", "salary_max", "salary_currency", "pay_period")}>
           <TextField label="Minimum" type="number" inputMode="numeric" min={0} step={1} error={err("salary_min")} {...register("salary_min", { deps: ["salary_max"] })} />
           <TextField label="Maximum" type="number" inputMode="numeric" min={0} step={1} error={err("salary_max")} {...register("salary_max", { deps: ["salary_min"] })} />
           <TextField label="Currency" placeholder="USD" error={err("salary_currency")} {...register("salary_currency")} />
+          <NativeSelect label="Pay period" icon={Wallet} options={PAY_PERIODS} placeholder="Not set" error={err("pay_period")} {...register("pay_period")} />
+          {payPeriod === "unpaid" ? <p className="text-xs text-muted-foreground sm:col-span-2">Shown as unpaid. Any salary you enter here is kept.</p> : null}
         </FormSection>
 
         <FormSection submitCount={submitCount} icon={Link2} title="Links" hint="Job posting, company website and logo" defaultOpen={filled("job_url", "company_website", "company_logo_url")} hasError={invalid("job_url", "company_website", "company_logo_url")}>

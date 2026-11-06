@@ -132,6 +132,49 @@ export const EMPLOYMENT_TYPES: Option[] = [
   { value: "internship", label: "Internship" },
   { value: "contract", label: "Contract" },
   { value: "temporary", label: "Temporary" },
+  { value: "co_op", label: "Co-op" },
+  { value: "apprenticeship", label: "Apprenticeship" },
+  { value: "freelance", label: "Freelance" },
+  { value: "graduate_program", label: "Graduate program" },
+];
+
+/** Employment types that can carry academic credit. Also the "Internships" category in the job list. */
+export const INTERNSHIP_TYPES = ["internship", "co_op"];
+
+export const JOB_SOURCES: Option[] = [
+  { value: "linkedin", label: "LinkedIn" },
+  { value: "company_website", label: "Company website" },
+  { value: "referral", label: "Referral" },
+  { value: "job_board", label: "Job board" },
+  { value: "university_career_center", label: "University career center" },
+  { value: "recruiter", label: "Recruiter" },
+  { value: "other", label: "Other" },
+];
+
+export const PAY_PERIODS: Option[] = [
+  { value: "hourly", label: "Hourly" },
+  { value: "monthly", label: "Monthly" },
+  { value: "yearly", label: "Yearly" },
+  { value: "stipend", label: "Stipend" },
+  { value: "unpaid", label: "Unpaid" },
+];
+
+export const VISA_SPONSORSHIP: Option[] = [
+  { value: "yes", label: "Yes" },
+  { value: "no", label: "No" },
+  { value: "unknown", label: "Unknown" },
+];
+
+export const ACADEMIC_CREDIT: Option[] = [
+  { value: "true", label: "Yes" },
+  { value: "false", label: "No" },
+];
+
+/** The All / Jobs / Internships switch above the job list. "" means All. */
+export const JOB_CATEGORIES: Option[] = [
+  { value: "", label: "All" },
+  { value: "jobs", label: "Jobs" },
+  { value: "internships", label: "Internships" },
 ];
 
 export const NOTE_KINDS: Option[] = [
