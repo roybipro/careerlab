@@ -2,7 +2,18 @@ import enum
 import uuid
 from datetime import date, datetime
 
-from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Index, String, Text, Uuid, false
+from sqlalchemy import (
+    Boolean,
+    CheckConstraint,
+    Date,
+    DateTime,
+    ForeignKey,
+    Index,
+    String,
+    Text,
+    Uuid,
+    false,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db import Base, TimestampMixin, str_enum
@@ -82,6 +93,11 @@ class ProjectSubmission(TimestampMixin, Base):
         Index("ix_project_submissions_user_status_paper", "user_id", "status", "paper_deadline"),
         Index(
             "ix_project_submissions_user_status_abstract", "user_id", "status", "abstract_deadline"
+        ),
+        CheckConstraint(
+            "abstract_deadline IS NULL OR paper_deadline IS NULL "
+            "OR abstract_deadline <= paper_deadline",
+            name="ck_project_submissions_deadline_order",
         ),
     )
 
