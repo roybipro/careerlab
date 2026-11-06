@@ -1,7 +1,7 @@
 "use client";
 
 import type { UseQueryResult } from "@tanstack/react-query";
-import { AlertCircle, Inbox } from "lucide-react";
+import { AlertCircle, Inbox, RotateCw, type LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -31,9 +31,9 @@ function defaultIsEmpty(data: unknown): boolean {
 export function DataSkeleton() {
   return (
     <div className="space-y-3" aria-busy="true" aria-label="Loading">
-      <Skeleton className="h-8 w-1/3" />
-      <Skeleton className="h-24 w-full" />
-      <Skeleton className="h-24 w-full" />
+      <Skeleton className="h-6 w-1/3" />
+      <Skeleton className="h-24 w-full rounded-2xl" />
+      <Skeleton className="h-24 w-full rounded-2xl" />
     </div>
   );
 }
@@ -46,6 +46,7 @@ export function ErrorState({ error, onRetry, retrying }: { error: Error; onRetry
       <AlertDescription className="flex flex-col items-start gap-3">
         <span>{error.message}</span>
         <Button variant="outline" size="sm" onClick={onRetry} disabled={retrying}>
+          <RotateCw data-icon="inline-start" aria-hidden="true" />
           {retrying ? "Retrying..." : "Retry"}
         </Button>
       </AlertDescription>
@@ -53,13 +54,15 @@ export function ErrorState({ error, onRetry, retrying }: { error: Error; onRetry
   );
 }
 
-export function EmptyState({ title, description, action }: { title: string; description?: string; action?: ReactNode }) {
+export function EmptyState({ title, description, action, icon: Icon = Inbox }: { title: string; description?: string; action?: ReactNode; icon?: LucideIcon }) {
   return (
-    <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed px-6 py-12 text-center">
-      <Inbox className="size-6 text-muted-foreground" aria-hidden="true" />
-      <h2 className="text-sm font-medium">{title}</h2>
+    <div className="flex flex-col items-center gap-2 px-6 py-12 text-center">
+      <span className="mb-1 flex size-12 items-center justify-center rounded-xl bg-accent text-accent-foreground">
+        <Icon className="size-5" aria-hidden="true" />
+      </span>
+      <h2 className="text-base font-semibold tracking-tight">{title}</h2>
       {description ? <p className="max-w-sm text-sm text-muted-foreground">{description}</p> : null}
-      {action ? <div className="mt-2">{action}</div> : null}
+      {action ? <div className="mt-3">{action}</div> : null}
     </div>
   );
 }

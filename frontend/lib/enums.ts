@@ -1,40 +1,83 @@
+import {
+  Archive,
+  Bookmark,
+  BriefcaseBusiness,
+  ChevronDown,
+  ChevronsUp,
+  Circle,
+  CircleCheck,
+  CircleX,
+  ClipboardCheck,
+  Compass,
+  Equal,
+  FileText,
+  GraduationCap,
+  Landmark,
+  Mail,
+  MessagesSquare,
+  Microscope,
+  PencilLine,
+  Send,
+  Star,
+  Trophy,
+  Undo2,
+  UserRound,
+  UserSearch,
+  type LucideIcon,
+} from "lucide-react";
+
 export type Option = { value: string; label: string };
 
 export type EntityType = "job" | "research" | "contact";
 
-/** Colours are Tailwind classes for a soft badge, readable in light and dark mode. */
-type StatusMeta = { label: string; badge: string };
+type ToneClasses = {
+  /** Soft badge background and text. */
+  badge: string;
+  /** Solid colour for a dot or a pipeline segment. */
+  dot: string;
+  /** Light background for a Kanban column. */
+  tint: string;
+};
 
+/** Colours come from the --tone-* tokens in globals.css, which are checked for WCAG AA in both modes. */
 const tone = {
-  gray: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
-  blue: "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300",
-  indigo: "bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300",
-  violet: "bg-violet-100 text-violet-800 dark:bg-violet-950 dark:text-violet-300",
-  amber: "bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300",
-  green: "bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300",
-  red: "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300",
-  stone: "bg-stone-200 text-stone-700 dark:bg-stone-800 dark:text-stone-300",
-} as const;
+  slate: { badge: "bg-tone-slate-soft text-tone-slate-fg", dot: "bg-tone-slate", tint: "bg-tone-slate-tint" },
+  sky: { badge: "bg-tone-sky-soft text-tone-sky-fg", dot: "bg-tone-sky", tint: "bg-tone-sky-tint" },
+  blue: { badge: "bg-tone-blue-soft text-tone-blue-fg", dot: "bg-tone-blue", tint: "bg-tone-blue-tint" },
+  teal: { badge: "bg-tone-teal-soft text-tone-teal-fg", dot: "bg-tone-teal", tint: "bg-tone-teal-tint" },
+  violet: { badge: "bg-tone-violet-soft text-tone-violet-fg", dot: "bg-tone-violet", tint: "bg-tone-violet-tint" },
+  amber: { badge: "bg-tone-amber-soft text-tone-amber-fg", dot: "bg-tone-amber", tint: "bg-tone-amber-tint" },
+  green: { badge: "bg-tone-green-soft text-tone-green-fg", dot: "bg-tone-green", tint: "bg-tone-green-tint" },
+  red: { badge: "bg-tone-red-soft text-tone-red-fg", dot: "bg-tone-red", tint: "bg-tone-red-tint" },
+  stone: { badge: "bg-tone-stone-soft text-tone-stone-fg", dot: "bg-tone-stone", tint: "bg-tone-stone-tint" },
+} satisfies Record<string, ToneClasses>;
 
-/** Job and research statuses share one table: a status with the same name looks the same everywhere. */
+type StatusMeta = ToneClasses & { label: string; icon: LucideIcon };
+
+/** Job and research statuses share one table: a status looks the same in badges, Kanban and pipelines. */
 export const STATUS_META: Record<string, StatusMeta> = {
   // Jobs
-  wishlist: { label: "Wishlist", badge: tone.gray },
-  preparing: { label: "Preparing", badge: tone.blue },
-  applied: { label: "Applied", badge: tone.indigo },
-  assessment: { label: "Assessment", badge: tone.violet },
-  interview: { label: "Interview", badge: tone.amber },
-  offer: { label: "Offer", badge: tone.green },
-  rejected: { label: "Rejected", badge: tone.red },
-  withdrawn: { label: "Withdrawn", badge: tone.stone },
+  wishlist: { label: "Wishlist", icon: Bookmark, ...tone.slate },
+  preparing: { label: "Preparing", icon: PencilLine, ...tone.sky },
+  applied: { label: "Applied", icon: Send, ...tone.blue },
+  assessment: { label: "Assessment", icon: ClipboardCheck, ...tone.violet },
+  interview: { label: "Interview", icon: MessagesSquare, ...tone.amber },
+  offer: { label: "Offer", icon: Trophy, ...tone.green },
+  rejected: { label: "Rejected", icon: CircleX, ...tone.red },
+  withdrawn: { label: "Withdrawn", icon: Undo2, ...tone.stone },
   // Research
-  discovered: { label: "Discovered", badge: tone.gray },
-  interested: { label: "Interested", badge: tone.blue },
-  contacted_professor: { label: "Contacted professor", badge: tone.indigo },
-  preparing_documents: { label: "Preparing documents", badge: tone.violet },
-  accepted: { label: "Accepted", badge: tone.green },
-  archived: { label: "Archived", badge: tone.stone },
+  discovered: { label: "Discovered", icon: Compass, ...tone.slate },
+  interested: { label: "Interested", icon: Star, ...tone.sky },
+  contacted_professor: { label: "Contacted professor", icon: Mail, ...tone.teal },
+  preparing_documents: { label: "Preparing documents", icon: FileText, ...tone.violet },
+  accepted: { label: "Accepted", icon: CircleCheck, ...tone.green },
+  archived: { label: "Archived", icon: Archive, ...tone.stone },
 };
+
+/** Style and icon for a status. An unknown value gets the neutral tone. */
+export function statusMeta(status: string): StatusMeta {
+  return STATUS_META[status] ?? { label: humanize(status), icon: Circle, ...tone.slate };
+}
 
 export function statusLabel(status: string): string {
   return STATUS_META[status]?.label ?? humanize(status);
@@ -66,9 +109,15 @@ export const PRIORITIES: Option[] = [
 ];
 
 export const PRIORITY_BADGE: Record<string, string> = {
-  low: tone.gray,
-  medium: tone.blue,
-  high: tone.red,
+  low: tone.slate.badge,
+  medium: tone.blue.badge,
+  high: tone.red.badge,
+};
+
+export const PRIORITY_ICON: Record<string, LucideIcon> = {
+  low: ChevronDown,
+  medium: Equal,
+  high: ChevronsUp,
 };
 
 export const JOB_TYPES: Option[] = [
@@ -99,6 +148,15 @@ export const CONTACT_TYPES: Option[] = [
   { value: "university_representative", label: "University representative" },
   { value: "other", label: "Other" },
 ];
+
+export const CONTACT_TYPE_ICON: Record<string, LucideIcon> = {
+  recruiter: UserSearch,
+  professor: GraduationCap,
+  researcher: Microscope,
+  hiring_manager: BriefcaseBusiness,
+  university_representative: Landmark,
+  other: UserRound,
+};
 
 export function optionLabel(list: Option[], value: string | null | undefined): string | null {
   if (!value) return null;
