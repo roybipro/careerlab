@@ -4,6 +4,7 @@ from typing import Any
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from sqlalchemy.exc import DataError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 logger = logging.getLogger(__name__)
@@ -55,6 +56,17 @@ def register_error_handlers(app: FastAPI) -> None:
             {"loc": list(e["loc"]), "message": e["msg"], "type": e["type"]} for e in exc.errors()
         ]
         return _envelope(422, "validation_error", "Request validation failed", details)
+
+    @app.exception_handler(DataError)
+    async def _data_error(request: Request, exc: DataError) -> JSONResponse:
+        # The database refused a value the schemas let through, most often a NUL character
+        # (PostgreSQL text cannot hold one). It is the caller's input, not a server fault.
+        logger.info("Rejected unstorable input on %s %s: %s", request.method, request.url.path, exc)
+        return _envelope(
+            422,
+            "validation_error",
+            "A value contains characters or data the database cannot store",
+        )
 
     @app.exception_handler(Exception)
     async def _unhandled_error(request: Request, exc: Exception) -> JSONResponse:

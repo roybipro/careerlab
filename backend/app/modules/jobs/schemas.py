@@ -3,14 +3,13 @@ from datetime import date, datetime
 from typing import Annotated
 
 from pydantic import (
-    AwareDatetime,
     BaseModel,
     ConfigDict,
     Field,
     model_validator,
 )
 
-from app.core.schemas import HttpUrl, Name
+from app.core.schemas import BoundedDatetime, HttpUrl, Name
 from app.modules.jobs.models import EmploymentType, JobStatus, JobType, Priority
 
 Salary = Annotated[int, Field(ge=0, le=2_000_000_000)]
@@ -35,7 +34,7 @@ class _JobFields(BaseModel):
     application_date: date | None = None
     deadline: date | None = None
     follow_up_date: date | None = None
-    interview_at: AwareDatetime | None = None
+    interview_at: BoundedDatetime | None = None
 
 
 class JobCreate(_JobFields):

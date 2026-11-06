@@ -1,7 +1,8 @@
+import os
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import field_validator
+from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # The repo-root .env, the same file Docker Compose reads, wherever the app is started from.
@@ -10,6 +11,17 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 REPO_ENV_FILE = Path(__file__).resolve().parents[3] / ".env"
 
 MIN_JWT_SECRET_LENGTH = 32
+
+# Secrets that appear in this public repository (the Compose fallback and the test and CI
+# values). They are fine on a developer machine, but they let anyone forge a session, so
+# a deployed instance refuses them.
+KNOWN_PUBLIC_JWT_SECRETS = frozenset(
+    {
+        "dev-only-secret-do-not-use-outside-local-compose",
+        "test-only-secret-not-for-real-use-0123456789",
+        "ci-only-secret-not-for-real-use-0123456789",
+    }
+)
 
 
 class Settings(BaseSettings):
@@ -32,6 +44,18 @@ class Settings(BaseSettings):
                 'with: python -c "import secrets; print(secrets.token_urlsafe(48))"'
             )
         return value
+
+    @model_validator(mode="after")
+    def _deployed_instance_has_a_private_secret(self) -> "Settings":
+        # "Deployed" means HTTPS cookies or Render's own RENDER variable.
+        deployed = self.COOKIE_SECURE or bool(os.environ.get("RENDER"))
+        if deployed and self.JWT_SECRET in KNOWN_PUBLIC_JWT_SECRETS:
+            raise ValueError(
+                "JWT_SECRET is a value published in this repository and cannot be used when "
+                "COOKIE_SECURE=true or on Render. Generate one with: "
+                'python -c "import secrets; print(secrets.token_urlsafe(48))"'
+            )
+        return self
 
 
 @lru_cache
