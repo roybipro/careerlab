@@ -2,12 +2,13 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { X } from "lucide-react";
+import { Banknote, Building2, CalendarDays, FileText, GraduationCap, Link2, X } from "lucide-react";
 import { useId, useState } from "react";
 import { Controller, useForm, type Control } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 import { NativeSelect } from "@/components/native-select";
+import { FormSection } from "@/components/form-section";
 import { TextAreaField } from "@/components/textarea-field";
 import { TextField } from "@/components/text-field";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -252,6 +253,15 @@ function ResearchFormBody({ research, onDone }: { research?: Research; onDone: (
 
   const err = (f: Exclude<Field, "research_interests">) => errors[f]?.message;
   const interestsError = errors.research_interests?.message ?? errors.research_interests?.root?.message;
+  const invalid = (...fields: Field[]) => fields.some((f) => errors[f]);
+  // Sections holding saved values start open when editing.
+  const saved = research ? toValues(research) : null;
+  const filled = (...fields: Field[]) =>
+    !!saved &&
+    fields.some((f) => {
+      const value = saved[f];
+      return Array.isArray(value) ? value.length > 0 : value !== EMPTY[f];
+    });
 
   return (
     <form noValidate onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -261,48 +271,53 @@ function ResearchFormBody({ research, onDone }: { research?: Research; onDone: (
         </Alert>
       ) : null}
 
-      <fieldset className="grid gap-4 sm:grid-cols-2">
+      <fieldset className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <legend className="sr-only">Opportunity</legend>
         <TextField label="Title" error={err("title")} {...register("title")} />
         <TextField label="Organization" error={err("organization")} {...register("organization")} />
         <NativeSelect label="Status" options={RESEARCH_STATUSES} error={err("status")} {...register("status")} />
         <NativeSelect label="Type" options={OPPORTUNITY_TYPES} placeholder="Not set" error={err("opportunity_type")} {...register("opportunity_type")} />
-        <NativeSelect label="Funding" options={FUNDING_STATUSES} error={err("funding_status")} {...register("funding_status")} />
-        <TextField label="Funding amount" placeholder="2,000 per month" error={err("funding_amount")} {...register("funding_amount")} />
-        <TextField label="Country" error={err("country")} {...register("country")} />
-        <TextField label="Department" error={err("department")} {...register("department")} />
-        <TextField label="Laboratory" error={err("laboratory")} {...register("laboratory")} />
-        <TextField label="Research area" error={err("research_area")} {...register("research_area")} />
       </fieldset>
 
-      <InterestsInput control={control} error={interestsError} />
+      <div className="border-b">
+        <FormSection icon={Banknote} title="Funding" hint="Funding status and amount" defaultOpen={filled("funding_status", "funding_amount")} hasError={invalid("funding_status", "funding_amount")}>
+          <NativeSelect label="Funding" options={FUNDING_STATUSES} error={err("funding_status")} {...register("funding_status")} />
+          <TextField label="Funding amount" placeholder="2,000 per month" error={err("funding_amount")} {...register("funding_amount")} />
+        </FormSection>
 
-      <fieldset className="grid gap-4 sm:grid-cols-2">
-        <legend className="mb-2 text-sm font-medium">Professor</legend>
-        <TextField label="Professor name" error={err("professor_name")} {...register("professor_name")} />
-        <TextField label="Professor email" type="email" error={err("professor_email")} {...register("professor_email")} />
-        <TextField label="Professor website" type="url" placeholder="https://" error={err("professor_website")} {...register("professor_website")} />
-      </fieldset>
+        <FormSection icon={Building2} title="Place and field" hint="Country, department, lab and research interests" defaultOpen={filled("country", "department", "laboratory", "research_area", "research_interests")} hasError={invalid("country", "department", "laboratory", "research_area") || !!interestsError}>
+          <TextField label="Country" error={err("country")} {...register("country")} />
+          <TextField label="Department" error={err("department")} {...register("department")} />
+          <TextField label="Laboratory" error={err("laboratory")} {...register("laboratory")} />
+          <TextField label="Research area" error={err("research_area")} {...register("research_area")} />
+          <div className="sm:col-span-2">
+            <InterestsInput control={control} error={interestsError} />
+          </div>
+        </FormSection>
 
-      <fieldset className="grid gap-4 sm:grid-cols-2">
-        <legend className="mb-2 text-sm font-medium">Links</legend>
-        <TextField label="Website" type="url" placeholder="https://" error={err("website")} {...register("website")} />
-        <TextField label="Application URL" type="url" placeholder="https://" error={err("application_url")} {...register("application_url")} />
-      </fieldset>
+        <FormSection icon={CalendarDays} title="Dates" hint="Applied and deadline" defaultOpen={filled("application_date", "deadline")} hasError={invalid("application_date", "deadline")}>
+          <TextField label="Application date" type="date" error={err("application_date")} {...register("application_date")} />
+          <TextField label="Deadline" type="date" error={err("deadline")} {...register("deadline")} />
+        </FormSection>
 
-      <fieldset className="grid gap-4 sm:grid-cols-2">
-        <legend className="mb-2 text-sm font-medium">Dates</legend>
-        <TextField label="Application date" type="date" error={err("application_date")} {...register("application_date")} />
-        <TextField label="Deadline" type="date" error={err("deadline")} {...register("deadline")} />
-      </fieldset>
+        <FormSection icon={GraduationCap} title="Professor" hint="Name, email and website" defaultOpen={filled("professor_name", "professor_email", "professor_website")} hasError={invalid("professor_name", "professor_email", "professor_website")}>
+          <TextField label="Professor name" error={err("professor_name")} {...register("professor_name")} />
+          <TextField label="Professor email" type="email" error={err("professor_email")} {...register("professor_email")} />
+          <TextField label="Professor website" type="url" placeholder="https://" error={err("professor_website")} {...register("professor_website")} />
+        </FormSection>
 
-      <fieldset className="grid gap-4">
-        <legend className="mb-2 text-sm font-medium">Details</legend>
-        <TextAreaField label="Description" error={err("description")} {...register("description")} />
-        <TextAreaField label="Eligibility" error={err("eligibility")} {...register("eligibility")} />
-        <TextAreaField label="Language test requirements (IELTS, GRE)" error={err("language_test_requirements")} {...register("language_test_requirements")} />
-        <TextAreaField label="Notes" error={err("notes")} {...register("notes")} />
-      </fieldset>
+        <FormSection icon={Link2} title="Links" hint="Website and application page" defaultOpen={filled("website", "application_url")} hasError={invalid("website", "application_url")}>
+          <TextField label="Website" type="url" placeholder="https://" error={err("website")} {...register("website")} />
+          <TextField label="Application URL" type="url" placeholder="https://" error={err("application_url")} {...register("application_url")} />
+        </FormSection>
+
+        <FormSection icon={FileText} title="Details" hint="Description, eligibility, language tests and notes" className="grid grid-cols-1 gap-4" defaultOpen={filled("description", "eligibility", "language_test_requirements", "notes")} hasError={invalid("description", "eligibility", "language_test_requirements", "notes")}>
+          <TextAreaField label="Description" error={err("description")} {...register("description")} />
+          <TextAreaField label="Eligibility" error={err("eligibility")} {...register("eligibility")} />
+          <TextAreaField label="Language test requirements (IELTS, GRE)" error={err("language_test_requirements")} {...register("language_test_requirements")} />
+          <TextAreaField label="Notes" error={err("notes")} {...register("notes")} />
+        </FormSection>
+      </div>
 
       <div className="flex justify-end gap-2">
         <Button type="button" variant="outline" onClick={onDone} disabled={save.isPending}>
@@ -323,7 +338,7 @@ export function ResearchFormDialog({ open, onOpenChange, research }: { open: boo
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>{research ? "Edit opportunity" : "Add a research opportunity"}</DialogTitle>
-          <DialogDescription>{research ? "Clear a field to remove its value." : "Title and organization are required."}</DialogDescription>
+          <DialogDescription>{research ? "Clear a field to remove its value." : "Only title and organization are needed. Open a section to add more."}</DialogDescription>
         </DialogHeader>
         <ResearchFormBody research={research} onDone={() => onOpenChange(false)} />
       </DialogContent>

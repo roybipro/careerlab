@@ -2,11 +2,13 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Banknote, CalendarDays, FileText, Link2, MapPin } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 import { NativeSelect } from "@/components/native-select";
+import { FormSection } from "@/components/form-section";
 import { TextAreaField } from "@/components/textarea-field";
 import { TextField } from "@/components/text-field";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -169,6 +171,9 @@ function JobFormBody({ job, onDone }: { job?: Job; onDone: () => void }) {
   }
 
   const err = (f: Field) => errors[f]?.message;
+  const invalid = (...fields: Field[]) => fields.some((f) => errors[f]);
+  // Sections holding saved values start open when editing.
+  const filled = (...fields: Field[]) => !!job && fields.some((f) => toValues(job)[f] !== "");
 
   return (
     <form noValidate onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -178,46 +183,47 @@ function JobFormBody({ job, onDone }: { job?: Job; onDone: () => void }) {
         </Alert>
       ) : null}
 
-      <fieldset className="grid gap-4 sm:grid-cols-2">
+      <fieldset className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <legend className="sr-only">Job</legend>
         <TextField label="Company" error={err("company_name")} {...register("company_name")} />
         <TextField label="Position" error={err("position_title")} {...register("position_title")} />
         <NativeSelect label="Status" options={JOB_STATUSES} error={err("status")} {...register("status")} />
         <NativeSelect label="Priority" options={PRIORITIES} error={err("priority")} {...register("priority")} />
-        <NativeSelect label="Job type" options={JOB_TYPES} placeholder="Not set" error={err("job_type")} {...register("job_type")} />
-        <NativeSelect label="Employment type" options={EMPLOYMENT_TYPES} placeholder="Not set" error={err("employment_type")} {...register("employment_type")} />
-        <TextField label="Location" error={err("location")} {...register("location")} />
       </fieldset>
 
-      <fieldset className="grid gap-4 sm:grid-cols-2">
-        <legend className="mb-2 text-sm font-medium">Links</legend>
-        <TextField label="Job posting URL" type="url" placeholder="https://" error={err("job_url")} {...register("job_url")} />
-        <TextField label="Company website" type="url" placeholder="https://" error={err("company_website")} {...register("company_website")} />
-        <TextField label="Company logo URL" type="url" placeholder="https://" error={err("company_logo_url")} {...register("company_logo_url")} />
-      </fieldset>
+      <div className="border-b">
+        <FormSection icon={MapPin} title="Role" hint="Job type, employment type and location" defaultOpen={filled("job_type", "employment_type", "location")} hasError={invalid("job_type", "employment_type", "location")}>
+          <NativeSelect label="Job type" options={JOB_TYPES} placeholder="Not set" error={err("job_type")} {...register("job_type")} />
+          <NativeSelect label="Employment type" options={EMPLOYMENT_TYPES} placeholder="Not set" error={err("employment_type")} {...register("employment_type")} />
+          <TextField label="Location" error={err("location")} {...register("location")} />
+        </FormSection>
 
-      <fieldset className="grid gap-4 sm:grid-cols-3">
-        <legend className="mb-2 text-sm font-medium">Salary</legend>
-        <TextField label="Minimum" type="number" inputMode="numeric" min={0} step={1} error={err("salary_min")} {...register("salary_min", { deps: ["salary_max"] })} />
-        <TextField label="Maximum" type="number" inputMode="numeric" min={0} step={1} error={err("salary_max")} {...register("salary_max", { deps: ["salary_min"] })} />
-        <TextField label="Currency" placeholder="USD" error={err("salary_currency")} {...register("salary_currency")} />
-      </fieldset>
+        <FormSection icon={CalendarDays} title="Dates" hint="Applied, deadline, follow-up and interview" defaultOpen={filled("application_date", "deadline", "follow_up_date", "interview_at")} hasError={invalid("application_date", "deadline", "follow_up_date", "interview_at")}>
+          <TextField label="Application date" type="date" error={err("application_date")} {...register("application_date")} />
+          <TextField label="Deadline" type="date" error={err("deadline")} {...register("deadline")} />
+          <TextField label="Follow-up date" type="date" error={err("follow_up_date")} {...register("follow_up_date")} />
+          <TextField label="Interview" type="datetime-local" hint="In your time zone" error={err("interview_at")} {...register("interview_at")} />
+        </FormSection>
 
-      <fieldset className="grid gap-4 sm:grid-cols-2">
-        <legend className="mb-2 text-sm font-medium">Dates</legend>
-        <TextField label="Application date" type="date" error={err("application_date")} {...register("application_date")} />
-        <TextField label="Deadline" type="date" error={err("deadline")} {...register("deadline")} />
-        <TextField label="Follow-up date" type="date" error={err("follow_up_date")} {...register("follow_up_date")} />
-        <TextField label="Interview" type="datetime-local" hint="In your time zone" error={err("interview_at")} {...register("interview_at")} />
-      </fieldset>
+        <FormSection icon={Banknote} title="Salary" hint="Range and currency" className="grid grid-cols-1 gap-4 sm:grid-cols-3" defaultOpen={filled("salary_min", "salary_max", "salary_currency")} hasError={invalid("salary_min", "salary_max", "salary_currency")}>
+          <TextField label="Minimum" type="number" inputMode="numeric" min={0} step={1} error={err("salary_min")} {...register("salary_min", { deps: ["salary_max"] })} />
+          <TextField label="Maximum" type="number" inputMode="numeric" min={0} step={1} error={err("salary_max")} {...register("salary_max", { deps: ["salary_min"] })} />
+          <TextField label="Currency" placeholder="USD" error={err("salary_currency")} {...register("salary_currency")} />
+        </FormSection>
 
-      <fieldset className="grid gap-4">
-        <legend className="mb-2 text-sm font-medium">Details</legend>
-        <TextField label="Resume version" error={err("resume_version")} {...register("resume_version")} />
-        <TextAreaField label="Cover letter (name, link or text)" error={err("cover_letter_ref")} {...register("cover_letter_ref")} />
-        <TextAreaField label="Job description" error={err("job_description")} {...register("job_description")} />
-        <TextAreaField label="Notes" error={err("notes")} {...register("notes")} />
-      </fieldset>
+        <FormSection icon={Link2} title="Links" hint="Job posting, company website and logo" defaultOpen={filled("job_url", "company_website", "company_logo_url")} hasError={invalid("job_url", "company_website", "company_logo_url")}>
+          <TextField label="Job posting URL" type="url" placeholder="https://" error={err("job_url")} {...register("job_url")} />
+          <TextField label="Company website" type="url" placeholder="https://" error={err("company_website")} {...register("company_website")} />
+          <TextField label="Company logo URL" type="url" placeholder="https://" error={err("company_logo_url")} {...register("company_logo_url")} />
+        </FormSection>
+
+        <FormSection icon={FileText} title="Details" hint="Resume, cover letter, description and notes" className="grid grid-cols-1 gap-4" defaultOpen={filled("resume_version", "cover_letter_ref", "job_description", "notes")} hasError={invalid("resume_version", "cover_letter_ref", "job_description", "notes")}>
+          <TextField label="Resume version" error={err("resume_version")} {...register("resume_version")} />
+          <TextAreaField label="Cover letter (name, link or text)" error={err("cover_letter_ref")} {...register("cover_letter_ref")} />
+          <TextAreaField label="Job description" error={err("job_description")} {...register("job_description")} />
+          <TextAreaField label="Notes" error={err("notes")} {...register("notes")} />
+        </FormSection>
+      </div>
 
       <div className="flex justify-end gap-2">
         <Button type="button" variant="outline" onClick={onDone} disabled={save.isPending}>
@@ -238,7 +244,7 @@ export function JobFormDialog({ open, onOpenChange, job }: { open: boolean; onOp
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>{job ? "Edit job" : "Add a job"}</DialogTitle>
-          <DialogDescription>{job ? "Clear a field to remove its value." : "Company and position are required."}</DialogDescription>
+          <DialogDescription>{job ? "Clear a field to remove its value." : "Only company and position are needed. Open a section to add more."}</DialogDescription>
         </DialogHeader>
         <JobFormBody job={job} onDone={() => onOpenChange(false)} />
       </DialogContent>

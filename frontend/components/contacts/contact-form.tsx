@@ -2,11 +2,13 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { CalendarDays, FileText, Link2 } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 import { NativeSelect } from "@/components/native-select";
+import { FormSection } from "@/components/form-section";
 import { TextAreaField } from "@/components/textarea-field";
 import { TextField } from "@/components/text-field";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -111,26 +113,37 @@ function ContactFormBody({ contact, onDone }: { contact?: Contact; onDone: () =>
   }
 
   const err = (f: Field) => errors[f]?.message;
+  const invalid = (...fields: Field[]) => fields.some((f) => errors[f]);
+  // Sections holding saved values start open when editing.
+  const filled = (...fields: Field[]) => !!contact && fields.some((f) => toValues(contact)[f] !== "");
 
   return (
-    <form noValidate onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <form noValidate onSubmit={handleSubmit(onSubmit)} className="space-y-5">
       {formError ? (
         <Alert variant="destructive">
           <AlertDescription>{formError}</AlertDescription>
         </Alert>
       ) : null}
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <TextField label="Name" error={err("name")} {...register("name")} />
         <NativeSelect label="Contact type" options={CONTACT_TYPES} placeholder="Not set" error={err("contact_type")} {...register("contact_type")} />
         <TextField label="Email" type="email" autoComplete="off" error={err("email")} {...register("email")} />
         <TextField label="Organization" error={err("organization")} {...register("organization")} />
         <TextField label="Position" error={err("position")} {...register("position")} />
-        <TextField label="LinkedIn URL" type="url" placeholder="https://" error={err("linkedin_url")} {...register("linkedin_url")} />
-        <TextField label="Website" type="url" placeholder="https://" error={err("website")} {...register("website")} />
-        <TextField label="Last contacted" type="date" error={err("last_contacted_at")} {...register("last_contacted_at")} />
-        <TextField label="Next follow-up" type="date" error={err("next_follow_up_at")} {...register("next_follow_up_at")} />
       </div>
-      <TextAreaField label="Notes" error={err("notes")} {...register("notes")} />
+      <div className="border-b">
+        <FormSection icon={CalendarDays} title="Follow-up" hint="Last contacted and next follow-up" defaultOpen={filled("last_contacted_at", "next_follow_up_at")} hasError={invalid("last_contacted_at", "next_follow_up_at")}>
+          <TextField label="Last contacted" type="date" error={err("last_contacted_at")} {...register("last_contacted_at")} />
+          <TextField label="Next follow-up" type="date" error={err("next_follow_up_at")} {...register("next_follow_up_at")} />
+        </FormSection>
+        <FormSection icon={Link2} title="Links" hint="LinkedIn and website" defaultOpen={filled("linkedin_url", "website")} hasError={invalid("linkedin_url", "website")}>
+          <TextField label="LinkedIn URL" type="url" placeholder="https://" error={err("linkedin_url")} {...register("linkedin_url")} />
+          <TextField label="Website" type="url" placeholder="https://" error={err("website")} {...register("website")} />
+        </FormSection>
+        <FormSection icon={FileText} title="Notes" hint="Anything worth remembering" className="grid grid-cols-1 gap-4" defaultOpen={filled("notes")} hasError={invalid("notes")}>
+          <TextAreaField label="Notes" error={err("notes")} {...register("notes")} />
+        </FormSection>
+      </div>
       <div className="flex justify-end gap-2">
         <Button type="button" variant="outline" onClick={onDone} disabled={save.isPending}>
           Cancel
@@ -150,7 +163,7 @@ export function ContactFormDialog({ open, onOpenChange, contact }: { open: boole
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>{contact ? "Edit contact" : "Add a contact"}</DialogTitle>
-          <DialogDescription>{contact ? "Clear a field to remove its value." : "Only the name is required."}</DialogDescription>
+          <DialogDescription>{contact ? "Clear a field to remove its value." : "Only the name is needed. Open a section to add more."}</DialogDescription>
         </DialogHeader>
         <ContactFormBody contact={contact} onDone={() => onOpenChange(false)} />
       </DialogContent>

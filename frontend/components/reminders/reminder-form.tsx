@@ -102,7 +102,7 @@ export function ReminderFormDialog({
       <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{reminder ? "Edit reminder" : "Add a reminder"}</DialogTitle>
-          <DialogDescription>Title and due time are required.</DialogDescription>
+          <DialogDescription>Add a title and when it is due.</DialogDescription>
         </DialogHeader>
         <ReminderFormBody key={reminder?.id ?? "new"} reminder={reminder} onDone={() => onOpenChange(false)} />
       </DialogContent>
