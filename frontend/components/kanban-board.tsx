@@ -67,35 +67,37 @@ function Card<T extends KanbanItem>({
 }) {
   const { setNodeRef, listeners, isDragging } = useDraggable({ id: item.id });
   return (
-    <div
-      ref={setNodeRef}
-      className={cn(
-        "relative rounded-xl shadow-card transition-[transform,box-shadow] duration-150 hover:shadow-lift motion-safe:hover:-translate-y-0.5",
-        isDragging && "opacity-40",
-      )}
-    >
-      {/* Drag listeners sit on the card body only, so the menu button is a separate control. */}
-      <div {...listeners}>{children}</div>
-      <DropdownMenu>
-        <DropdownMenuTrigger
-          aria-label={`Move ${label} to another status`}
-          render={<Button variant="ghost" size="icon-sm" className="absolute top-0.5 right-0.5 text-muted-foreground md:top-1.5 md:right-1.5" />}
-        >
-          <MoreVertical />
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-48">
-          <DropdownMenuGroup>
-            <DropdownMenuLabel>Move to</DropdownMenuLabel>
-            {columns
-              .filter((c) => c.id !== item.status)
-              .map((c) => (
-                <DropdownMenuItem key={c.id} onClick={() => onMove(item, c.id)}>
-                  {c.label}
-                </DropdownMenuItem>
-              ))}
-          </DropdownMenuGroup>
-        </DropdownMenuContent>
-      </DropdownMenu>
+    // The lift is on the inner element: dnd-kit measures the outer node, which must not move on hover.
+    <div ref={setNodeRef} className={cn(isDragging && "opacity-40")}>
+      <div
+        className={cn(
+          "relative rounded-xl shadow-card transition-[transform,box-shadow] duration-150",
+          !isDragging && "hover:shadow-lift motion-safe:hover:-translate-y-0.5",
+        )}
+      >
+        {/* Drag listeners sit on the card body only, so the menu button is a separate control. */}
+        <div {...listeners}>{children}</div>
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            aria-label={`Move ${label} to another status`}
+            render={<Button variant="ghost" size="icon-sm" className="absolute top-0.5 right-0.5 text-muted-foreground md:top-1.5 md:right-1.5" />}
+          >
+            <MoreVertical />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuGroup>
+              <DropdownMenuLabel>Move to</DropdownMenuLabel>
+              {columns
+                .filter((c) => c.id !== item.status)
+                .map((c) => (
+                  <DropdownMenuItem key={c.id} onClick={() => onMove(item, c.id)}>
+                    {c.label}
+                  </DropdownMenuItem>
+                ))}
+            </DropdownMenuGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
     </div>
   );
 }
