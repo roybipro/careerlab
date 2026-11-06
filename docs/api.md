@@ -16,7 +16,16 @@ the CSRF header, the cookie and the limits.
 - **Dates:** date-only fields (`deadline`, `application_date`, `follow_up_date`,
   `next_follow_up_at`, `last_contacted_at`) are `YYYY-MM-DD`. Timestamps (`due_at`,
   `interview_at`) are ISO 8601 and **must include a UTC offset** such as `Z` or `+02:00`. A value
-  without an offset is rejected with `422`, not guessed.
+  without an offset is rejected with `422`, not guessed. Timestamps must also have a year between
+  1900 and 2200.
+- **Today:** the API has no user time zone, so `GET /dashboard/summary`,
+  `GET /dashboard/upcoming-deadlines` and `GET /contacts?follow_up_due=true` take an optional
+  `today=YYYY-MM-DD` query parameter, the client's local date. It must be within one day of the UTC
+  date, otherwise the response is `422`, and when omitted the UTC date is used. It applies to
+  date-only fields only; reminders always compare exact instants. The app sends the browser's
+  local date, so a deadline dated today stays on the dashboard all day for users west of UTC.
+- **Text:** a NUL character (`\u0000`) in any text field or search term returns `422`, because
+  PostgreSQL cannot store it.
 - **Updates:** `PATCH` changes only the fields present in the body. Sending `null` clears an
   optional field. Required fields cannot be set to `null`.
 - **Ownership:** every record belongs to one user. A record that does not exist and a record that
@@ -71,12 +80,22 @@ X-Requested-With: CareerLab
 Without it the API returns `403 forbidden`. `GET` requests do not need it. The frontend's API
 client adds the header for you.
 
-**Swagger "Try it out":** the OpenAPI schema does not declare this header, so Swagger UI does not
-send it. In practice, `POST`, `PATCH` and `DELETE` calls from "Try it out" answer
-`403 forbidden` ("Missing X-Requested-With header"). Use `curl` (see the example below) or the app for
-mutations. `GET` calls work from Swagger once you are signed in. Locally, signing in to the app at
-<http://localhost:3000> is enough, because browsers share cookies between ports on `localhost`.
-There is no "Authorize" button because the session is a cookie, not a token.
+**Swagger "Try it out":** the OpenAPI schema declares `X-Requested-With` on every `POST`, `PATCH`
+and `DELETE` operation, prefilled with `CareerLab`, so Swagger UI sends it and mutations work. The
+API still checks the raw request header, and a page on another site cannot send the header without
+passing a CORS preflight, so this does not weaken the check.
+
+The session is a cookie, not a token, so there is no "Authorize" button. To use Swagger:
+
+1. Open `/docs` on the API host itself (<http://localhost:8000/docs> locally, the API's own URL
+   when deployed), not on the web app's host.
+2. Run `POST /auth/login` ("Try it out", then "Execute") with an account's email and password. The
+   response sets the session cookie for that host.
+3. Run any other operation. The browser sends the cookie with each request.
+
+Locally, signing in to the app at <http://localhost:3000> also works for `GET` calls, because
+browsers share cookies between ports on `localhost`. A cookie set on the web app's host is not
+sent to a different API host, which is why the steps above sign in through Swagger itself.
 
 ### Session cookie
 
@@ -101,7 +120,17 @@ Limits are counted in memory per API process, per rolling minute, and answer `42
 | `POST /auth/login` | 10 per client IP, and 5 per email address |
 
 The client IP is the connection's address, or the first `X-Forwarded-For` entry when
-`TRUST_PROXY=true`. Counters reset when the API restarts and are not shared between instances.
+`TRUST_PROXY=true`, and only when that entry is a valid IP address (anything else falls back to
+the connection's address). Counters reset when the API restarts and are not shared between
+instances.
+
+Each limiter keeps at most 10,000 keys. Once that is reached and no expired key can be dropped,
+new keys share one overflow counter with the same limit, so memory stays bounded and limiting
+continues.
+
+Password hashing and verification (register, login, change password) also share a small number of
+concurrent slots. When none frees up within about two seconds, the request is answered `429` with
+the message "The server is busy".
 
 ## Routes
 
@@ -143,8 +172,8 @@ and `/health` needs a session.
 | `PATCH /notes/{id}` | Edit `kind` or `content` | |
 | `DELETE /notes/{id}` | Delete | `204` |
 | `GET /activity` | Activity history | Filters: `entity_type`, `entity_id`. Newest first |
-| `GET /dashboard/summary` | The eight dashboard numbers | |
-| `GET /dashboard/upcoming-deadlines` | Items due in the next 14 days | |
+| `GET /dashboard/summary` | The eight dashboard numbers | Optional `today` |
+| `GET /dashboard/upcoming-deadlines` | Items due in the next 14 days | Optional `today` |
 | `GET /dashboard/recent-activities` | The 10 most recent activity rows | |
 | `GET /dashboard/analytics` | Status counts and monthly counts for the last 12 months | |
 

@@ -102,7 +102,8 @@ sequenceDiagram
 ## Docker and CI
 
 - `docker compose up` starts `db` (PostgreSQL 16, also creates the `careerlab_test` database on
-  first start), `api` (port 8000) and `web` (port 3000).
+  first start), `api` (port 8000) and `web` (port 3000). The database and API ports are published on
+  `127.0.0.1` only.
 - The API image contains the application, the migrations and `scripts/`, and leaves out tests.
   It runs as a non-root user.
 - `.github/workflows/ci.yml` runs backend lint, type checks and tests, the frontend lint,

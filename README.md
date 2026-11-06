@@ -67,7 +67,10 @@ Then open:
 
 The first start builds three images and applies the database migrations, so it takes a few
 minutes. `.env.example` leaves `JWT_SECRET` empty. Compose then uses a development-only
-secret, so this setup is for local use only. Register an account on the login page to start.
+secret, so this setup is for local use only: the API refuses that secret (and the other values
+published in this repository) when `COOKIE_SECURE=true` or on Render. Compose publishes the
+database (5433) and the API (8000) on `127.0.0.1` only, so they are not reachable from other
+machines. Register an account on the login page to start.
 
 ### Optional: load demo data
 
