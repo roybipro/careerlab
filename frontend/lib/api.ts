@@ -41,7 +41,7 @@ function buildUrl(path: string, query: ApiInit["query"]): string {
 /**
  * Typed fetch wrapper for the CareerLab API. `path` is relative to /api/v1 (e.g. "/jobs").
  * Adds the CSRF header on mutations. Throws ApiError for every failure, including network
- * errors (status 0) and non-JSON error bodies such as a proxy error page.
+ * errors (status 0) and non-JSON bodies, error or success, such as a proxy page.
  */
 export async function api<T>(path: string, init: ApiInit = {}): Promise<T> {
   const method = init.method ?? "GET";
@@ -62,7 +62,13 @@ export async function api<T>(path: string, init: ApiInit = {}): Promise<T> {
 
   if (res.ok) {
     if (res.status === 204) return undefined as T;
-    return (await res.json()) as T;
+    try {
+      return (await res.json()) as T;
+    } catch {
+      // A 2xx that is not JSON is a proxy or hosting page (for example a sleeping server's
+      // loading page). Report it as a gateway error, which the query client retries.
+      throw new ApiError(502, "bad_response", "The server sent an unexpected response. Try again in a moment.");
+    }
   }
 
   let payload: { error?: { code?: string; message?: string; details?: ApiErrorDetail[] | null } } | null = null;

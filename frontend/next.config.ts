@@ -5,6 +5,10 @@ const API_URL = process.env.API_URL ?? "http://localhost:8000";
 
 // Rewrites are baked in at build time, so a production build without API_URL would proxy to localhost.
 if (process.env.NODE_ENV === "production" && !process.env.API_URL) {
+  // On Vercel a missing value would ship a site that proxies to nothing: fail the build instead.
+  if (process.env.VERCEL) {
+    throw new Error("[careerlab] API_URL is not set. Set it in the Vercel project's environment variables, then redeploy.");
+  }
   console.warn("[careerlab] API_URL is not set: /api/v1/* will be proxied to http://localhost:8000. Set API_URL before `next build`.");
 }
 

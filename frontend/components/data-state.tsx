@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { WakingHint } from "@/components/waking-hint";
 
 type DataStateProps<T> = {
   query: UseQueryResult<T>;
@@ -68,7 +69,14 @@ export function EmptyState({ title, description, action }: { title: string; desc
  * Every data view uses this so failures are never a blank page or an endless spinner.
  */
 export function DataState<T>({ query, skeleton, empty, isEmpty = defaultIsEmpty, children }: DataStateProps<T>) {
-  if (query.isPending) return <>{skeleton ?? <DataSkeleton />}</>;
+  if (query.isPending) {
+    return (
+      <>
+        {skeleton ?? <DataSkeleton />}
+        <WakingHint className="mt-3 text-sm text-muted-foreground" />
+      </>
+    );
+  }
   const retry = () => void query.refetch();
   // No data at all: full error state.
   if (query.isError && query.data === undefined) {
