@@ -12,7 +12,7 @@ from collections.abc import Sequence
 from datetime import UTC, date, datetime, time, timedelta
 from typing import Any
 
-from sqlalchemy import ColumnElement, and_, func, select
+from sqlalchemy import ColumnElement, Subquery, and_, func, literal, select, union_all
 from sqlalchemy.orm import Session
 
 from app.modules.activity.models import ActivityLog
@@ -20,6 +20,12 @@ from app.modules.auth.models import User
 from app.modules.contacts.models import Contact
 from app.modules.entities import job_label, research_label
 from app.modules.jobs.models import JobApplication, JobStatus
+from app.modules.projects.models import ResearchProject
+from app.modules.projects.service import (
+    active_project_clause,
+    open_milestones,
+    planned_submission_deadlines,
+)
 from app.modules.reminders.models import Reminder
 from app.modules.research.models import ResearchOpportunity, ResearchStatus
 
@@ -27,6 +33,7 @@ DEADLINE_WINDOW_DAYS = 14
 FOLLOW_UP_WINDOW_DAYS = 7
 RECENT_ACTIVITY_LIMIT = 10
 MONTHS = 12
+OVERDUE_RESEARCH_LIMIT = 50
 
 IN_PROGRESS_JOB_STATUSES = (
     JobStatus.preparing,
@@ -77,6 +84,49 @@ def _reminder_deadline_rule(user: User, now: datetime) -> list[ColumnElement[boo
     ]
 
 
+def _open_research_items(user: User) -> Subquery:
+    """Open research items of every user project, from the rules in projects.service.
+
+    Columns: kind, item_id, title, due, project_id, project_title. A submission's venue
+    title gets " abstract" or " paper" so the two dates read as separate items.
+    """
+    subs = planned_submission_deadlines(user)
+    miles = open_milestones(user).subquery("open_milestones")
+    title = subs.c.title + literal(" ") + func.replace(subs.c.field, "_deadline", "")
+    items = union_all(
+        select(
+            literal("project_submission_deadline").label("kind"),
+            subs.c.item_id,
+            title.label("title"),
+            subs.c.due,
+            subs.c.project_id,
+        ),
+        select(
+            literal("project_milestone").label("kind"),
+            miles.c.item_id,
+            miles.c.title,
+            miles.c.due,
+            miles.c.project_id,
+        ),
+    ).subquery("open_research_items")
+    return (
+        select(
+            items.c.kind,
+            items.c.item_id,
+            items.c.title,
+            items.c.due,
+            items.c.project_id,
+            ResearchProject.title.label("project_title"),
+        )
+        .join(ResearchProject, ResearchProject.id == items.c.project_id)
+        .subquery("open_research")
+    )
+
+
+def _research_window_rule(items: Subquery, today: date) -> list[ColumnElement[bool]]:
+    return [items.c.due >= today, items.c.due <= today + timedelta(days=DEADLINE_WINDOW_DAYS)]
+
+
 def summary(
     db: Session, user: User, now: datetime | None = None, today: date | None = None
 ) -> dict[str, int]:
@@ -113,6 +163,17 @@ def summary(
         ).where(ResearchOpportunity.user_id == user.id)
     ).one()
 
+    open_items = _open_research_items(user)
+    project_deadlines = db.scalar(
+        select(func.count())
+        .select_from(open_items)
+        .where(*_research_window_rule(open_items, today))
+    )
+    active_projects = db.scalar(
+        select(func.count())
+        .select_from(ResearchProject)
+        .where(ResearchProject.user_id == user.id, active_project_clause())
+    )
     reminder_deadlines = db.scalar(
         select(func.count()).select_from(Reminder).where(*_reminder_deadline_rule(user, now))
     )
@@ -131,8 +192,10 @@ def summary(
         "rejected": job_row.rejected + research_row.rejected,
         "upcoming_deadlines": job_row.deadlines
         + research_row.deadlines
+        + (project_deadlines or 0)
         + (reminder_deadlines or 0),
         "pending_follow_ups": job_row.follow_ups + (contact_follow_ups or 0),
+        "active_research_projects": active_projects or 0,
     }
 
 
@@ -140,6 +203,35 @@ def _sort_instant(due: date | datetime) -> datetime:
     if isinstance(due, datetime):
         return due
     return datetime.combine(due, time.min, tzinfo=UTC)
+
+
+def _research_item(row: Any, related: bool) -> dict[str, Any]:
+    item: dict[str, Any] = {
+        "kind": row.kind,
+        "id": row.item_id,
+        "title": row.title,
+        "due": row.due,
+        "project_id": row.project_id,
+        "project_title": row.project_title,
+    }
+    if related:
+        item.update(related_type="project", related_id=row.project_id)
+    return item
+
+
+def overdue_research(
+    db: Session, user: User, now: datetime | None = None, today: date | None = None
+) -> list[dict[str, Any]]:
+    """Open research items dated before today, oldest first. An item due today is not overdue."""
+    today = today or _utc(now).date()
+    items = _open_research_items(user)
+    rows = db.execute(
+        select(items)
+        .where(items.c.due < today)
+        .order_by(items.c.due, items.c.kind, items.c.item_id)
+        .limit(OVERDUE_RESEARCH_LIMIT)
+    )
+    return [_research_item(row, related=False) for row in rows]
 
 
 def upcoming_deadlines(
@@ -173,6 +265,9 @@ def upcoming_deadlines(
                 "related_id": item.id,
             }
         )
+    open_items = _open_research_items(user)
+    for row in db.execute(select(open_items).where(*_research_window_rule(open_items, today))):
+        items.append(_research_item(row, related=True))
     for reminder in db.scalars(select(Reminder).where(*_reminder_deadline_rule(user, now))):
         items.append(
             {
