@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Plus, StickyNote, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/confirm-dialog";
@@ -74,7 +74,7 @@ function NoteItem({ note, fixedKind, onDelete, onSaved }: { note: Note; fixedKin
   }
 
   return (
-    <li className="rounded-lg border p-3">
+    <li className="py-3 first:pt-0">
       <p className="text-sm break-words whitespace-pre-wrap">{note.content}</p>
       <div className="mt-2 flex items-center justify-between gap-2">
         <span className="text-xs text-muted-foreground">{formatDateTime(note.created_at)}</span>
@@ -144,7 +144,10 @@ export function NotesPanel({ entityType, entityId, kind: fixedKind, title = "Not
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{title}</CardTitle>
+        <CardTitle>
+          <StickyNote aria-hidden="true" />
+          {title}
+        </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <form
@@ -162,7 +165,8 @@ export function NotesPanel({ entityType, entityId, kind: fixedKind, title = "Not
           ) : null}
           {fixedKind ? null : <NativeSelect label="Kind" options={NOTE_KINDS} value={kind} onChange={(e) => setKind(e.target.value)} />}
           <Textarea aria-label={fixedKind ? title : "Note"} placeholder={fixedKind ? "Log a call, email or message" : "Add a note"} value={content} onChange={(e) => setContent(e.target.value)} />
-          <Button type="submit" size="sm" disabled={add.isPending}>
+          <Button type="submit" variant="outline" size="sm" disabled={add.isPending}>
+            <Plus data-icon="inline-start" aria-hidden="true" />
             {add.isPending ? "Saving..." : fixedKind ? "Add entry" : "Add note"}
           </Button>
         </form>
@@ -172,8 +176,8 @@ export function NotesPanel({ entityType, entityId, kind: fixedKind, title = "Not
             <div className="space-y-4">
               {NOTE_KINDS.filter((k) => data.items.some((n) => n.kind === k.value)).map((k) => (
                 <section key={k.value} aria-label={k.label}>
-                  <h3 className="mb-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">{k.label}</h3>
-                  <ul className="space-y-2">
+                  <h3 className="mb-2 text-xs font-medium text-muted-foreground">{k.label}</h3>
+                  <ul className="divide-y">
                     {data.items
                       .filter((n) => n.kind === k.value)
                       .map((note) => (

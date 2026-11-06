@@ -1,6 +1,6 @@
 "use client";
 
-import { Trash2 } from "lucide-react";
+import { FileCheck, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -32,7 +32,10 @@ export function DocumentChecklist({ research }: { research: Research }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Required documents</CardTitle>
+        <CardTitle>
+          <FileCheck aria-hidden="true" />
+          Required documents
+        </CardTitle>
         {items.length > 0 ? (
           <p className="text-xs text-muted-foreground">
             {done} of {items.length} ready
@@ -51,7 +54,7 @@ export function DocumentChecklist({ research }: { research: Research }) {
           <ul className="space-y-1">
             {items.map((doc, index) => (
               <li key={`${index}-${doc.name}`} className="flex items-center gap-2">
-                <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-md p-1.5 hover:bg-muted/50">
+                <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-md px-1.5 py-3 hover:bg-muted md:py-1.5">
                   <input
                     type="checkbox"
                     className="size-4 shrink-0 accent-primary"

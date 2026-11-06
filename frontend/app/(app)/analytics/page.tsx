@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { BarChart3, Briefcase, CalendarRange, FlaskConical } from "lucide-react";
 import { MonthlyActivity } from "@/components/charts/monthly-activity";
 import { StatusDistribution } from "@/components/charts/status-distribution";
 import { DataState } from "@/components/data-state";
@@ -15,13 +16,16 @@ export default function AnalyticsPage() {
 
   return (
     <>
-      <PageHeader title="Analytics" description="How your search is going." />
+      <PageHeader title="Analytics" description="How your search is going." icon={BarChart3} />
       <DataState query={query} isEmpty={() => false}>
         {(data) => (
-          <div className="grid gap-6 lg:grid-cols-2">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <Card>
               <CardHeader>
-                <CardTitle>Job applications by status</CardTitle>
+                <CardTitle>
+                  <Briefcase aria-hidden="true" />
+                  Job applications by status
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <StatusDistribution title="Job applications by status" data={data.job_status} emptyHint="Add a job application and its status shows up here." />
@@ -29,7 +33,10 @@ export default function AnalyticsPage() {
             </Card>
             <Card>
               <CardHeader>
-                <CardTitle>Research opportunities by status</CardTitle>
+                <CardTitle>
+                  <FlaskConical aria-hidden="true" />
+                  Research opportunities by status
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <StatusDistribution title="Research opportunities by status" data={data.research_status} emptyHint="Add a research opportunity and its status shows up here." />
@@ -37,7 +44,10 @@ export default function AnalyticsPage() {
             </Card>
             <Card className="lg:col-span-2">
               <CardHeader>
-                <CardTitle>Monthly activity</CardTitle>
+                <CardTitle>
+                  <CalendarRange aria-hidden="true" />
+                  Monthly activity
+                </CardTitle>
                 <CardDescription>Applications and opportunities by application date, last 12 months. Records with no application date are not counted.</CardDescription>
               </CardHeader>
               <CardContent>

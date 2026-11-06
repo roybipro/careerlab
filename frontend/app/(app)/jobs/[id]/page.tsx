@@ -1,5 +1,6 @@
 "use client";
 
+import { Banknote, BriefcaseBusiness, CalendarClock, FileText, Globe, Image, Info, Laptop, Link2, MapPin, MessagesSquare, Reply, Send } from "lucide-react";
 import { use } from "react";
 import { ActivityTimeline } from "@/components/entity/activity-timeline";
 import { Field, TextSection, UrlValue } from "@/components/entity/detail-parts";
@@ -18,22 +19,25 @@ function JobDetails({ job }: { job: Job }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Details</CardTitle>
+        <CardTitle>
+          <Info aria-hidden="true" />
+          Details
+        </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
-        <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <Field label="Location">{job.location}</Field>
-          <Field label="Job type">{optionLabel(JOB_TYPES, job.job_type)}</Field>
-          <Field label="Employment type">{optionLabel(EMPLOYMENT_TYPES, job.employment_type)}</Field>
-          <Field label="Salary">{formatSalary(job.salary_min, job.salary_max, job.salary_currency)}</Field>
-          <Field label="Application date">{formatDateOnly(job.application_date)}</Field>
-          <Field label="Deadline">{formatDateOnly(job.deadline)}</Field>
-          <Field label="Follow-up date">{formatDateOnly(job.follow_up_date)}</Field>
-          <Field label="Interview">{formatDateTime(job.interview_at)}</Field>
-          <Field label="Resume version">{job.resume_version}</Field>
-          <Field label="Job posting">{job.job_url ? <UrlValue value={job.job_url} /> : null}</Field>
-          <Field label="Company website">{job.company_website ? <UrlValue value={job.company_website} /> : null}</Field>
-          <Field label="Company logo">{job.company_logo_url ? <UrlValue value={job.company_logo_url} /> : null}</Field>
+        <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <Field label="Location" icon={MapPin}>{job.location}</Field>
+          <Field label="Job type" icon={Laptop}>{optionLabel(JOB_TYPES, job.job_type)}</Field>
+          <Field label="Employment type" icon={BriefcaseBusiness}>{optionLabel(EMPLOYMENT_TYPES, job.employment_type)}</Field>
+          <Field label="Salary" icon={Banknote}>{formatSalary(job.salary_min, job.salary_max, job.salary_currency)}</Field>
+          <Field label="Application date" icon={Send}>{formatDateOnly(job.application_date)}</Field>
+          <Field label="Deadline" icon={CalendarClock}>{formatDateOnly(job.deadline)}</Field>
+          <Field label="Follow-up date" icon={Reply}>{formatDateOnly(job.follow_up_date)}</Field>
+          <Field label="Interview" icon={MessagesSquare}>{formatDateTime(job.interview_at)}</Field>
+          <Field label="Resume version" icon={FileText}>{job.resume_version}</Field>
+          <Field label="Job posting" icon={Link2}>{job.job_url ? <UrlValue value={job.job_url} /> : null}</Field>
+          <Field label="Company website" icon={Globe}>{job.company_website ? <UrlValue value={job.company_website} /> : null}</Field>
+          <Field label="Company logo" icon={Image}>{job.company_logo_url ? <UrlValue value={job.company_logo_url} /> : null}</Field>
         </dl>
         <TextSection title="Cover letter" value={job.cover_letter_ref} />
         <TextSection title="Job description" value={job.job_description} />
@@ -64,7 +68,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
       renderEdit={(job, open, onOpenChange) => <JobFormDialog open={open} onOpenChange={onOpenChange} job={job} />}
     >
       {(job) => (
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <div className="lg:col-span-2">
             <JobDetails job={job} />
           </div>

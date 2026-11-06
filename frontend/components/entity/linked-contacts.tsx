@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Unlink } from "lucide-react";
+import { Plus, Unlink, Users } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -125,7 +125,10 @@ export function LinkedContacts({ entityType, entityId }: { entityType: Linkable;
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Contacts</CardTitle>
+        <CardTitle>
+          <Users aria-hidden="true" />
+          Contacts
+        </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         <Button
@@ -142,9 +145,9 @@ export function LinkedContacts({ entityType, entityId }: { entityType: Linkable;
         </Button>
         <DataState query={linked} empty={<p className="text-sm text-muted-foreground">No contacts linked yet.</p>}>
           {(data) => (
-            <ul className="space-y-2">
+            <ul className="divide-y">
               {data.items.map((c) => (
-                <li key={c.id} className="flex items-center gap-3 rounded-lg border p-3">
+                <li key={c.id} className="flex items-center gap-3 py-2.5">
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium">{c.name}</p>
                     <p className="truncate text-xs text-muted-foreground">{contactSubtitle(c) || "No details"}</p>

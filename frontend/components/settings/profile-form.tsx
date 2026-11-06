@@ -1,5 +1,6 @@
 "use client";
 
+import { UserRound } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
@@ -81,7 +82,10 @@ export function ProfileForm() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Profile</CardTitle>
+        <CardTitle>
+          <UserRound aria-hidden="true" />
+          Profile
+        </CardTitle>
         <CardDescription>Your name and the email you log in with.</CardDescription>
       </CardHeader>
       <CardContent>

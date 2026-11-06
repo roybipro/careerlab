@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Pencil, Trash2 } from "lucide-react";
+import { Bell, Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -82,7 +82,10 @@ export function RemindersPanel({ relatedType, relatedId }: { relatedType: Entity
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Reminders</CardTitle>
+        <CardTitle>
+          <Bell aria-hidden="true" />
+          Reminders
+        </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <form
@@ -100,24 +103,27 @@ export function RemindersPanel({ relatedType, relatedId }: { relatedType: Entity
           ) : null}
           <TextField label="Reminder" placeholder="Follow up with the recruiter" error={errors.title?.message} {...register("title", { validate: (v) => v.trim() !== "" || "Enter a title" })} />
           <TextField label="Due" type="datetime-local" error={errors.due_at?.message} {...register("due_at", { required: "Choose when it is due" })} />
-          <Button type="submit" size="sm" disabled={add.isPending}>
+          <Button type="submit" variant="outline" size="sm" disabled={add.isPending}>
+            <Plus data-icon="inline-start" aria-hidden="true" />
             {add.isPending ? "Adding..." : "Add reminder"}
           </Button>
         </form>
 
         <DataState query={query} empty={<p className="text-sm text-muted-foreground">No reminders yet. Add one above.</p>}>
           {(data) => (
-            <ul className="space-y-2">
+            <ul className="divide-y">
               {data.items.map((r) => (
-                <li key={r.id} className="flex items-start gap-3 rounded-lg border p-3">
-                  <input
+                <li key={r.id} className="flex items-center gap-1.5 py-1.5">
+                  <label className="flex size-10 shrink-0 cursor-pointer items-center justify-center md:size-7">
+                    <input
                     type="checkbox"
-                    className="mt-1 size-4"
+                    className="size-4"
                     checked={r.is_completed}
                     disabled={toggle.isPending}
                     aria-label={`Mark "${r.title}" ${r.is_completed ? "not done" : "done"}`}
                     onChange={() => toggle.mutate(r)}
                   />
+                  </label>
                   <div className="min-w-0 flex-1">
                     <p className={r.is_completed ? "text-sm break-words text-muted-foreground line-through" : "text-sm break-words"}>{r.title}</p>
                     <p className="text-xs text-muted-foreground">Due {formatDateTime(r.due_at)}</p>
