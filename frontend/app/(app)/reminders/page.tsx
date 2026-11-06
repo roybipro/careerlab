@@ -1,11 +1,14 @@
-import { EmptyState } from "@/components/data-state";
-import { PageHeader } from "@/components/page-header";
+import { Suspense } from "react";
+import { DataSkeleton } from "@/components/data-state";
+import { RemindersList } from "@/components/reminders/reminders-list";
+
+export const metadata = { title: "Reminders" };
 
 export default function Page() {
+  // RemindersList reads the URL search parameters, which needs a Suspense boundary.
   return (
-    <>
-      <PageHeader title="Reminders" description="Deadlines and follow-ups." />
-      <EmptyState title="Coming soon" description="This page is not built yet." />
-    </>
+    <Suspense fallback={<DataSkeleton />}>
+      <RemindersList />
+    </Suspense>
   );
 }

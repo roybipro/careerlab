@@ -129,3 +129,28 @@ export type Research = {
   created_at: string;
   updated_at: string;
 };
+
+export type DashboardSummary = {
+  total_jobs: number;
+  total_research: number;
+  in_progress: number;
+  interviews_scheduled: number;
+  offers: number;
+  rejected: number;
+  upcoming_deadlines: number;
+  pending_follow_ups: number;
+};
+
+export type Deadline = {
+  kind: "job_deadline" | "research_deadline" | "reminder";
+  id: string;
+  title: string;
+  /** A date ("YYYY-MM-DD") for job and research deadlines, a timestamp for reminders. */
+  due: string;
+  related_type: "job" | "research" | "contact" | null;
+  related_id: string | null;
+};
+
+export type StatusCount = { status: string; count: number };
+export type MonthlyCount = { month: string; jobs: number; research: number };
+export type Analytics = { job_status: StatusCount[]; research_status: StatusCount[]; monthly: MonthlyCount[] };
