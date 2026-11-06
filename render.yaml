@@ -1,0 +1,36 @@
+# Render Blueprint for the CareerLab API. The frontend deploys separately on Vercel.
+# Step by step guide: docs/deployment.md
+# Spec: https://render.com/docs/blueprint-spec
+#
+# No secrets live in this file. Render asks for the `sync: false` values when you create
+# the Blueprint, and generates JWT_SECRET itself.
+services:
+  - type: web
+    name: careerlab-api
+    runtime: docker
+    plan: free
+    region: oregon # Cannot be changed after creation. Pick the one closest to your Neon region.
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /health
+    autoDeployTrigger: commit
+    envVars:
+      # Postgres connection string from Neon, in the form
+      # postgresql+psycopg://USER:PASSWORD@ep-xxxx.REGION.aws.neon.tech/DBNAME?sslmode=require
+      # (the direct host, without -pooler). With no value the API refuses to start.
+      - key: DATABASE_URL
+        sync: false
+      # Render generates a random 256-bit base64 value (44 characters, the app needs 32+).
+      - key: JWT_SECRET
+        generateValue: true
+      # The Vercel URL, with no trailing slash, for example https://careerlab.vercel.app
+      - key: FRONTEND_ORIGIN
+        sync: false
+      - key: COOKIE_SECURE
+        value: "true"
+      # Render's load balancer sets X-Forwarded-For, and so does Vercel's proxy in front of it.
+      - key: TRUST_PROXY
+        value: "true"
+      # Each Argon2 hash uses about 64 MiB. The free plan has 512 MB, so allow 2 at once.
+      - key: MAX_CONCURRENT_HASHES
+        value: "2"

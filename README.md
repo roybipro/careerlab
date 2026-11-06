@@ -160,6 +160,7 @@ npm run test:e2e
 - [Database and ER diagram](docs/database.md)
 - [API reference](docs/api.md)
 - [Two-minute demo script](docs/demo-script.md)
+- [Deployment guide](docs/deployment.md) (Neon, Render and Vercel)
 - [Contributing](CONTRIBUTING.md)
 
 ## Known limits

@@ -24,7 +24,7 @@ _hasher = PasswordHasher()
 
 # Each Argon2 run takes tens of MiB, and the login limiters can be sidestepped with spoofed
 # client IPs. Cap how many run at once and answer 429 when a request cannot get a slot soon.
-MAX_CONCURRENT_HASHES = 4
+MAX_CONCURRENT_HASHES = get_settings().MAX_CONCURRENT_HASHES
 SLOT_WAIT_SECONDS = 2.0
 _hash_slots = threading.BoundedSemaphore(MAX_CONCURRENT_HASHES)
 

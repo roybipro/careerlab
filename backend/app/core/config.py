@@ -2,7 +2,7 @@ import os
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import field_validator, model_validator
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # The repo-root .env, the same file Docker Compose reads, wherever the app is started from.
@@ -34,6 +34,21 @@ class Settings(BaseSettings):
     TRUST_PROXY: bool = False
     # Per-IP limit on POST /auth/register. Only the end-to-end test environment raises it.
     RATE_LIMIT_REGISTER_PER_MINUTE: int = 5
+    # How many Argon2 hashes may run at once. Each takes about 64 MiB, so this bounds the
+    # memory spent on hashing. Lower it on small hosts (render.yaml sets 2 for the free plan).
+    MAX_CONCURRENT_HASHES: int = Field(default=4, ge=1)
+
+    @field_validator("DATABASE_URL")
+    @classmethod
+    def _database_url_is_not_blank(cls, value: str) -> str:
+        # A blank value (for example a Render secret left empty) would otherwise surface as an
+        # obscure SQLAlchemy parse error.
+        if not value.strip():
+            raise ValueError(
+                "DATABASE_URL is empty. Set it to your Postgres connection string, for example "
+                "postgresql+psycopg://USER:PASSWORD@HOST/DBNAME?sslmode=require"
+            )
+        return value
 
     @field_validator("JWT_SECRET")
     @classmethod
