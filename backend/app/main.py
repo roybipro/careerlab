@@ -11,6 +11,7 @@ from app.modules.contacts.router import router as contacts_router
 from app.modules.dashboard.router import router as dashboard_router
 from app.modules.jobs.router import router as jobs_router
 from app.modules.notes.router import router as notes_router
+from app.modules.projects.router import router as projects_router
 from app.modules.reminders.router import router as reminders_router
 from app.modules.research.router import router as research_router
 
@@ -73,6 +74,7 @@ def create_app() -> FastAPI:
     app.include_router(auth_router, prefix="/api/v1")
     app.include_router(jobs_router, prefix="/api/v1")
     app.include_router(research_router, prefix="/api/v1")
+    app.include_router(projects_router, prefix="/api/v1")
     app.include_router(contacts_router, prefix="/api/v1")
     app.include_router(reminders_router, prefix="/api/v1")
     app.include_router(notes_router, prefix="/api/v1")

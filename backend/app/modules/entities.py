@@ -15,6 +15,7 @@ from app.modules.contacts.models import Contact, ContactLink
 from app.modules.entity_types import EntityType
 from app.modules.jobs.models import JobApplication
 from app.modules.notes.models import Note
+from app.modules.projects.models import ResearchProject
 from app.modules.reminders.models import Reminder
 from app.modules.research.models import ResearchOpportunity
 
@@ -25,6 +26,10 @@ def job_label(job: JobApplication) -> str:
 
 def research_label(item: ResearchOpportunity) -> str:
     return f"{item.title} ({item.organization})"
+
+
+def project_label(project: ResearchProject) -> str:
+    return project.title
 
 
 def contact_label(contact: Contact) -> str:
@@ -48,6 +53,13 @@ def assert_entity_owned(db: Session, user: User, entity_type: str, entity_id: uu
                 )
             )
             label = research_label(item) if item else None
+        case EntityType.project:
+            project = db.scalar(
+                select(ResearchProject).where(
+                    ResearchProject.id == entity_id, ResearchProject.user_id == user.id
+                )
+            )
+            label = project_label(project) if project else None
         case EntityType.contact:
             contact = db.scalar(
                 select(Contact).where(Contact.id == entity_id, Contact.user_id == user.id)
