@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Trash2 } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/confirm-dialog";
@@ -17,6 +17,80 @@ import { formatDateTime } from "@/lib/format";
 import { keys } from "@/lib/keys";
 import type { Note, Paginated } from "@/lib/types";
 
+/** One note, with an inline editor. Editing keeps the note's original timestamp. */
+function NoteItem({ note, fixedKind, onDelete, onSaved }: { note: Note; fixedKind?: string; onDelete: () => void; onSaved: () => void }) {
+  const [editing, setEditing] = useState(false);
+  const [content, setContent] = useState(note.content);
+  const [kind, setKind] = useState(note.kind);
+  const [error, setError] = useState<string | null>(null);
+
+  const save = useMutation({
+    mutationFn: () => api<Note>(`/notes/${note.id}`, { method: "PATCH", body: { content, kind } }),
+    onSuccess: () => {
+      setEditing(false);
+      setError(null);
+      onSaved();
+      toast.success("Note updated");
+    },
+    onError: (e) => setError(e instanceof ApiError ? e.message : "Could not save the note."),
+  });
+
+  function startEditing() {
+    setContent(note.content);
+    setKind(note.kind);
+    setError(null);
+    setEditing(true);
+  }
+
+  if (editing) {
+    return (
+      <li className="rounded-lg border p-3">
+        <form
+          className="space-y-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!content.trim()) return setError("Write something first.");
+            save.mutate();
+          }}
+        >
+          {error ? (
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          ) : null}
+          {fixedKind ? null : <NativeSelect label="Kind" options={NOTE_KINDS} value={kind} onChange={(e) => setKind(e.target.value)} />}
+          <Textarea aria-label="Edit note" value={content} onChange={(e) => setContent(e.target.value)} />
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="outline" size="sm" onClick={() => setEditing(false)} disabled={save.isPending}>
+              Cancel
+            </Button>
+            <Button type="submit" size="sm" disabled={save.isPending}>
+              {save.isPending ? "Saving..." : "Save changes"}
+            </Button>
+          </div>
+        </form>
+      </li>
+    );
+  }
+
+  return (
+    <li className="rounded-lg border p-3">
+      <p className="text-sm break-words whitespace-pre-wrap">{note.content}</p>
+      <div className="mt-2 flex items-center justify-between gap-2">
+        <span className="text-xs text-muted-foreground">{formatDateTime(note.created_at)}</span>
+        <span className="flex gap-1">
+          <Button variant="ghost" size="icon-xs" aria-label="Edit note" onClick={startEditing}>
+            <Pencil />
+          </Button>
+          <Button variant="ghost" size="icon-xs" aria-label="Delete note" onClick={onDelete}>
+            <Trash2 />
+          </Button>
+        </span>
+      </div>
+    </li>
+  );
+}
+
 type NotesPanelProps = {
   entityType: EntityType;
   entityId: string;
@@ -26,7 +100,7 @@ type NotesPanelProps = {
   title?: string;
 };
 
-/** Notes written on one record, grouped by kind, with a form to add one. Works for any entity type. */
+/** Notes written on one record, grouped by kind, with a form to add one and edit and delete on each. Works for any entity type. */
 export function NotesPanel({ entityType, entityId, kind: fixedKind, title = "Notes" }: NotesPanelProps) {
   const client = useQueryClient();
   const baseKey = keys.notes(entityType, entityId);
@@ -103,15 +177,13 @@ export function NotesPanel({ entityType, entityId, kind: fixedKind, title = "Not
                     {data.items
                       .filter((n) => n.kind === k.value)
                       .map((note) => (
-                        <li key={note.id} className="rounded-lg border p-3">
-                          <p className="text-sm break-words whitespace-pre-wrap">{note.content}</p>
-                          <div className="mt-2 flex items-center justify-between gap-2">
-                            <span className="text-xs text-muted-foreground">{formatDateTime(note.created_at)}</span>
-                            <Button variant="ghost" size="icon-xs" aria-label="Delete note" onClick={() => setDeleting(note)}>
-                              <Trash2 />
-                            </Button>
-                          </div>
-                        </li>
+                        <NoteItem
+                          key={note.id}
+                          note={note}
+                          fixedKind={fixedKind}
+                          onDelete={() => setDeleting(note)}
+                          onSaved={() => void client.invalidateQueries({ queryKey: baseKey })}
+                        />
                       ))}
                   </ul>
                 </section>

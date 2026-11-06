@@ -1,18 +1,19 @@
 "use client";
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, Plus, RotateCcw, Trash2 } from "lucide-react";
+import { Check, Pencil, Plus, RotateCcw, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { DataState, EmptyState } from "@/components/data-state";
-import { useListParams, usePageClamp } from "@/components/list-toolbar";
+import { ListToolbar, useListParams, usePageClamp } from "@/components/list-toolbar";
 import { PageHeader } from "@/components/page-header";
 import { Pagination } from "@/components/pagination";
 import { ReminderFormDialog } from "@/components/reminders/reminder-form";
 import { Button } from "@/components/ui/button";
 import { api, ApiError } from "@/lib/api";
+import type { Option } from "@/lib/enums";
 import { formatDateTime } from "@/lib/format";
 import { invalidateReminders, keys } from "@/lib/keys";
 import { entityHref } from "@/lib/navigation";
@@ -21,10 +22,27 @@ import { cn } from "@/lib/utils";
 
 const PAGE_SIZE = 20;
 
+// Values match SORT_FIELDS in backend/app/modules/reminders/service.py. The first option of each
+// list is that tab's default sort, so it is not written to the URL.
+const OPEN_SORT: Option[] = [
+  { value: "due_at", label: "Due soonest" },
+  { value: "-due_at", label: "Due latest" },
+  { value: "-created_at", label: "Newest added" },
+  { value: "created_at", label: "Oldest added" },
+  { value: "title", label: "Title A-Z" },
+  { value: "-title", label: "Title Z-A" },
+];
+const OVERDUE_SORT: Option[] = [{ value: "due_at", label: "Most overdue first" }, ...OPEN_SORT.slice(1)];
+const COMPLETED_SORT: Option[] = [
+  { value: "-completed_at", label: "Recently completed" },
+  { value: "completed_at", label: "Completed longest ago" },
+  ...OPEN_SORT,
+];
+
 const TABS = [
-  { value: "overdue", label: "Overdue", sort: "due_at", empty: "Nothing is overdue." },
-  { value: "upcoming", label: "Upcoming", sort: "due_at", empty: "No upcoming reminders." },
-  { value: "completed", label: "Completed", sort: "-completed_at", empty: "No completed reminders yet." },
+  { value: "overdue", label: "Overdue", sortOptions: OVERDUE_SORT, empty: "Nothing is overdue." },
+  { value: "upcoming", label: "Upcoming", sortOptions: OPEN_SORT, empty: "No upcoming reminders." },
+  { value: "completed", label: "Completed", sortOptions: COMPLETED_SORT, empty: "No completed reminders yet." },
 ] as const;
 
 const RELATED_LABEL: Record<string, string> = { job: "job", research: "research opportunity", contact: "contact" };
@@ -35,9 +53,13 @@ export function RemindersList() {
   const tab = TABS.find((t) => t.value === get("state")) ?? TABS[1];
   const [adding, setAdding] = useState(false);
   const [deleting, setDeleting] = useState<Reminder | null>(null);
+  const [editing, setEditing] = useState<Reminder | null>(null);
   const client = useQueryClient();
 
-  const params = { state: tab.value, sort: tab.sort, page, page_size: PAGE_SIZE };
+  // A sort left over from another tab, or typed into the URL, falls back to this tab's default.
+  const sort = tab.sortOptions.find((o) => o.value === get("sort"))?.value ?? tab.sortOptions[0].value;
+  const q = get("q");
+  const params = { state: tab.value, q, sort, page, page_size: PAGE_SIZE };
   const query = useQuery({
     queryKey: keys.reminderList(params),
     queryFn: () => api<Paginated<Reminder>>("/reminders", { query: params }),
@@ -83,28 +105,35 @@ export function RemindersList() {
             aria-selected={t.value === tab.value}
             variant={t.value === tab.value ? "secondary" : "ghost"}
             size="sm"
-            onClick={() => update({ state: t.value === "upcoming" ? null : t.value })}
+            // Each tab starts on its own default sort and page 1; the search text stays.
+            onClick={() => update({ state: t.value === "upcoming" ? null : t.value, sort: null })}
           >
             {t.label}
           </Button>
         ))}
       </div>
+      {/* Keyed by tab so the sort control's options and default follow the tab. */}
+      <ListToolbar key={tab.value} filters={[]} searchPlaceholder="Search title or details" sortOptions={[...tab.sortOptions]} />
       <div role="tabpanel" aria-label={tab.label}>
         <DataState
           query={query}
           empty={
-            <EmptyState
-              title={tab.empty}
-              description={tab.value === "completed" ? "Reminders you complete show up here." : "Add a reminder for a follow-up, a deadline or anything you should not forget."}
-              action={
-                tab.value === "completed" ? undefined : (
-                  <Button onClick={() => setAdding(true)}>
-                    <Plus data-icon="inline-start" />
-                    Add a reminder
-                  </Button>
-                )
-              }
-            />
+            q ? (
+              <EmptyState title="No reminders match" description="Try different search words, or clear the search." />
+            ) : (
+              <EmptyState
+                title={tab.empty}
+                description={tab.value === "completed" ? "Reminders you complete show up here." : "Add a reminder for a follow-up, a deadline or anything you should not forget."}
+                action={
+                  tab.value === "completed" ? undefined : (
+                    <Button onClick={() => setAdding(true)}>
+                      <Plus data-icon="inline-start" />
+                      Add a reminder
+                    </Button>
+                  )
+                }
+              />
+            )
           }
         >
           {(data) => (
@@ -137,6 +166,9 @@ export function RemindersList() {
                       {r.is_completed ? <RotateCcw data-icon="inline-start" /> : <Check data-icon="inline-start" />}
                       {r.is_completed ? "Reopen" : "Complete"}
                     </Button>
+                    <Button variant="ghost" size="icon-sm" aria-label={`Edit reminder ${r.title}`} onClick={() => setEditing(r)}>
+                      <Pencil />
+                    </Button>
                     <Button variant="ghost" size="icon-sm" aria-label={`Delete reminder ${r.title}`} onClick={() => setDeleting(r)}>
                       <Trash2 />
                     </Button>
@@ -149,6 +181,7 @@ export function RemindersList() {
         </DataState>
       </div>
       <ReminderFormDialog open={adding} onOpenChange={setAdding} />
+      <ReminderFormDialog open={editing !== null} onOpenChange={(open) => !open && setEditing(null)} reminder={editing ?? undefined} />
       <ConfirmDialog
         open={deleting !== null}
         onOpenChange={(open) => !open && setDeleting(null)}

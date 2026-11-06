@@ -1,12 +1,13 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Trash2 } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { DataState } from "@/components/data-state";
+import { ReminderFormDialog } from "@/components/reminders/reminder-form";
 import { TextField } from "@/components/text-field";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -19,7 +20,7 @@ import type { Paginated, Reminder } from "@/lib/types";
 
 type Values = { title: string; due_at: string };
 
-/** Reminders attached to one record, with add, complete and delete. Works for any entity type. */
+/** Reminders attached to one record, with add, edit, complete and delete. Works for any entity type. */
 export function RemindersPanel({ relatedType, relatedId }: { relatedType: EntityType; relatedId: string }) {
   const client = useQueryClient();
   const queryKey = keys.reminders(relatedType, relatedId);
@@ -36,6 +37,7 @@ export function RemindersPanel({ relatedType, relatedId }: { relatedType: Entity
 
   const [formError, setFormError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<Reminder | null>(null);
+  const [editing, setEditing] = useState<Reminder | null>(null);
   const {
     register,
     handleSubmit,
@@ -120,6 +122,9 @@ export function RemindersPanel({ relatedType, relatedId }: { relatedType: Entity
                     <p className={r.is_completed ? "text-sm break-words text-muted-foreground line-through" : "text-sm break-words"}>{r.title}</p>
                     <p className="text-xs text-muted-foreground">Due {formatDateTime(r.due_at)}</p>
                   </div>
+                  <Button variant="ghost" size="icon-xs" aria-label={`Edit reminder ${r.title}`} onClick={() => setEditing(r)}>
+                    <Pencil />
+                  </Button>
                   <Button variant="ghost" size="icon-xs" aria-label={`Delete reminder ${r.title}`} onClick={() => setDeleting(r)}>
                     <Trash2 />
                   </Button>
@@ -129,6 +134,7 @@ export function RemindersPanel({ relatedType, relatedId }: { relatedType: Entity
           )}
         </DataState>
       </CardContent>
+      <ReminderFormDialog open={editing !== null} onOpenChange={(open) => !open && setEditing(null)} reminder={editing ?? undefined} />
       <ConfirmDialog
         open={deleting !== null}
         onOpenChange={(open) => !open && setDeleting(null)}
