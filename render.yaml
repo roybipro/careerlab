@@ -9,7 +9,7 @@ services:
     name: careerlab-api
     runtime: docker
     plan: free
-    region: oregon # Cannot be changed after creation. Pick the one closest to your Neon region.
+    region: ohio # Cannot be changed after creation. Pick the one closest to your Neon region.
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
     healthCheckPath: /health
