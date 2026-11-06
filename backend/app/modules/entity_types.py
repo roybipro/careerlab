@@ -6,6 +6,7 @@ class EntityType(enum.StrEnum):
 
     job = "job"
     research = "research"
+    project = "project"
     contact = "contact"
 
 

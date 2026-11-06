@@ -16,7 +16,7 @@ def list_activity(
     params: ListQuery,
     user: CurrentUser,
     db: DbSession,
-    entity_type: Annotated[Literal["job", "research", "contact"] | None, Query()] = None,
+    entity_type: Annotated[Literal["job", "research", "project", "contact"] | None, Query()] = None,
     entity_id: Annotated[uuid.UUID | None, Query()] = None,
 ) -> Page[ActivityOut]:
     return service.list_activity(db, user, params, entity_type, entity_id)

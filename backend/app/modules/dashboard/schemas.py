@@ -22,7 +22,7 @@ class DeadlineOut(BaseModel):
     title: str
     # A date for job and research deadlines, a timestamp for reminders.
     due: date | datetime
-    related_type: Literal["job", "research", "contact"] | None
+    related_type: Literal["job", "research", "project", "contact"] | None
     related_id: uuid.UUID | None
 
 
