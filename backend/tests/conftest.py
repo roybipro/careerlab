@@ -8,7 +8,7 @@ TEST_DATABASE_URL = os.environ.get(
     "postgresql+psycopg://careerlab:careerlab@localhost:5433/careerlab_test",
 )
 os.environ["DATABASE_URL"] = TEST_DATABASE_URL
-os.environ.setdefault("JWT_SECRET", "test-only-secret-not-for-real-use")
+os.environ.setdefault("JWT_SECRET", "test-only-secret-not-for-real-use-0123456789")
 os.environ["COOKIE_SECURE"] = "false"
 
 import pytest  # noqa: E402

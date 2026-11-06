@@ -16,5 +16,21 @@ services:
       timeout: 5s
       retries: 10
 
+  api:
+    build: ./backend
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # Development-only values so `docker compose up` works from a fresh .env.
+      # Deployments must set real values (JWT_SECRET is required to be 32+ characters).
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-careerlab}:${POSTGRES_PASSWORD:-careerlab}@db:5432/careerlab
+      JWT_SECRET: ${JWT_SECRET:-dev-only-secret-do-not-use-outside-local-compose}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost:3000}
+      TRUST_PROXY: ${TRUST_PROXY:-false}
+    ports:
+      - "8000:8000"
+
 volumes:
   pgdata:
