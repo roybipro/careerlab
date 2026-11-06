@@ -1,12 +1,12 @@
 import uuid
 from collections.abc import Sequence
-from datetime import date
+from datetime import UTC, date, datetime
 from typing import Any, cast
 
 from sqlalchemy import ColumnElement, Select, Subquery, func, literal, select, union_all
 from sqlalchemy.orm import Session
 
-from app.core.errors import not_found
+from app.core.errors import AppError, not_found
 from app.core.lists import ListParams, Page, contains, paginate
 from app.modules.activity.service import log_activity
 from app.modules.auth.models import User
@@ -19,10 +19,14 @@ from app.modules.projects.models import (
     SubmissionStatus,
 )
 from app.modules.projects.schemas import (
+    MilestoneCreate,
+    MilestoneUpdate,
     ProjectCreate,
     ProjectFilters,
     ProjectOut,
     ProjectUpdate,
+    SubmissionCreate,
+    SubmissionUpdate,
 )
 
 ENTITY = "project"
@@ -227,4 +231,214 @@ def delete_project(db: Session, user: User, project_id: uuid.UUID) -> None:
     log_activity(db, user, ENTITY, project.id, "deleted", project_label(project))
     delete_dependents(db, user, ENTITY, project.id)
     db.delete(project)
+    db.commit()
+
+
+# --- Submissions and milestones -------------------------------------------------------------
+
+SUBMISSION_SORT_FIELDS = {
+    "created_at": ProjectSubmission.created_at,
+    "venue_name": ProjectSubmission.venue_name,
+    "status": ProjectSubmission.status,
+    "abstract_deadline": ProjectSubmission.abstract_deadline,
+    "paper_deadline": ProjectSubmission.paper_deadline,
+}
+
+MILESTONE_SORT_FIELDS = {
+    "due_date": ProjectMilestone.due_date,
+    "created_at": ProjectMilestone.created_at,
+    "title": ProjectMilestone.title,
+}
+
+
+def list_submissions(
+    db: Session, user: User, project_id: uuid.UUID, params: ListParams
+) -> Page[Any]:
+    get_project(db, user, project_id)
+    stmt = select(ProjectSubmission).where(
+        ProjectSubmission.user_id == user.id, ProjectSubmission.project_id == project_id
+    )
+    if params.q:
+        stmt = stmt.where(contains(ProjectSubmission.venue_name, params.q))
+    return paginate(db, stmt, params, SUBMISSION_SORT_FIELDS, "created_at")
+
+
+def _get_submission(
+    db: Session, user: User, project_id: uuid.UUID, submission_id: uuid.UUID
+) -> ProjectSubmission:
+    submission = db.scalar(
+        select(ProjectSubmission).where(
+            ProjectSubmission.id == submission_id,
+            ProjectSubmission.project_id == project_id,
+            ProjectSubmission.user_id == user.id,
+        )
+    )
+    if submission is None:
+        raise not_found()
+    return submission
+
+
+def _check_deadline_order(abstract: date | None, paper: date | None) -> None:
+    if abstract is not None and paper is not None and abstract > paper:
+        raise AppError(
+            422,
+            "validation_error",
+            "Request validation failed",
+            [
+                {
+                    "loc": ["body", "abstract_deadline"],
+                    "message": "abstract_deadline must not be after paper_deadline",
+                    "type": "value_error",
+                }
+            ],
+        )
+
+
+def create_submission(
+    db: Session, user: User, project_id: uuid.UUID, data: SubmissionCreate
+) -> ProjectSubmission:
+    project = get_project(db, user, project_id)
+    submission = ProjectSubmission(user_id=user.id, project_id=project.id, **data.model_dump())
+    db.add(submission)
+    db.flush()
+    log_activity(
+        db,
+        user,
+        ENTITY,
+        project.id,
+        "submission_added",
+        project_label(project),
+        venue=submission.venue_name,
+    )
+    db.commit()
+    return submission
+
+
+def update_submission(
+    db: Session,
+    user: User,
+    project_id: uuid.UUID,
+    submission_id: uuid.UUID,
+    data: SubmissionUpdate,
+) -> ProjectSubmission:
+    project = get_project(db, user, project_id)
+    submission = _get_submission(db, user, project_id, submission_id)
+    changes = {
+        k: v for k, v in data.model_dump(exclude_unset=True).items() if getattr(submission, k) != v
+    }
+    if changes:
+        # Stored values merged with the patch, so a patch of one deadline is checked too.
+        _check_deadline_order(
+            changes.get("abstract_deadline", submission.abstract_deadline),
+            changes.get("paper_deadline", submission.paper_deadline),
+        )
+        old_status = submission.status
+        for field, value in changes.items():
+            setattr(submission, field, value)
+        if "status" in changes:
+            log_activity(
+                db,
+                user,
+                ENTITY,
+                project.id,
+                "submission_status_changed",
+                project_label(project),
+                venue=submission.venue_name,
+                old=old_status.value,
+                new=submission.status.value,
+            )
+        db.commit()
+    return submission
+
+
+def delete_submission(
+    db: Session, user: User, project_id: uuid.UUID, submission_id: uuid.UUID
+) -> None:
+    get_project(db, user, project_id)
+    db.delete(_get_submission(db, user, project_id, submission_id))
+    db.commit()
+
+
+def list_milestones(
+    db: Session, user: User, project_id: uuid.UUID, params: ListParams
+) -> Page[Any]:
+    get_project(db, user, project_id)
+    stmt = select(ProjectMilestone).where(
+        ProjectMilestone.user_id == user.id, ProjectMilestone.project_id == project_id
+    )
+    if params.q:
+        stmt = stmt.where(contains(ProjectMilestone.title, params.q))
+    if params.sort is None:
+        # Due date with undated last, then creation time. `paginate` appends its own keys.
+        stmt = stmt.order_by(
+            ProjectMilestone.due_date.asc().nulls_last(), ProjectMilestone.created_at
+        )
+    return paginate(db, stmt, params, MILESTONE_SORT_FIELDS, "due_date")
+
+
+def _get_milestone(
+    db: Session, user: User, project_id: uuid.UUID, milestone_id: uuid.UUID
+) -> ProjectMilestone:
+    milestone = db.scalar(
+        select(ProjectMilestone).where(
+            ProjectMilestone.id == milestone_id,
+            ProjectMilestone.project_id == project_id,
+            ProjectMilestone.user_id == user.id,
+        )
+    )
+    if milestone is None:
+        raise not_found()
+    return milestone
+
+
+def _log_completed(db: Session, user: User, project: ResearchProject, title: str) -> None:
+    log_activity(
+        db, user, ENTITY, project.id, "milestone_completed", project_label(project), milestone=title
+    )
+
+
+def create_milestone(
+    db: Session, user: User, project_id: uuid.UUID, data: MilestoneCreate
+) -> ProjectMilestone:
+    project = get_project(db, user, project_id)
+    milestone = ProjectMilestone(user_id=user.id, project_id=project.id, **data.model_dump())
+    if milestone.is_done:
+        milestone.completed_at = datetime.now(UTC)
+    db.add(milestone)
+    db.flush()
+    if milestone.is_done:
+        _log_completed(db, user, project, milestone.title)
+    db.commit()
+    return milestone
+
+
+def update_milestone(
+    db: Session,
+    user: User,
+    project_id: uuid.UUID,
+    milestone_id: uuid.UUID,
+    data: MilestoneUpdate,
+) -> ProjectMilestone:
+    project = get_project(db, user, project_id)
+    milestone = _get_milestone(db, user, project_id, milestone_id)
+    changes = {
+        k: v for k, v in data.model_dump(exclude_unset=True).items() if getattr(milestone, k) != v
+    }
+    if changes:
+        for field, value in changes.items():
+            setattr(milestone, field, value)
+        if "is_done" in changes:
+            # Only a real change of state touches completed_at, so ticking twice keeps it.
+            milestone.completed_at = datetime.now(UTC) if milestone.is_done else None
+            if milestone.is_done:
+                _log_completed(db, user, project, milestone.title)
+        db.commit()
+    return milestone
+
+
+def delete_milestone(
+    db: Session, user: User, project_id: uuid.UUID, milestone_id: uuid.UUID
+) -> None:
+    get_project(db, user, project_id)
+    db.delete(_get_milestone(db, user, project_id, milestone_id))
     db.commit()
