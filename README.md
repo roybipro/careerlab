@@ -18,10 +18,11 @@ The screenshots in this repo use invented data from the demo seed script.
 - Move jobs and research opportunities between statuses from a form or by dragging cards
   on a Kanban board. Each card also has a status menu that works from the keyboard.
 - Research detail pages have a required-documents checklist and publication links.
-- Reminders have overdue, upcoming and completed views. The header bell shows incomplete
-  reminders that are overdue or due in the next 3 days.
-- A dashboard with eight summary numbers, job and research pipelines, upcoming deadlines
-  and recent activity, all computed from the database on each request.
+- Reminders have overdue, upcoming and completed views, with search and sorting. The header
+  bell shows incomplete reminders that are overdue or due in the next 3 days.
+- A dashboard with eight summary numbers, job and research pipelines, upcoming deadlines,
+  a section for overdue reminders (shown only when there are some) and recent activity, all
+  computed from the database on each request. "Today" is the browser's local date.
 - An analytics page with status charts and monthly application counts.
 - Search, filters, sorting and pagination on every list. Filters live in the URL.
 - An activity timeline on each job, research opportunity and contact.
@@ -164,7 +165,10 @@ npm run test:e2e
 ## Known limits
 
 - The API may be hosted on a free tier that sleeps when idle, so the first request after a
-  pause can be slow.
+  pause can be slow. Loading screens and the login and register buttons say so after about
+  10 seconds.
+- There is no password reset (it needs email). Someone who forgets their password loses
+  access to their data, and the register page says so.
 - Rate limit counters are kept in memory. They reset when the API restarts and only work with
   a single API instance.
 - A stolen session cookie stays valid until it expires after 7 days or the password changes.
