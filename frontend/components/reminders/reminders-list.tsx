@@ -1,7 +1,7 @@
 "use client";
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, Pencil, Plus, RotateCcw, Trash2 } from "lucide-react";
+import { Bell, Check, Pencil, Plus, RotateCcw, SearchX, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -89,6 +89,7 @@ export function RemindersList() {
     <>
       <PageHeader
         title="Reminders"
+        icon={Bell}
         description="Deadlines and follow-ups."
         actions={
           <Button onClick={() => setAdding(true)}>
@@ -97,14 +98,15 @@ export function RemindersList() {
           </Button>
         }
       />
-      <div role="tablist" aria-label="Reminder state" className="mb-4 inline-flex rounded-lg border p-0.5">
+      <div role="tablist" aria-label="Reminder state" className="mb-4 inline-flex gap-0.5 rounded-xl bg-muted p-1">
         {TABS.map((t) => (
           <Button
             key={t.value}
             role="tab"
             aria-selected={t.value === tab.value}
-            variant={t.value === tab.value ? "secondary" : "ghost"}
+            variant="ghost"
             size="sm"
+            className={t.value === tab.value ? "bg-card text-foreground shadow-card hover:bg-card" : "text-muted-foreground"}
             // Each tab starts on its own default sort and page 1; the search text stays.
             onClick={() => update({ state: t.value === "upcoming" ? null : t.value, sort: null })}
           >
@@ -119,9 +121,10 @@ export function RemindersList() {
           query={query}
           empty={
             q ? (
-              <EmptyState title="No reminders match" description="Try different search words, or clear the search." />
+              <EmptyState icon={SearchX} title="No reminders match" description="Try different search words, or clear the search." />
             ) : (
               <EmptyState
+                icon={tab.value === "completed" ? Check : Bell}
                 title={tab.empty}
                 description={tab.value === "completed" ? "Reminders you complete show up here." : "Add a reminder for a follow-up, a deadline or anything you should not forget."}
                 action={
@@ -138,10 +141,10 @@ export function RemindersList() {
         >
           {(data) => (
             <>
-              <ul className="space-y-2">
+              <ul className="divide-y rounded-2xl border bg-card shadow-card">
                 {data.items.map((r) => (
-                  <li key={r.id} className="flex items-start gap-3 rounded-xl border p-3">
-                    <div className="min-w-0 flex-1">
+                  <li key={r.id} className="flex flex-wrap items-start gap-x-3 gap-y-2 p-4">
+                    <div className="min-w-0 flex-[1_1_16rem]">
                       <p className={cn("text-sm font-medium break-words", r.is_completed && "text-muted-foreground line-through")}>{r.title}</p>
                       {r.description ? <p className="mt-0.5 text-sm break-words whitespace-pre-wrap text-muted-foreground">{r.description}</p> : null}
                       <p className={cn("mt-1 text-xs", tab.value === "overdue" ? "text-destructive" : "text-muted-foreground")}>
@@ -149,13 +152,14 @@ export function RemindersList() {
                         {r.related_type && r.related_id ? (
                           <>
                             {" · "}
-                            <Link href={entityHref(r.related_type, r.related_id)} className="underline underline-offset-4">
+                            <Link href={entityHref(r.related_type, r.related_id)} className="inline-flex min-h-10 items-center text-link underline underline-offset-4 md:min-h-0">
                               Open {RELATED_LABEL[r.related_type]}
                             </Link>
                           </>
                         ) : null}
                       </p>
                     </div>
+                    <div className="flex shrink-0 items-center gap-1">
                     <Button
                       variant="outline"
                       size="sm"
@@ -172,6 +176,7 @@ export function RemindersList() {
                     <Button variant="ghost" size="icon-sm" aria-label={`Delete reminder ${r.title}`} onClick={() => setDeleting(r)}>
                       <Trash2 />
                     </Button>
+                    </div>
                   </li>
                 ))}
               </ul>

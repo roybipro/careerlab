@@ -14,7 +14,7 @@ function ResearchMeta({ item }: { item: Research }) {
 export function ResearchTable({ items }: { items: Research[] }) {
   return (
     <>
-      <div className="hidden md:block">
+      <div className="hidden lg:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -30,29 +30,29 @@ export function ResearchTable({ items }: { items: Research[] }) {
             {items.map((item) => (
               <TableRow key={item.id}>
                 <TableCell className="font-medium whitespace-normal">
-                  <Link href={`/research/${item.id}`} className="underline-offset-4 hover:underline">
+                  <Link href={`/research/${item.id}`} className="underline-offset-4 hover:text-link hover:underline">
                     {item.title}
                   </Link>
                 </TableCell>
-                <TableCell className="whitespace-normal">{item.organization}</TableCell>
-                <TableCell>{optionLabel(OPPORTUNITY_TYPES, item.opportunity_type) ?? "-"}</TableCell>
-                <TableCell>{item.country ?? "-"}</TableCell>
+                <TableCell className="whitespace-normal text-muted-foreground">{item.organization}</TableCell>
+                <TableCell className="text-muted-foreground">{optionLabel(OPPORTUNITY_TYPES, item.opportunity_type) ?? "-"}</TableCell>
+                <TableCell className="text-muted-foreground">{item.country ?? "-"}</TableCell>
                 <TableCell>
                   <StatusBadge status={item.status} />
                 </TableCell>
-                <TableCell>{formatDateOnly(item.deadline) ?? "-"}</TableCell>
+                <TableCell className="text-muted-foreground tabular-nums">{formatDateOnly(item.deadline) ?? "-"}</TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </div>
-      <ul className="space-y-3 md:hidden">
+      <ul className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:hidden">
         {items.map((item) => (
           <li key={item.id}>
-            <Link href={`/research/${item.id}`} className="block rounded-xl border p-3 hover:bg-muted/50">
-              <p className="font-medium break-words">{item.title}</p>
+            <Link href={`/research/${item.id}`} className="block h-full rounded-2xl border bg-card p-4 shadow-card transition-shadow hover:shadow-lift">
+              <p className="font-semibold break-words">{item.title}</p>
               <p className="text-sm break-words text-muted-foreground">{item.organization}</p>
-              <div className="mt-2 flex flex-wrap items-center gap-2">
+              <div className="mt-3 flex flex-wrap items-center gap-2">
                 <StatusBadge status={item.status} />
                 <ResearchMeta item={item} />
               </div>
@@ -70,9 +70,9 @@ export function ResearchKanbanCard({ item }: { item: Research }) {
     <Link
       href={`/research/${item.id}`}
       draggable={false}
-      className="block cursor-grab rounded-lg border bg-card p-3 pr-10 text-card-foreground select-none hover:border-ring/50"
+      className="block cursor-grab rounded-xl border bg-card p-3 pr-11 text-card-foreground select-none"
     >
-      <p className="text-sm font-medium break-words">{item.title}</p>
+      <p className="text-sm font-semibold break-words">{item.title}</p>
       <p className="text-xs break-words text-muted-foreground">{item.organization}</p>
       <div className="mt-2 flex flex-wrap items-center gap-2">
         <ResearchMeta item={item} />
