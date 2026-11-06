@@ -1,6 +1,6 @@
 "use client";
 
-import { Banknote, BriefcaseBusiness, CalendarClock, FileText, Globe, Image, Info, Laptop, Link2, MapPin, MessagesSquare, Reply, Send } from "lucide-react";
+import { Banknote, BriefcaseBusiness, CalendarCheck, CalendarClock, CalendarX, FileText, Globe, GraduationCap, Hourglass, Image, Info, Laptop, Link2, MapPin, Megaphone, MessagesSquare, Plane, Reply, Send, Wallet } from "lucide-react";
 import { use } from "react";
 import { ActivityTimeline } from "@/components/entity/activity-timeline";
 import { Field, TextSection, UrlValue } from "@/components/entity/detail-parts";
@@ -11,8 +11,8 @@ import { RemindersPanel } from "@/components/entity/reminders-panel";
 import { JobFormDialog } from "@/components/jobs/job-form";
 import { PriorityBadge, StatusBadge } from "@/components/status-badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { EMPLOYMENT_TYPES, JOB_TYPES, optionLabel } from "@/lib/enums";
-import { formatDateOnly, formatDateTime, formatSalary } from "@/lib/format";
+import { EMPLOYMENT_TYPES, JOB_SOURCES, JOB_TYPES, PAY_PERIODS, VISA_SPONSORSHIP, optionLabel } from "@/lib/enums";
+import { formatDateOnly, formatDateTime, formatDuration, formatSalary } from "@/lib/format";
 import type { Job } from "@/lib/types";
 
 function JobDetails({ job }: { job: Job }) {
@@ -29,7 +29,17 @@ function JobDetails({ job }: { job: Job }) {
           <Field label="Location" icon={MapPin}>{job.location}</Field>
           <Field label="Job type" icon={Laptop}>{optionLabel(JOB_TYPES, job.job_type)}</Field>
           <Field label="Employment type" icon={BriefcaseBusiness}>{optionLabel(EMPLOYMENT_TYPES, job.employment_type)}</Field>
-          <Field label="Salary" icon={Banknote}>{formatSalary(job.salary_min, job.salary_max, job.salary_currency)}</Field>
+          <Field label="Source" icon={Megaphone}>{optionLabel(JOB_SOURCES, job.source)}</Field>
+          <Field label="Salary" icon={Banknote}>{formatSalary(job.salary_min, job.salary_max, job.salary_currency, job.pay_period)}</Field>
+          {/* A pay period with no amounts has no salary line to sit on, so it gets its own. */}
+          {job.salary_min === null && job.salary_max === null && job.pay_period !== "unpaid" ? (
+            <Field label="Pay period" icon={Wallet}>{optionLabel(PAY_PERIODS, job.pay_period)}</Field>
+          ) : null}
+          <Field label="Start date" icon={CalendarCheck}>{formatDateOnly(job.start_date)}</Field>
+          <Field label="End date" icon={CalendarX}>{formatDateOnly(job.end_date)}</Field>
+          <Field label="Duration" icon={Hourglass}>{formatDuration(job.start_date, job.end_date)}</Field>
+          <Field label="Visa sponsorship" icon={Plane}>{optionLabel(VISA_SPONSORSHIP, job.visa_sponsorship)}</Field>
+          <Field label="Academic credit" icon={GraduationCap}>{job.academic_credit === null ? null : job.academic_credit ? "Yes" : "No"}</Field>
           <Field label="Application date" icon={Send}>{formatDateOnly(job.application_date)}</Field>
           <Field label="Deadline" icon={CalendarClock}>{formatDateOnly(job.deadline)}</Field>
           <Field label="Follow-up date" icon={Reply}>{formatDateOnly(job.follow_up_date)}</Field>
