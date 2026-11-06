@@ -10,7 +10,6 @@ import { z } from "zod";
 import { TextField } from "@/components/text-field";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { WakingHint } from "@/components/waking-hint";
 import { api, applyServerErrors } from "@/lib/api";
 import { safeNextPath } from "@/lib/auth";
@@ -44,12 +43,10 @@ export function LoginForm() {
   const registerHref = next ? `/register?next=${encodeURIComponent(next)}` : "/register";
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg">Log in</CardTitle>
-        <CardDescription>Welcome back. Enter your details to continue.</CardDescription>
-      </CardHeader>
-      <CardContent>
+    <div>
+      <h1 className="text-2xl font-semibold tracking-tight">Log in</h1>
+      <p className="mt-1 mb-6 text-sm text-muted-foreground">Welcome back. Enter your details to continue.</p>
+      <div>
         <form
           noValidate
           // Before hydration a native submit must not put credentials in the URL: POST to this page.
@@ -79,13 +76,13 @@ export function LoginForm() {
           </Button>
           {login.isPending ? <WakingHint className="text-center text-sm text-muted-foreground" /> : null}
         </form>
-        <p className="mt-4 text-center text-sm text-muted-foreground">
+        <p className="mt-3 text-center text-sm text-muted-foreground">
           No account yet?{" "}
-          <Link href={registerHref} className="font-medium text-foreground underline underline-offset-4">
+          <Link href={registerHref} className="inline-flex min-h-10 items-center font-medium text-link underline underline-offset-4">
             Create one
           </Link>
         </p>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

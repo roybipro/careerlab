@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { Bell } from "lucide-react";
+import { ArrowRight, Bell } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -37,7 +37,7 @@ export function ReminderBell() {
       >
         <Bell />
         {total > 0 ? (
-          <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] leading-none font-semibold text-white" aria-hidden="true">
+          <span className="absolute top-0.5 right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive-solid px-1 text-[10px] leading-none font-semibold text-white" aria-hidden="true">
             {total > 99 ? "99+" : total}
           </span>
         ) : null}
@@ -49,7 +49,7 @@ export function ReminderBell() {
         {query.isError && !query.data ? (
           <div className="px-2 py-2 text-sm text-muted-foreground">
             Could not load reminders.{" "}
-            <button type="button" className="underline underline-offset-4" onClick={() => void query.refetch()}>
+            <button type="button" className="min-h-10 text-link underline underline-offset-4 md:min-h-0" onClick={() => void query.refetch()}>
               Retry
             </button>
           </div>
@@ -73,7 +73,9 @@ export function ReminderBell() {
         )}
         {total > SHOWN ? <div className="px-2 py-1 text-xs text-muted-foreground">and {total - SHOWN} more</div> : null}
         <DropdownMenuSeparator />
-        <DropdownMenuItem render={<Link href="/reminders" />}>View all reminders</DropdownMenuItem>
+        <DropdownMenuItem render={<Link href="/reminders" />}>
+          <ArrowRight aria-hidden="true" />
+          View all reminders</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
