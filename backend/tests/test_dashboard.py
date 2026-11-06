@@ -1,4 +1,7 @@
-"""Dashboard tests use a fixed `now` passed to the service. "Today" is the UTC date."""
+"""Dashboard tests use a fixed `now` passed to the service.
+
+Without `today`, "today" is the UTC date of `now`.
+"""
 
 import uuid
 from datetime import UTC, date, datetime, timedelta, timezone
@@ -421,3 +424,48 @@ def test_endpoints_reflect_created_records(ana):
     assert set(items[0]) == {"kind", "id", "title", "due", "related_type", "related_id"}
     assert ana.get(f"{DASHBOARD}/recent-activities").json()[0]["entity_type"] == "job"
     assert ana.get(f"{DASHBOARD}/analytics").json()["monthly"][-1]["jobs"] == 1
+
+
+def _job_due(client, deadline: date) -> None:
+    r = client.post(
+        "/api/v1/jobs",
+        json={"company_name": "Acme", "position_title": "Dev", "deadline": deadline.isoformat(),
+              "status": "applied"},
+    )  # fmt: skip
+    assert r.status_code == 201, r.text
+
+
+def test_deadline_on_the_clients_today_counts_after_utc_has_moved_on(ana):
+    # A browser west of UTC: its local date is the day before the UTC date.
+    utc_today = datetime.now(UTC).date()
+    client_today = utc_today - timedelta(days=1)
+    _job_due(ana, client_today)
+
+    assert ana.get(f"{DASHBOARD}/summary").json()["upcoming_deadlines"] == 0
+    with_today = {"today": client_today.isoformat()}
+    assert ana.get(f"{DASHBOARD}/summary", params=with_today).json()["upcoming_deadlines"] == 1
+    items = ana.get(f"{DASHBOARD}/upcoming-deadlines", params=with_today).json()
+    assert [i["due"] for i in items] == [client_today.isoformat()]
+
+
+def test_today_one_day_ahead_of_utc_is_accepted_and_shifts_the_window(ana):
+    utc_today = datetime.now(UTC).date()
+    _job_due(ana, utc_today)  # due today in UTC, already past for a client east of UTC
+    east = {"today": (utc_today + timedelta(days=1)).isoformat()}
+    assert ana.get(f"{DASHBOARD}/summary", params=east).json()["upcoming_deadlines"] == 0
+    assert ana.get(f"{DASHBOARD}/upcoming-deadlines", params=east).json() == []
+
+
+@pytest.mark.parametrize("path", ["summary", "upcoming-deadlines"])
+@pytest.mark.parametrize("offset", [-2, 2, 400])
+def test_today_more_than_a_day_from_utc_returns_422(ana, path, offset):
+    bad = (datetime.now(UTC).date() + timedelta(days=offset)).isoformat()
+    r = ana.get(f"{DASHBOARD}/{path}", params={"today": bad})
+    assert r.status_code == 422
+    assert r.json()["error"]["code"] == "validation_error"
+    assert r.json()["error"]["details"][0]["loc"] == ["query", "today"]
+
+
+def test_today_that_is_not_a_date_returns_422(ana):
+    r = ana.get(f"{DASHBOARD}/summary", params={"today": "tomorrow"})
+    assert r.status_code == 422

@@ -1,10 +1,11 @@
 """Dashboard numbers, computed with aggregate SQL.
 
-The API has no user time zone, so "today" is the UTC date of `now`. Date-only fields
-(deadline, follow_up_date, next_follow_up_at) compare against that date. Reminders carry
-a time, so they compare against the instant `now`.
+Date-only fields (deadline, follow_up_date, next_follow_up_at) compare against "today".
+The API has no user time zone, so the browser sends its local date as `today` (validated by
+the route to be within a day of the UTC date); without it, "today" is the UTC date of `now`.
+Reminders carry a time, so they compare against the instant `now`.
 
-Every function takes `now` so tests can fix the clock; routes call without it.
+Every function takes `now` (and `today`) so tests can fix the clock; routes pass only `today`.
 """
 
 from collections.abc import Sequence
@@ -76,9 +77,11 @@ def _reminder_deadline_rule(user: User, now: datetime) -> list[ColumnElement[boo
     ]
 
 
-def summary(db: Session, user: User, now: datetime | None = None) -> dict[str, int]:
+def summary(
+    db: Session, user: User, now: datetime | None = None, today: date | None = None
+) -> dict[str, int]:
     now = _utc(now)
-    today = now.date()
+    today = today or now.date()
     follow_up_by = today + timedelta(days=FOLLOW_UP_WINDOW_DAYS)
 
     job_row = db.execute(
@@ -140,10 +143,10 @@ def _sort_instant(due: date | datetime) -> datetime:
 
 
 def upcoming_deadlines(
-    db: Session, user: User, now: datetime | None = None
+    db: Session, user: User, now: datetime | None = None, today: date | None = None
 ) -> list[dict[str, Any]]:
     now = _utc(now)
-    today = now.date()
+    today = today or now.date()
     items: list[dict[str, Any]] = []
 
     for job in db.scalars(select(JobApplication).where(*_job_deadline_rule(user, today))):

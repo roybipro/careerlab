@@ -209,6 +209,8 @@ The base path is `/api/v1`. The PRD's routes are kept, and the additions are mar
 
 **Docs:** Swagger at `/docs` and OpenAPI at `/openapi.json` stay enabled in production.
 
+**Today (final review):** the dashboard summary, upcoming deadlines and the contacts `follow_up_due` filter take an optional `today` query parameter, the browser's local date. It must be within one day of the UTC date or the API returns `422`, and when omitted the UTC date is used. It applies to date-only fields only, and reminders still compare instants.
+
 ### Activity events
 
 Services write these in the same transaction as the change: `created`,
