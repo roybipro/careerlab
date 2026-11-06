@@ -63,6 +63,10 @@ def app(db: Session) -> FastAPI:
     def _validate(n: int) -> dict[str, int]:  # test-only route
         return {"n": n}
 
+    @application.get("/api/v1/_test/boom")
+    def _boom() -> None:  # test-only route
+        raise RuntimeError("boom")
+
     return application
 
 
@@ -75,4 +79,11 @@ def client(app: FastAPI) -> Iterator[TestClient]:
 @pytest.fixture
 def raw_client(app: FastAPI) -> Iterator[TestClient]:
     with TestClient(app) as c:
+        yield c
+
+
+@pytest.fixture
+def lenient_client(app: FastAPI) -> Iterator[TestClient]:
+    """Returns 500 responses instead of re-raising server exceptions."""
+    with TestClient(app, headers=CSRF_HEADERS, raise_server_exceptions=False) as c:
         yield c

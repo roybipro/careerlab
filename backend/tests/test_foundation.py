@@ -25,6 +25,15 @@ def test_validation_error_uses_envelope(client):
     assert r.json()["error"]["details"][0]["loc"] == ["query", "n"]
 
 
+def test_unhandled_exception_uses_envelope_and_is_logged(lenient_client, caplog):
+    r = lenient_client.get("/api/v1/_test/boom")
+    assert r.status_code == 500
+    assert r.json() == {
+        "error": {"code": "internal_error", "message": "Internal server error", "details": None}
+    }
+    assert any(rec.exc_info and "boom" in str(rec.exc_info[1]) for rec in caplog.records)
+
+
 def test_swagger_stays_available(client):
     assert client.get("/openapi.json").status_code == 200
     assert client.get("/docs").status_code == 200
