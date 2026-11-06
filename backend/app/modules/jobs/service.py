@@ -8,6 +8,7 @@ from app.core.errors import AppError, not_found
 from app.core.lists import ListParams, Page, contains, iso, paginate
 from app.modules.activity.service import log_activity
 from app.modules.auth.models import User
+from app.modules.entities import delete_dependents, job_label
 from app.modules.jobs.models import JobApplication
 from app.modules.jobs.schemas import JobCreate, JobFilters, JobUpdate
 
@@ -21,10 +22,6 @@ SORT_FIELDS = {
     "follow_up_date": JobApplication.follow_up_date,
     "interview_at": JobApplication.interview_at,
 }
-
-
-def _label(job: JobApplication) -> str:
-    return f"{job.position_title} at {job.company_name}"
 
 
 def _check_salary(salary_min: int | None, salary_max: int | None) -> None:
@@ -90,7 +87,7 @@ def create_job(db: Session, user: User, data: JobCreate) -> JobApplication:
     job = JobApplication(user_id=user.id, **data.model_dump())
     db.add(job)
     db.flush()
-    log_activity(db, user, "job", job.id, "created", _label(job))
+    log_activity(db, user, "job", job.id, "created", job_label(job))
     db.commit()
     return job
 
@@ -109,7 +106,7 @@ def update_job(db: Session, user: User, job_id: uuid.UUID, data: JobUpdate) -> J
     for field, value in changes.items():
         setattr(job, field, value)
 
-    label = _label(job)
+    label = job_label(job)
     if "status" in changes:
         log_activity(
             db, user, "job", job.id, "status_changed", label, old=old["status"], new=job.status
@@ -141,6 +138,7 @@ def update_job(db: Session, user: User, job_id: uuid.UUID, data: JobUpdate) -> J
 
 def delete_job(db: Session, user: User, job_id: uuid.UUID) -> None:
     job = get_job(db, user, job_id)
-    log_activity(db, user, "job", job.id, "deleted", _label(job))
+    log_activity(db, user, "job", job.id, "deleted", job_label(job))
+    delete_dependents(db, user, "job", job.id)
     db.delete(job)
     db.commit()

@@ -8,6 +8,7 @@ from app.core.errors import not_found
 from app.core.lists import ListParams, Page, contains, iso, paginate
 from app.modules.activity.service import log_activity
 from app.modules.auth.models import User
+from app.modules.entities import delete_dependents, research_label
 from app.modules.research.models import ResearchOpportunity, ResearchStatus
 from app.modules.research.schemas import ResearchCreate, ResearchFilters, ResearchUpdate
 
@@ -22,10 +23,6 @@ SORT_FIELDS = {
     "application_date": ResearchOpportunity.application_date,
     "deadline": ResearchOpportunity.deadline,
 }
-
-
-def _label(item: ResearchOpportunity) -> str:
-    return f"{item.title} ({item.organization})"
 
 
 def list_research(
@@ -71,7 +68,7 @@ def create_research(db: Session, user: User, data: ResearchCreate) -> ResearchOp
     item = ResearchOpportunity(user_id=user.id, **data.model_dump())
     db.add(item)
     db.flush()
-    log_activity(db, user, ENTITY, item.id, "created", _label(item))
+    log_activity(db, user, ENTITY, item.id, "created", research_label(item))
     db.commit()
     return item
 
@@ -91,7 +88,7 @@ def update_research(
     for field, value in changes.items():
         setattr(item, field, value)
 
-    label = _label(item)
+    label = research_label(item)
     if "status" in changes:
         log_activity(
             db, user, ENTITY, item.id, "status_changed", label, old=old["status"], new=item.status
@@ -115,6 +112,7 @@ def update_research(
 
 def delete_research(db: Session, user: User, research_id: uuid.UUID) -> None:
     item = get_research(db, user, research_id)
-    log_activity(db, user, ENTITY, item.id, "deleted", _label(item))
+    log_activity(db, user, ENTITY, item.id, "deleted", research_label(item))
+    delete_dependents(db, user, ENTITY, item.id)
     db.delete(item)
     db.commit()
