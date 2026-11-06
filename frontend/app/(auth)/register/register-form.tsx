@@ -60,6 +60,9 @@ export function RegisterForm() {
       <CardContent>
         <form
           noValidate
+          // Before hydration a native submit must not put credentials in the URL: POST to this page.
+          method="post"
+          action="/register"
           className="space-y-4"
           onSubmit={handleSubmit((values) => {
             setFormError(null);

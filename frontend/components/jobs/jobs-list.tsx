@@ -14,7 +14,7 @@ import { Pagination } from "@/components/pagination";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { api, ApiError } from "@/lib/api";
-import { JOB_STATUSES, JOB_TYPES, PRIORITIES, statusLabel } from "@/lib/enums";
+import { JOB_STATUSES, JOB_TYPES, PRIORITIES, statusLabel, type Option } from "@/lib/enums";
 import { invalidateEntity, keys } from "@/lib/keys";
 import type { Job, Paginated } from "@/lib/types";
 
@@ -33,6 +33,22 @@ const FILTERS: ToolbarFilter[] = [
   { type: "date", key: "application_date_to", label: "Applied to" },
 ];
 
+// Values match SORT_FIELDS in backend/app/modules/jobs/service.py. The first is the API default.
+const SORT_OPTIONS: Option[] = [
+  { value: "-created_at", label: "Newest added" },
+  { value: "created_at", label: "Oldest added" },
+  { value: "-updated_at", label: "Recently updated" },
+  { value: "company_name", label: "Company A-Z" },
+  { value: "-company_name", label: "Company Z-A" },
+  { value: "position_title", label: "Position A-Z" },
+  { value: "deadline", label: "Deadline, soonest" },
+  { value: "-deadline", label: "Deadline, latest" },
+  { value: "follow_up_date", label: "Follow-up, soonest" },
+  { value: "interview_at", label: "Interview, soonest" },
+  { value: "application_date", label: "Applied, oldest" },
+  { value: "-application_date", label: "Applied, newest" },
+];
+
 /** Needs a Suspense boundary above it: the toolbar reads the URL search parameters. */
 export function JobsList() {
   const client = useQueryClient();
@@ -42,11 +58,12 @@ export function JobsList() {
   // The board shows every status as a column, so a status filter makes no sense there.
   const filters = view === "kanban" ? FILTERS.filter((f) => f.key !== "status") : FILTERS;
   const filterValues = Object.fromEntries(["q", ...filters.map((f) => f.key)].map((k) => [k, get(k)]));
+  const sort = SORT_OPTIONS.some((o) => o.value === get("sort")) ? get("sort") : "";
   const filtersActive = Object.values(filterValues).some(Boolean);
   const params =
     view === "kanban"
-      ? { ...filterValues, page_size: KANBAN_LIMIT }
-      : { ...filterValues, page, page_size: TABLE_PAGE_SIZE };
+      ? { ...filterValues, sort, page_size: KANBAN_LIMIT }
+      : { ...filterValues, sort, page, page_size: TABLE_PAGE_SIZE };
 
   const query = useQuery({
     queryKey: keys.list("job", params),
@@ -102,7 +119,7 @@ export function JobsList() {
           </Button>
         }
       />
-      <ListToolbar filters={filters} searchPlaceholder="Search company, position or location" viewToggle />
+      <ListToolbar filters={filters} searchPlaceholder="Search company, position or location" viewToggle sortOptions={SORT_OPTIONS} />
       <DataState query={query} empty={empty}>
         {(data) =>
           view === "kanban" ? (

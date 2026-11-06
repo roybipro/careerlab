@@ -49,17 +49,26 @@ type ListToolbarProps = {
   searchPlaceholder?: string;
   /** Show the table / Kanban switch. */
   viewToggle?: boolean;
+  /**
+   * Allowed sort values for this entity (must match the API's sort allowlist). The first is the
+   * default and is not written to the URL. Omit for no sort control.
+   */
+  sortOptions?: Option[];
 };
 
-export function ListToolbar({ filters, searchPlaceholder = "Search", viewToggle }: ListToolbarProps) {
+export function ListToolbar({ filters, searchPlaceholder = "Search", viewToggle, sortOptions }: ListToolbarProps) {
   const { get, view, update } = useListParams();
   const urlQ = get("q");
   const [text, setText] = useState(urlQ);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // The last search value this component wrote to the URL. Seeing it come back is not an outside change.
+  const lastSent = useRef(urlQ);
 
   // Follow the URL when it changes from outside (Back, clear filters), unless the user is mid-typing.
   useEffect(() => {
-    if (!timer.current) setText(urlQ);
+    if (timer.current || urlQ === lastSent.current) return;
+    lastSent.current = urlQ;
+    setText(urlQ);
   }, [urlQ]);
   useEffect(() => () => void (timer.current && clearTimeout(timer.current)), []);
 
@@ -68,7 +77,8 @@ export function ListToolbar({ filters, searchPlaceholder = "Search", viewToggle 
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => {
       timer.current = null;
-      update({ q: value.trim() });
+      lastSent.current = value.trim();
+      update({ q: lastSent.current });
     }, 300);
   }
 
@@ -80,6 +90,7 @@ export function ListToolbar({ filters, searchPlaceholder = "Search", viewToggle 
     if (timer.current) clearTimeout(timer.current);
     timer.current = null;
     setText("");
+    lastSent.current = "";
     update({ q: null, ...Object.fromEntries(filters.map((f) => [f.key, null])) });
   }
 
@@ -108,6 +119,16 @@ export function ListToolbar({ filters, searchPlaceholder = "Search", viewToggle 
             <X data-icon="inline-start" />
             Clear
           </Button>
+        ) : null}
+        {sortOptions ? (
+          <NativeSelect
+            label="Sort by"
+            hideLabel
+            className="w-44"
+            options={sortOptions}
+            value={get("sort") || sortOptions[0].value}
+            onChange={(e) => update({ sort: e.target.value === sortOptions[0].value ? null : e.target.value })}
+          />
         ) : null}
         {viewToggle ? (
           <div className="ml-auto flex rounded-lg border p-0.5" role="group" aria-label="View">
