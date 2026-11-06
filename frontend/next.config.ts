@@ -9,6 +9,8 @@ if (process.env.NODE_ENV === "production" && !process.env.API_URL) {
 }
 
 const nextConfig: NextConfig = {
+  // A self-contained server for the Docker image (frontend/Dockerfile).
+  output: "standalone",
   turbopack: {
     // Pin the root so a stray lockfile in a parent folder is not picked up.
     root: import.meta.dirname,

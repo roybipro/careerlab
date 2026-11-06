@@ -29,8 +29,21 @@ services:
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
       FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost:3000}
       TRUST_PROXY: ${TRUST_PROXY:-false}
+      # Production keeps the default of 5. CI raises it so the e2e suite can register several users.
+      RATE_LIMIT_REGISTER_PER_MINUTE: ${RATE_LIMIT_REGISTER_PER_MINUTE:-5}
     ports:
       - "8000:8000"
+
+  web:
+    build:
+      context: ./frontend
+      args:
+        # Baked into the build: Next.js proxies /api/v1/* to this address.
+        API_URL: http://api:8000
+    depends_on:
+      - api
+    ports:
+      - "3000:3000"
 
 volumes:
   pgdata:

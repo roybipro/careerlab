@@ -20,6 +20,8 @@ class Settings(BaseSettings):
     COOKIE_SECURE: bool = False
     FRONTEND_ORIGIN: str = "http://localhost:3000"
     TRUST_PROXY: bool = False
+    # Per-IP limit on POST /auth/register. Only the end-to-end test environment raises it.
+    RATE_LIMIT_REGISTER_PER_MINUTE: int = 5
 
     @field_validator("JWT_SECRET")
     @classmethod

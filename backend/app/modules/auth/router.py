@@ -16,7 +16,9 @@ from app.modules.auth.schemas import (
 
 router = APIRouter(prefix="/auth", tags=["auth"], dependencies=[Depends(require_csrf)])
 
-_register_ip_limiter = RateLimiter(limit=5, window_seconds=60)
+_register_ip_limiter = RateLimiter(
+    limit=get_settings().RATE_LIMIT_REGISTER_PER_MINUTE, window_seconds=60
+)
 _register_global_limiter = RateLimiter(limit=30, window_seconds=60)
 _login_ip_limiter = RateLimiter(limit=10, window_seconds=60)
 _login_email_limiter = RateLimiter(limit=5, window_seconds=60)
