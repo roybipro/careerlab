@@ -7,7 +7,10 @@ from app.core.config import get_settings
 from app.core.db import Base
 from app.modules.activity import models as _activity_models  # noqa: F401  (registers tables)
 from app.modules.auth import models as _auth_models  # noqa: F401
+from app.modules.contacts import models as _contacts_models  # noqa: F401
 from app.modules.jobs import models as _jobs_models  # noqa: F401
+from app.modules.notes import models as _notes_models  # noqa: F401
+from app.modules.reminders import models as _reminders_models  # noqa: F401
 from app.modules.research import models as _research_models  # noqa: F401
 
 config = context.config
