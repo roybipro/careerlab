@@ -72,7 +72,8 @@ authorization and validation. The frontend only calls the documented REST API.
 - **CORS:** not needed in production because the proxy keeps everything on one domain.
   Local development allows only the configured frontend origin.
 - **Rate limits:** in memory, which suits the single API instance.
-  - Register: 5 per minute per client IP.
+  - Register: 5 per minute per client IP, plus a global backstop of 30 per minute
+    across all IPs, because forwarded IPs can be spoofed.
   - Login: 10 per minute per client IP, and 5 per minute per email address.
   - The email limit still protects accounts if forwarded client IPs turn out to be
     unreliable behind the proxy.

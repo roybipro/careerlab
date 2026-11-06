@@ -1,5 +1,6 @@
 import os
 from collections.abc import Iterator
+from typing import Any
 
 # Settings must be in place before the app modules are imported.
 TEST_DATABASE_URL = os.environ.get(
@@ -20,6 +21,7 @@ from sqlalchemy.engine import make_url  # noqa: E402
 from sqlalchemy.orm import Session  # noqa: E402
 
 from app.core.db import get_db  # noqa: E402
+from app.core.rate_limit import reset_all_limiters  # noqa: E402
 from app.main import create_app  # noqa: E402
 
 CSRF_HEADERS = {"X-Requested-With": "CareerLab"}
@@ -86,4 +88,32 @@ def raw_client(app: FastAPI) -> Iterator[TestClient]:
 def lenient_client(app: FastAPI) -> Iterator[TestClient]:
     """Returns 500 responses instead of re-raising server exceptions."""
     with TestClient(app, headers=CSRF_HEADERS, raise_server_exceptions=False) as c:
+        yield c
+
+
+@pytest.fixture(autouse=True)
+def _reset_rate_limiters() -> None:
+    reset_all_limiters()
+
+
+PASSWORD = "correct-horse-battery"
+
+
+def register_user(
+    client: TestClient, email: str = "ana@x.com", full_name: str = "Ana Lima"
+) -> dict[str, Any]:
+    response = client.post(
+        "/api/v1/auth/register",
+        json={"full_name": full_name, "email": email, "password": PASSWORD},
+    )
+    assert response.status_code == 201, response.text
+    body: dict[str, Any] = response.json()
+    return body
+
+
+@pytest.fixture
+def second_client(app: FastAPI) -> Iterator[TestClient]:
+    """A separate client logged in as a different user."""
+    with TestClient(app, headers=CSRF_HEADERS) as c:
+        register_user(c, email="bob@x.com", full_name="Bob Reis")
         yield c
