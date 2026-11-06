@@ -45,6 +45,76 @@ jobs:
       - run: mypy app
       - run: pytest
 
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    env:
+      # The build bakes this into the /api/v1/* rewrite. Nothing calls it during the build.
+      API_URL: http://localhost:8000
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run build
+
+  e2e:
+    # Pull requests only: it builds and runs the whole stack, which is slow.
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # The suite registers several users from one IP, which the production limit of 5 per minute blocks.
+      RATE_LIMIT_REGISTER_PER_MINUTE: "1000"
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Generate a throwaway JWT secret
+        run: |
+          secret="$(openssl rand -hex 32)"
+          echo "::add-mask::$secret"
+          echo "JWT_SECRET=$secret" >> "$GITHUB_ENV"
+      - name: Start the stack
+        run: docker compose up -d --build --wait
+      - name: Wait for the site and the API
+        run: |
+          curl --retry 30 --retry-delay 2 --retry-connrefused -fsS http://localhost:8000/health
+          curl --retry 30 --retry-delay 2 --retry-connrefused -fsS -o /dev/null http://localhost:3000/login
+      - name: Install dependencies and Chromium
+        working-directory: frontend
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: Run Playwright
+        working-directory: frontend
+        run: npx playwright test
+      - name: Upload the Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v5
+        with:
+          name: playwright-report
+          path: |
+            frontend/playwright-report/
+            frontend/test-results/
+          retention-days: 7
+      - name: Show container logs
+        if: failure()
+        run: docker compose logs --no-color --tail=200
+      - name: Stop the stack
+        if: always()
+        run: docker compose down -v
+
   secret-scan:
     runs-on: ubuntu-latest
     steps:

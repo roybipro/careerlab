@@ -1,0 +1,16 @@
+node_modules
+.next
+out
+build
+coverage
+e2e
+test-results
+playwright-report
+.env*
+*.tsbuildinfo
+next-env.d.ts
+Dockerfile
+.dockerignore
+.git
+.DS_Store
+npm-debug.log*
