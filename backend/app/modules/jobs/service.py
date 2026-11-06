@@ -1,12 +1,11 @@
 import uuid
-from datetime import date, datetime
 from typing import Any
 
-from sqlalchemy import ColumnElement, SQLColumnExpression, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.errors import AppError, not_found
-from app.core.lists import ListParams, Page, escape_like, paginate
+from app.core.lists import ListParams, Page, contains, iso, paginate
 from app.modules.activity.service import log_activity
 from app.modules.auth.models import User
 from app.modules.jobs.models import JobApplication
@@ -28,10 +27,6 @@ def _label(job: JobApplication) -> str:
     return f"{job.position_title} at {job.company_name}"
 
 
-def _contains(column: SQLColumnExpression[Any], term: str) -> ColumnElement[bool]:
-    return column.ilike(f"%{escape_like(term)}%", escape="\\")
-
-
 def _check_salary(salary_min: int | None, salary_max: int | None) -> None:
     if salary_min is not None and salary_max is not None and salary_min > salary_max:
         raise AppError(
@@ -48,22 +43,18 @@ def _check_salary(salary_min: int | None, salary_max: int | None) -> None:
         )
 
 
-def _iso(value: date | datetime | None) -> str | None:
-    return value.isoformat() if value is not None else None
-
-
 def list_jobs(db: Session, user: User, params: ListParams, filters: JobFilters) -> Page[Any]:
     stmt = select(JobApplication).where(JobApplication.user_id == user.id)
     if params.q:
         stmt = stmt.where(
-            _contains(JobApplication.company_name, params.q)
-            | _contains(JobApplication.position_title, params.q)
-            | _contains(JobApplication.location, params.q)
+            contains(JobApplication.company_name, params.q)
+            | contains(JobApplication.position_title, params.q)
+            | contains(JobApplication.location, params.q)
         )
     if filters.company:
-        stmt = stmt.where(_contains(JobApplication.company_name, filters.company))
+        stmt = stmt.where(contains(JobApplication.company_name, filters.company))
     if filters.position:
-        stmt = stmt.where(_contains(JobApplication.position_title, filters.position))
+        stmt = stmt.where(contains(JobApplication.position_title, filters.position))
     if filters.status:
         stmt = stmt.where(JobApplication.status == filters.status)
     if filters.priority:
@@ -131,8 +122,8 @@ def update_job(db: Session, user: User, job_id: uuid.UUID, data: JobUpdate) -> J
             job.id,
             "deadline_updated",
             label,
-            old=_iso(old["deadline"]),
-            new=_iso(job.deadline),
+            old=iso(old["deadline"]),
+            new=iso(job.deadline),
         )
     if changes.get("interview_at") is not None:
         log_activity(
@@ -142,7 +133,7 @@ def update_job(db: Session, user: User, job_id: uuid.UUID, data: JobUpdate) -> J
             job.id,
             "interview_scheduled",
             label,
-            interview_at=_iso(job.interview_at),
+            interview_at=iso(job.interview_at),
         )
     db.commit()
     return job

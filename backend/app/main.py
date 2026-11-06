@@ -6,6 +6,7 @@ from app.core.errors import register_error_handlers
 from app.modules.activity.router import router as activity_router
 from app.modules.auth.router import router as auth_router
 from app.modules.jobs.router import router as jobs_router
+from app.modules.research.router import router as research_router
 
 
 def create_app() -> FastAPI:
@@ -21,6 +22,7 @@ def create_app() -> FastAPI:
     register_error_handlers(app)
     app.include_router(auth_router, prefix="/api/v1")
     app.include_router(jobs_router, prefix="/api/v1")
+    app.include_router(research_router, prefix="/api/v1")
     app.include_router(activity_router, prefix="/api/v1")
 
     @app.get("/health")
