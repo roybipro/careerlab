@@ -90,7 +90,7 @@ function ContactFormBody({ contact, onDone }: { contact?: Contact; onDone: () =>
     register,
     handleSubmit,
     setError,
-    formState: { errors, dirtyFields },
+    formState: { errors, dirtyFields, submitCount },
   } = useForm<Values>({ resolver: zodResolver(schema), defaultValues: contact ? toValues(contact) : EMPTY });
 
   const save = useMutation({
@@ -132,15 +132,15 @@ function ContactFormBody({ contact, onDone }: { contact?: Contact; onDone: () =>
         <TextField label="Position" error={err("position")} {...register("position")} />
       </div>
       <div className="border-b">
-        <FormSection icon={CalendarDays} title="Follow-up" hint="Last contacted and next follow-up" defaultOpen={filled("last_contacted_at", "next_follow_up_at")} hasError={invalid("last_contacted_at", "next_follow_up_at")}>
+        <FormSection submitCount={submitCount} icon={CalendarDays} title="Follow-up" hint="Last contacted and next follow-up" defaultOpen={filled("last_contacted_at", "next_follow_up_at")} hasError={invalid("last_contacted_at", "next_follow_up_at")}>
           <TextField label="Last contacted" type="date" error={err("last_contacted_at")} {...register("last_contacted_at")} />
           <TextField label="Next follow-up" type="date" error={err("next_follow_up_at")} {...register("next_follow_up_at")} />
         </FormSection>
-        <FormSection icon={Link2} title="Links" hint="LinkedIn and website" defaultOpen={filled("linkedin_url", "website")} hasError={invalid("linkedin_url", "website")}>
+        <FormSection submitCount={submitCount} icon={Link2} title="Links" hint="LinkedIn and website" defaultOpen={filled("linkedin_url", "website")} hasError={invalid("linkedin_url", "website")}>
           <TextField label="LinkedIn URL" type="url" placeholder="https://" error={err("linkedin_url")} {...register("linkedin_url")} />
           <TextField label="Website" type="url" placeholder="https://" error={err("website")} {...register("website")} />
         </FormSection>
-        <FormSection icon={FileText} title="Notes" hint="Anything worth remembering" className="grid grid-cols-1 gap-4" defaultOpen={filled("notes")} hasError={invalid("notes")}>
+        <FormSection submitCount={submitCount} icon={FileText} title="Notes" hint="Anything worth remembering" className="grid grid-cols-1 gap-4" defaultOpen={filled("notes")} hasError={invalid("notes")}>
           <TextAreaField label="Notes" error={err("notes")} {...register("notes")} />
         </FormSection>
       </div>

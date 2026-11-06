@@ -227,7 +227,7 @@ function ResearchFormBody({ research, onDone }: { research?: Research; onDone: (
     control,
     handleSubmit,
     setError,
-    formState: { errors, dirtyFields },
+    formState: { errors, dirtyFields, submitCount },
   } = useForm<Values>({ resolver: zodResolver(schema), defaultValues: research ? toValues(research) : EMPTY });
 
   const save = useMutation({
@@ -280,12 +280,12 @@ function ResearchFormBody({ research, onDone }: { research?: Research; onDone: (
       </fieldset>
 
       <div className="border-b">
-        <FormSection icon={Banknote} title="Funding" hint="Funding status and amount" defaultOpen={filled("funding_status", "funding_amount")} hasError={invalid("funding_status", "funding_amount")}>
+        <FormSection submitCount={submitCount} icon={Banknote} title="Funding" hint="Funding status and amount" defaultOpen={filled("funding_status", "funding_amount")} hasError={invalid("funding_status", "funding_amount")}>
           <NativeSelect label="Funding" options={FUNDING_STATUSES} error={err("funding_status")} {...register("funding_status")} />
           <TextField label="Funding amount" placeholder="2,000 per month" error={err("funding_amount")} {...register("funding_amount")} />
         </FormSection>
 
-        <FormSection icon={Building2} title="Place and field" hint="Country, department, lab and research interests" defaultOpen={filled("country", "department", "laboratory", "research_area", "research_interests")} hasError={invalid("country", "department", "laboratory", "research_area") || !!interestsError}>
+        <FormSection submitCount={submitCount} icon={Building2} title="Place and field" hint="Country, department, lab and research interests" defaultOpen={filled("country", "department", "laboratory", "research_area", "research_interests")} hasError={invalid("country", "department", "laboratory", "research_area") || !!interestsError}>
           <TextField label="Country" error={err("country")} {...register("country")} />
           <TextField label="Department" error={err("department")} {...register("department")} />
           <TextField label="Laboratory" error={err("laboratory")} {...register("laboratory")} />
@@ -295,23 +295,23 @@ function ResearchFormBody({ research, onDone }: { research?: Research; onDone: (
           </div>
         </FormSection>
 
-        <FormSection icon={CalendarDays} title="Dates" hint="Applied and deadline" defaultOpen={filled("application_date", "deadline")} hasError={invalid("application_date", "deadline")}>
+        <FormSection submitCount={submitCount} icon={CalendarDays} title="Dates" hint="Applied and deadline" defaultOpen={filled("application_date", "deadline")} hasError={invalid("application_date", "deadline")}>
           <TextField label="Application date" type="date" error={err("application_date")} {...register("application_date")} />
           <TextField label="Deadline" type="date" error={err("deadline")} {...register("deadline")} />
         </FormSection>
 
-        <FormSection icon={GraduationCap} title="Professor" hint="Name, email and website" defaultOpen={filled("professor_name", "professor_email", "professor_website")} hasError={invalid("professor_name", "professor_email", "professor_website")}>
+        <FormSection submitCount={submitCount} icon={GraduationCap} title="Professor" hint="Name, email and website" defaultOpen={filled("professor_name", "professor_email", "professor_website")} hasError={invalid("professor_name", "professor_email", "professor_website")}>
           <TextField label="Professor name" error={err("professor_name")} {...register("professor_name")} />
           <TextField label="Professor email" type="email" error={err("professor_email")} {...register("professor_email")} />
           <TextField label="Professor website" type="url" placeholder="https://" error={err("professor_website")} {...register("professor_website")} />
         </FormSection>
 
-        <FormSection icon={Link2} title="Links" hint="Website and application page" defaultOpen={filled("website", "application_url")} hasError={invalid("website", "application_url")}>
+        <FormSection submitCount={submitCount} icon={Link2} title="Links" hint="Website and application page" defaultOpen={filled("website", "application_url")} hasError={invalid("website", "application_url")}>
           <TextField label="Website" type="url" placeholder="https://" error={err("website")} {...register("website")} />
           <TextField label="Application URL" type="url" placeholder="https://" error={err("application_url")} {...register("application_url")} />
         </FormSection>
 
-        <FormSection icon={FileText} title="Details" hint="Description, eligibility, language tests and notes" className="grid grid-cols-1 gap-4" defaultOpen={filled("description", "eligibility", "language_test_requirements", "notes")} hasError={invalid("description", "eligibility", "language_test_requirements", "notes")}>
+        <FormSection submitCount={submitCount} icon={FileText} title="Details" hint="Description, eligibility, language tests and notes" className="grid grid-cols-1 gap-4" defaultOpen={filled("description", "eligibility", "language_test_requirements", "notes")} hasError={invalid("description", "eligibility", "language_test_requirements", "notes")}>
           <TextAreaField label="Description" error={err("description")} {...register("description")} />
           <TextAreaField label="Eligibility" error={err("eligibility")} {...register("eligibility")} />
           <TextAreaField label="Language test requirements (IELTS, GRE)" error={err("language_test_requirements")} {...register("language_test_requirements")} />

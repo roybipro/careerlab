@@ -147,7 +147,7 @@ function JobFormBody({ job, onDone }: { job?: Job; onDone: () => void }) {
     register,
     handleSubmit,
     setError,
-    formState: { errors, dirtyFields },
+    formState: { errors, dirtyFields, submitCount },
   } = useForm<Values>({ resolver: zodResolver(schema), defaultValues: job ? toValues(job) : EMPTY });
 
   const save = useMutation({
@@ -192,32 +192,32 @@ function JobFormBody({ job, onDone }: { job?: Job; onDone: () => void }) {
       </fieldset>
 
       <div className="border-b">
-        <FormSection icon={MapPin} title="Role" hint="Job type, employment type and location" defaultOpen={filled("job_type", "employment_type", "location")} hasError={invalid("job_type", "employment_type", "location")}>
+        <FormSection submitCount={submitCount} icon={MapPin} title="Role" hint="Job type, employment type and location" defaultOpen={filled("job_type", "employment_type", "location")} hasError={invalid("job_type", "employment_type", "location")}>
           <NativeSelect label="Job type" options={JOB_TYPES} placeholder="Not set" error={err("job_type")} {...register("job_type")} />
           <NativeSelect label="Employment type" options={EMPLOYMENT_TYPES} placeholder="Not set" error={err("employment_type")} {...register("employment_type")} />
           <TextField label="Location" error={err("location")} {...register("location")} />
         </FormSection>
 
-        <FormSection icon={CalendarDays} title="Dates" hint="Applied, deadline, follow-up and interview" defaultOpen={filled("application_date", "deadline", "follow_up_date", "interview_at")} hasError={invalid("application_date", "deadline", "follow_up_date", "interview_at")}>
+        <FormSection submitCount={submitCount} icon={CalendarDays} title="Dates" hint="Applied, deadline, follow-up and interview" defaultOpen={filled("application_date", "deadline", "follow_up_date", "interview_at")} hasError={invalid("application_date", "deadline", "follow_up_date", "interview_at")}>
           <TextField label="Application date" type="date" error={err("application_date")} {...register("application_date")} />
           <TextField label="Deadline" type="date" error={err("deadline")} {...register("deadline")} />
           <TextField label="Follow-up date" type="date" error={err("follow_up_date")} {...register("follow_up_date")} />
           <TextField label="Interview" type="datetime-local" hint="In your time zone" error={err("interview_at")} {...register("interview_at")} />
         </FormSection>
 
-        <FormSection icon={Banknote} title="Salary" hint="Range and currency" className="grid grid-cols-1 gap-4 sm:grid-cols-3" defaultOpen={filled("salary_min", "salary_max", "salary_currency")} hasError={invalid("salary_min", "salary_max", "salary_currency")}>
+        <FormSection submitCount={submitCount} icon={Banknote} title="Salary" hint="Range and currency" className="grid grid-cols-1 gap-4 sm:grid-cols-3" defaultOpen={filled("salary_min", "salary_max", "salary_currency")} hasError={invalid("salary_min", "salary_max", "salary_currency")}>
           <TextField label="Minimum" type="number" inputMode="numeric" min={0} step={1} error={err("salary_min")} {...register("salary_min", { deps: ["salary_max"] })} />
           <TextField label="Maximum" type="number" inputMode="numeric" min={0} step={1} error={err("salary_max")} {...register("salary_max", { deps: ["salary_min"] })} />
           <TextField label="Currency" placeholder="USD" error={err("salary_currency")} {...register("salary_currency")} />
         </FormSection>
 
-        <FormSection icon={Link2} title="Links" hint="Job posting, company website and logo" defaultOpen={filled("job_url", "company_website", "company_logo_url")} hasError={invalid("job_url", "company_website", "company_logo_url")}>
+        <FormSection submitCount={submitCount} icon={Link2} title="Links" hint="Job posting, company website and logo" defaultOpen={filled("job_url", "company_website", "company_logo_url")} hasError={invalid("job_url", "company_website", "company_logo_url")}>
           <TextField label="Job posting URL" type="url" placeholder="https://" error={err("job_url")} {...register("job_url")} />
           <TextField label="Company website" type="url" placeholder="https://" error={err("company_website")} {...register("company_website")} />
           <TextField label="Company logo URL" type="url" placeholder="https://" error={err("company_logo_url")} {...register("company_logo_url")} />
         </FormSection>
 
-        <FormSection icon={FileText} title="Details" hint="Resume, cover letter, description and notes" className="grid grid-cols-1 gap-4" defaultOpen={filled("resume_version", "cover_letter_ref", "job_description", "notes")} hasError={invalid("resume_version", "cover_letter_ref", "job_description", "notes")}>
+        <FormSection submitCount={submitCount} icon={FileText} title="Details" hint="Resume, cover letter, description and notes" className="grid grid-cols-1 gap-4" defaultOpen={filled("resume_version", "cover_letter_ref", "job_description", "notes")} hasError={invalid("resume_version", "cover_letter_ref", "job_description", "notes")}>
           <TextField label="Resume version" error={err("resume_version")} {...register("resume_version")} />
           <TextAreaField label="Cover letter (name, link or text)" error={err("cover_letter_ref")} {...register("cover_letter_ref")} />
           <TextAreaField label="Job description" error={err("job_description")} {...register("job_description")} />
