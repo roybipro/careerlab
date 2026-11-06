@@ -192,11 +192,11 @@ export function ListToolbar({ filters, searchPlaceholder = "Search", viewToggle,
         ) : null}
         {viewToggle ? (
           <div className="ml-auto flex gap-0.5 rounded-xl bg-muted p-1" role="group" aria-label="View">
-            <Button variant="ghost" size="sm" className={view === "table" ? "bg-card text-foreground shadow-card hover:bg-card" : "text-muted-foreground"} aria-pressed={view === "table"} onClick={() => update({ view: null })}>
+            <Button variant="ghost" size="sm" className={view === "table" ? "bg-card text-foreground shadow-card hover:bg-card dark:bg-accent dark:hover:bg-accent" : "text-muted-foreground"} aria-pressed={view === "table"} onClick={() => update({ view: null })}>
               <Table2 data-icon="inline-start" />
               Table
             </Button>
-            <Button variant="ghost" size="sm" className={view === "kanban" ? "bg-card text-foreground shadow-card hover:bg-card" : "text-muted-foreground"} aria-pressed={view === "kanban"} onClick={() => update({ view: "kanban" })}>
+            <Button variant="ghost" size="sm" className={view === "kanban" ? "bg-card text-foreground shadow-card hover:bg-card dark:bg-accent dark:hover:bg-accent" : "text-muted-foreground"} aria-pressed={view === "kanban"} onClick={() => update({ view: "kanban" })}>
               <Kanban data-icon="inline-start" />
               Kanban
             </Button>

@@ -106,7 +106,7 @@ export function RemindersList() {
             aria-selected={t.value === tab.value}
             variant="ghost"
             size="sm"
-            className={t.value === tab.value ? "bg-card text-foreground shadow-card hover:bg-card" : "text-muted-foreground"}
+            className={t.value === tab.value ? "bg-card text-foreground shadow-card hover:bg-card dark:bg-accent dark:hover:bg-accent" : "text-muted-foreground"}
             // Each tab starts on its own default sort and page 1; the search text stays.
             onClick={() => update({ state: t.value === "upcoming" ? null : t.value, sort: null })}
           >

@@ -41,7 +41,9 @@ export function StatusDistribution({ title, data, emptyHint }: { title: string; 
           </BarChart>
         </ResponsiveContainer>
       </div>
-      <table className="sr-only">
+      {/* The wrapper clips the table: a table ignores sr-only's size and would stretch the page. */}
+      <div className="sr-only">
+      <table>
         <caption>{title}</caption>
         <thead>
           <tr>
@@ -58,6 +60,7 @@ export function StatusDistribution({ title, data, emptyHint }: { title: string; 
           ))}
         </tbody>
       </table>
+      </div>
     </figure>
   );
 }

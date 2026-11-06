@@ -284,7 +284,7 @@
 /* Opacity only: a transform here would become the containing block for the Kanban drag overlay. */
 @keyframes page-enter {
   from {
-    opacity: 0;
+    opacity: 0.4;
   }
 }
 
