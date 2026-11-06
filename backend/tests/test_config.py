@@ -85,3 +85,43 @@ def test_private_jwt_secret_is_accepted_when_deployed(monkeypatch: pytest.Monkey
         _env_file=None, DATABASE_URL=DB_URL, JWT_SECRET="r" * 48, COOKIE_SECURE=True
     )
     assert settings.JWT_SECRET == "r" * 48
+
+
+def test_max_concurrent_hashes_defaults_to_4() -> None:
+    settings = Settings(_env_file=None, DATABASE_URL=DB_URL, JWT_SECRET="x" * 32)
+    assert settings.MAX_CONCURRENT_HASHES == 4
+
+
+@pytest.mark.parametrize("value", [0, -1])
+def test_max_concurrent_hashes_must_be_at_least_1(value: int) -> None:
+    with pytest.raises(ValidationError, match="MAX_CONCURRENT_HASHES"):
+        Settings(
+            _env_file=None, DATABASE_URL=DB_URL, JWT_SECRET="x" * 32, MAX_CONCURRENT_HASHES=value
+        )
+
+
+def test_max_concurrent_hashes_setting_sizes_the_hashing_semaphore(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from app.core import security
+    from app.core.config import get_settings
+
+    monkeypatch.setenv("MAX_CONCURRENT_HASHES", "2")
+    get_settings.cache_clear()
+    try:
+        reloaded = importlib.reload(security)
+        assert reloaded.MAX_CONCURRENT_HASHES == 2
+        slots = [reloaded._hash_slots.acquire(blocking=False) for _ in range(3)]
+        assert slots == [True, True, False]
+        reloaded._hash_slots.release()
+        reloaded._hash_slots.release()
+    finally:
+        monkeypatch.delenv("MAX_CONCURRENT_HASHES")
+        get_settings.cache_clear()
+        importlib.reload(security)
+
+
+@pytest.mark.parametrize("value", ["", "   "])
+def test_blank_database_url_is_rejected_with_a_clear_message(value: str) -> None:
+    with pytest.raises(ValidationError, match="DATABASE_URL is empty"):
+        Settings(_env_file=None, DATABASE_URL=value, JWT_SECRET="x" * 32)
