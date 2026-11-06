@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { ContactFormDialog } from "@/components/contacts/contact-form";
 import { DataState, EmptyState } from "@/components/data-state";
-import { ListToolbar, useListParams, type ToolbarFilter } from "@/components/list-toolbar";
+import { ListToolbar, useListParams, usePageClamp, type ToolbarFilter } from "@/components/list-toolbar";
 import { PageHeader } from "@/components/page-header";
 import { Pagination } from "@/components/pagination";
 import { Badge } from "@/components/ui/badge";
@@ -64,6 +64,7 @@ export function ContactsList() {
     queryFn: () => api<Paginated<Contact>>("/contacts", { query: params }),
     placeholderData: keepPreviousData,
   });
+  usePageClamp(query, page, update);
 
   const empty = filtersActive ? (
     <EmptyState title="No contacts match" description="Try different search words, or clear the filters." />

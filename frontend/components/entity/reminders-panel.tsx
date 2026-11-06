@@ -14,7 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { api, applyServerErrors, ApiError } from "@/lib/api";
 import type { EntityType } from "@/lib/enums";
 import { formatDateTime, fromDatetimeLocal } from "@/lib/format";
-import { keys } from "@/lib/keys";
+import { invalidateReminders, keys } from "@/lib/keys";
 import type { Paginated, Reminder } from "@/lib/types";
 
 type Values = { title: string; due_at: string };
@@ -32,12 +32,7 @@ export function RemindersPanel({ relatedType, relatedId }: { relatedType: Entity
   });
 
   // Reminders feed the dashboard and the reminders page, so refresh those too.
-  const refresh = () =>
-    Promise.all([
-      client.invalidateQueries({ queryKey }),
-      client.invalidateQueries({ queryKey: ["reminders"] }),
-      client.invalidateQueries({ queryKey: keys.dashboard }),
-    ]);
+  const refresh = () => invalidateReminders(client);
 
   const [formError, setFormError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<Reminder | null>(null);

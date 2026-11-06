@@ -5,7 +5,7 @@ import { Plus } from "lucide-react";
 import { useState } from "react";
 import { DataState, EmptyState } from "@/components/data-state";
 import { KanbanBoard } from "@/components/kanban-board";
-import { ListToolbar, useListParams, type ToolbarFilter } from "@/components/list-toolbar";
+import { ListToolbar, useListParams, usePageClamp, type ToolbarFilter } from "@/components/list-toolbar";
 import { PageHeader } from "@/components/page-header";
 import { Pagination } from "@/components/pagination";
 import { ResearchFormDialog } from "@/components/research/research-form";
@@ -69,6 +69,7 @@ export function ResearchList() {
     queryFn: () => api<Paginated<Research>>("/research", { query: params }),
     placeholderData: keepPreviousData,
   });
+  usePageClamp(query, page, update, view !== "kanban");
 
   const move = useStatusMove<Research>("research", "/research", (item) => item.title);
 

@@ -78,6 +78,31 @@ export function useListParams() {
   return { get, page, view, update };
 }
 
+/**
+ * After a delete or a status change the current page can end up past the last one (page 3 of
+ * a list that now has 2). Moves to the last page that exists, replacing the URL entry so Back
+ * is unaffected. Does nothing while a page is loading, for an empty first page (that is the
+ * normal empty state), or when `enabled` is false (the Kanban board ignores `page`).
+ */
+export function usePageClamp(
+  query: { data?: { items: unknown[]; total: number; page_size: number }; isPlaceholderData: boolean },
+  page: number,
+  update: (changes: Record<string, string | null>) => void,
+  enabled = true,
+) {
+  const data = query.data;
+  const emptyPastFirst = enabled && !query.isPlaceholderData && data !== undefined && data.items.length === 0 && page > 1;
+  const total = data?.total ?? 0;
+  const pageSize = data?.page_size ?? 1;
+  useEffect(() => {
+    if (!emptyPastFirst) return;
+    const last = Math.max(1, Math.ceil(total / pageSize));
+    update({ page: last > 1 ? String(last) : null });
+    // `update` is recreated every render and only reads the live URL.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [emptyPastFirst, total, pageSize]);
+}
+
 type ListToolbarProps = {
   filters: ToolbarFilter[];
   searchPlaceholder?: string;

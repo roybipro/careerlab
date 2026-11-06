@@ -7,7 +7,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { DataState, EmptyState } from "@/components/data-state";
-import { useListParams } from "@/components/list-toolbar";
+import { useListParams, usePageClamp } from "@/components/list-toolbar";
 import { PageHeader } from "@/components/page-header";
 import { Pagination } from "@/components/pagination";
 import { ReminderFormDialog } from "@/components/reminders/reminder-form";
@@ -43,6 +43,7 @@ export function RemindersList() {
     queryFn: () => api<Paginated<Reminder>>("/reminders", { query: params }),
     placeholderData: keepPreviousData,
   });
+  usePageClamp(query, page, update);
 
   const toggle = useMutation({
     mutationFn: (r: Reminder) => api<Reminder>(`/reminders/${r.id}`, { method: "PATCH", body: { is_completed: !r.is_completed } }),

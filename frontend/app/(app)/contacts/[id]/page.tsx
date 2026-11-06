@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { use } from "react";
 import { ContactFormDialog } from "@/components/contacts/contact-form";
+import { LinkedOpportunities } from "@/components/contacts/linked-opportunities";
 import { ActivityTimeline } from "@/components/entity/activity-timeline";
 import { Field, TextSection, UrlValue } from "@/components/entity/detail-parts";
 import { EntityDetailPage } from "@/components/entity/entity-detail-page";
@@ -36,35 +36,6 @@ function ContactDetails({ item }: { item: ContactDetail }) {
   );
 }
 
-function LinkedOpportunities({ item }: { item: ContactDetail }) {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Linked opportunities</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {item.links.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Not linked to any job or research opportunity yet. Link this contact from a job or research page.</p>
-        ) : (
-          <ul className="space-y-2">
-            {item.links.map((l) => (
-              <li key={l.id}>
-                <Link
-                  href={l.entity_type === "job" ? `/jobs/${l.entity_id}` : `/research/${l.entity_id}`}
-                  className="flex items-center gap-3 rounded-lg border p-3 hover:bg-muted/50"
-                >
-                  <Badge variant="secondary">{l.entity_type === "job" ? "Job" : "Research"}</Badge>
-                  <span className="min-w-0 flex-1 text-sm break-words">{l.label}</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
 export default function Page({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   return (
@@ -86,7 +57,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
             <ContactDetails item={item} />
           </div>
           <div className="space-y-6">
-            <LinkedOpportunities item={item} />
+            <LinkedOpportunities contact={item} />
             <NotesPanel entityType="contact" entityId={item.id} kind="communication" title="Communication history" />
           </div>
           <div className="space-y-6">
