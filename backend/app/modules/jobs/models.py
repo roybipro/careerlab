@@ -6,7 +6,6 @@ from sqlalchemy import (
     CheckConstraint,
     Date,
     DateTime,
-    Enum,
     ForeignKey,
     Index,
     Integer,
@@ -16,7 +15,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.core.db import Base, TimestampMixin
+from app.core.db import Base, TimestampMixin, str_enum
 
 
 class JobType(enum.StrEnum):
@@ -50,11 +49,6 @@ class Priority(enum.StrEnum):
     high = "high"
 
 
-def _enum(cls: type[enum.StrEnum]) -> Enum:
-    # Stored as plain text; the migration adds the CHECK constraints.
-    return Enum(cls, native_enum=False, length=20, create_constraint=False)
-
-
 class JobApplication(TimestampMixin, Base):
     __tablename__ = "job_applications"
     __table_args__ = (
@@ -77,16 +71,16 @@ class JobApplication(TimestampMixin, Base):
     job_description: Mapped[str | None] = mapped_column(Text)
     location: Mapped[str | None] = mapped_column(String(200))
     notes: Mapped[str | None] = mapped_column(Text)
-    job_type: Mapped[JobType | None] = mapped_column(_enum(JobType))
-    employment_type: Mapped[EmploymentType | None] = mapped_column(_enum(EmploymentType))
+    job_type: Mapped[JobType | None] = mapped_column(str_enum(JobType))
+    employment_type: Mapped[EmploymentType | None] = mapped_column(str_enum(EmploymentType))
     salary_min: Mapped[int | None] = mapped_column(Integer)
     salary_max: Mapped[int | None] = mapped_column(Integer)
     salary_currency: Mapped[str | None] = mapped_column(String(10))
     status: Mapped[JobStatus] = mapped_column(
-        _enum(JobStatus), default=JobStatus.wishlist, server_default=JobStatus.wishlist.value
+        str_enum(JobStatus), default=JobStatus.wishlist, server_default=JobStatus.wishlist.value
     )
     priority: Mapped[Priority] = mapped_column(
-        _enum(Priority), default=Priority.medium, server_default=Priority.medium.value
+        str_enum(Priority), default=Priority.medium, server_default=Priority.medium.value
     )
     resume_version: Mapped[str | None] = mapped_column(String(500))
     cover_letter_ref: Mapped[str | None] = mapped_column(Text)

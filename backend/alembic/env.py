@@ -8,6 +8,7 @@ from app.core.db import Base
 from app.modules.activity import models as _activity_models  # noqa: F401  (registers tables)
 from app.modules.auth import models as _auth_models  # noqa: F401
 from app.modules.jobs import models as _jobs_models  # noqa: F401
+from app.modules.research import models as _research_models  # noqa: F401
 
 config = context.config
 if config.config_file_name is not None:

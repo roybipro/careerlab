@@ -1,8 +1,9 @@
+import enum
 from collections.abc import Iterator
 from datetime import datetime
 from functools import lru_cache
 
-from sqlalchemy import DateTime, Engine, create_engine, func
+from sqlalchemy import DateTime, Engine, Enum, create_engine, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, sessionmaker
 
 from app.core.config import get_settings
@@ -17,6 +18,11 @@ class TimestampMixin:
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
+
+
+def str_enum(cls: type[enum.StrEnum], length: int = 20) -> Enum:
+    # Stored as plain text; each migration adds the CHECK constraints.
+    return Enum(cls, native_enum=False, length=length, create_constraint=False)
 
 
 @lru_cache

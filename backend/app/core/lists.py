@@ -1,9 +1,10 @@
 from collections.abc import Mapping
+from datetime import date, datetime
 from typing import Annotated, Any
 
 from fastapi import Depends, Query
 from pydantic import BaseModel
-from sqlalchemy import Select, SQLColumnExpression, func, inspect, select
+from sqlalchemy import ColumnElement, Select, SQLColumnExpression, func, inspect, select
 from sqlalchemy.orm import Session
 
 from app.core.errors import AppError
@@ -15,6 +16,15 @@ MAX_PAGE = 1_000_000
 
 def escape_like(term: str) -> str:
     return term.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
+def contains(column: SQLColumnExpression[Any], term: str) -> ColumnElement[bool]:
+    """Case-insensitive substring match that treats `%` and `_` literally."""
+    return column.ilike(f"%{escape_like(term)}%", escape="\\")
+
+
+def iso(value: date | datetime | None) -> str | None:
+    return value.isoformat() if value is not None else None
 
 
 class ListParams:
