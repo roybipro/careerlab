@@ -49,7 +49,15 @@ from app.modules.contacts.models import ContactType  # noqa: E402
 from app.modules.contacts.schemas import ContactCreate, ContactLinkIn  # noqa: E402
 from app.modules.entity_types import EntityType, LinkableType  # noqa: E402
 from app.modules.jobs import service as jobs_service  # noqa: E402
-from app.modules.jobs.models import EmploymentType, JobStatus, JobType, Priority  # noqa: E402
+from app.modules.jobs.models import (  # noqa: E402
+    EmploymentType,
+    JobSource,
+    JobStatus,
+    JobType,
+    PayPeriod,
+    Priority,
+    VisaSponsorship,
+)
 from app.modules.jobs.schemas import JobCreate, JobUpdate  # noqa: E402
 from app.modules.notes import service as notes_service  # noqa: E402
 from app.modules.notes.models import NoteKind  # noqa: E402
@@ -141,6 +149,9 @@ def seed(db: Session, password: str, today: date) -> User:
             salary_min=32000,
             salary_max=38000,
             salary_currency="EUR",
+            pay_period=PayPeriod.yearly,
+            source=JobSource.company_website,
+            visa_sponsorship=VisaSponsorship.yes,
             priority=Priority.high,
             resume_version="Data analyst v3",
             application_date=d(-9),
@@ -161,6 +172,12 @@ def seed(db: Session, password: str, today: date) -> User:
             salary_min=1800,
             salary_max=2200,
             salary_currency="EUR",
+            pay_period=PayPeriod.monthly,
+            source=JobSource.university_career_center,
+            start_date=d(120),
+            end_date=d(210),
+            visa_sponsorship=VisaSponsorship.no,
+            academic_credit=True,
             priority=Priority.high,
             resume_version="Software v5",
             application_date=d(-20),
@@ -199,7 +216,12 @@ def seed(db: Session, password: str, today: date) -> User:
             company_website="https://brightmoor-studio.example",
             location="Remote",
             job_type=JobType.remote,
-            employment_type=EmploymentType.contract,
+            employment_type=EmploymentType.freelance,
+            pay_period=PayPeriod.hourly,
+            salary_min=40,
+            salary_max=55,
+            salary_currency="EUR",
+            source=JobSource.referral,
             priority=Priority.medium,
             application_date=d(-52),
         ),
@@ -228,6 +250,8 @@ def seed(db: Session, password: str, today: date) -> User:
             salary_min=52000,
             salary_max=62000,
             salary_currency="EUR",
+            pay_period=PayPeriod.yearly,
+            source=JobSource.linkedin,
             priority=Priority.high,
             deadline=d(4),
             application_date=d(-2),
@@ -271,6 +295,62 @@ def seed(db: Session, password: str, today: date) -> User:
             application_date=d(-215),
         ),
         [JobStatus.preparing, JobStatus.applied, JobStatus.rejected],
+    )
+
+    job(
+        JobCreate(
+            company_name="Harbourlight Engineering",
+            position_title="Software Co-op Student",
+            company_website="https://harbourlight-engineering.example",
+            location="Toronto, Canada",
+            job_type=JobType.hybrid,
+            employment_type=EmploymentType.co_op,
+            salary_min=24,
+            salary_max=28,
+            salary_currency="CAD",
+            pay_period=PayPeriod.hourly,
+            source=JobSource.university_career_center,
+            start_date=d(150),
+            end_date=d(270),
+            visa_sponsorship=VisaSponsorship.unknown,
+            academic_credit=True,
+            priority=Priority.medium,
+            deadline=d(15),
+        ),
+        [JobStatus.preparing],
+    )
+    job(
+        JobCreate(
+            company_name="Mossbank Community Trust",
+            position_title="Digital Skills Volunteer Intern",
+            location="Cork, Ireland",
+            job_type=JobType.on_site,
+            employment_type=EmploymentType.internship,
+            pay_period=PayPeriod.unpaid,
+            source=JobSource.job_board,
+            start_date=d(60),
+            end_date=d(102),
+            academic_credit=False,
+            priority=Priority.low,
+        ),
+    )
+    job(
+        JobCreate(
+            company_name="Alderwick Group",
+            position_title="Graduate Software Programme",
+            location="London, United Kingdom",
+            job_type=JobType.hybrid,
+            employment_type=EmploymentType.graduate_program,
+            salary_min=34000,
+            salary_max=34000,
+            salary_currency="GBP",
+            pay_period=PayPeriod.yearly,
+            source=JobSource.recruiter,
+            start_date=d(240),
+            visa_sponsorship=VisaSponsorship.yes,
+            priority=Priority.medium,
+            deadline=d(20),
+        ),
     )
 
     # --- Research opportunities -------------------------------------------------------
