@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { api, applyServerErrors } from "@/lib/api";
 import { CONTACT_TYPES } from "@/lib/enums";
+import { buildBody } from "@/lib/form-body";
 import { invalidateContacts } from "@/lib/keys";
 import type { Contact, ContactDetail } from "@/lib/types";
 
@@ -41,6 +42,9 @@ const schema = z.object({
 type Values = z.infer<typeof schema>;
 type Field = keyof Values;
 const FIELDS = Object.keys(schema.shape) as Field[];
+
+// Name can never be null: an emptied one is sent as an empty string and the API rejects it.
+const REQUIRED: Field[] = ["name"];
 
 const EMPTY: Values = {
   name: "",
@@ -70,19 +74,6 @@ function toValues(c: Contact): Values {
   };
 }
 
-/** "" becomes null, which clears an optional field on edit. Name is required and never null. */
-function buildBody(values: Values, fields: Field[], isCreate: boolean) {
-  const body: Record<string, string | null> = {};
-  for (const field of fields) {
-    const v = values[field].trim();
-    if (field === "name") body[field] = v;
-    else if (v === "") {
-      if (!isCreate) body[field] = null;
-    } else body[field] = v;
-  }
-  return body;
-}
-
 function ContactFormBody({ contact, onDone }: { contact?: Contact; onDone: () => void }) {
   const client = useQueryClient();
   const [formError, setFormError] = useState<string | null>(null);
@@ -106,10 +97,10 @@ function ContactFormBody({ contact, onDone }: { contact?: Contact; onDone: () =>
 
   function onSubmit(values: Values) {
     setFormError(null);
-    if (!contact) return save.mutate(buildBody(values, FIELDS, true));
+    if (!contact) return save.mutate(buildBody(values, FIELDS, true, REQUIRED));
     const changed = FIELDS.filter((f) => dirtyFields[f]);
     if (changed.length === 0) return onDone();
-    save.mutate(buildBody(values, changed, false));
+    save.mutate(buildBody(values, changed, false, REQUIRED));
   }
 
   const err = (f: Field) => errors[f]?.message;

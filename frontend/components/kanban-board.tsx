@@ -20,7 +20,7 @@ import { statusMeta } from "@/lib/enums";
 import { cn } from "@/lib/utils";
 
 export type KanbanColumn = { id: string; label: string };
-export type KanbanItem = { id: string; status: string };
+export type KanbanItem = { id: string };
 
 type KanbanBoardProps<T extends KanbanItem> = {
   columns: KanbanColumn[];
@@ -31,6 +31,8 @@ type KanbanBoardProps<T extends KanbanItem> = {
   renderCard: (item: T) => ReactNode;
   /** Describes a card for screen readers, for example "Acme, Engineer". */
   getItemLabel: (item: T) => string;
+  /** The column a card belongs in. Defaults to the item's `status`. */
+  getColumn?: (item: T) => string;
 };
 
 function Column({ column, count, children }: { column: KanbanColumn; count: number; children: ReactNode }) {
@@ -56,10 +58,13 @@ function Card<T extends KanbanItem>({
   item,
   columns,
   label,
+  column,
   onMove,
   children,
 }: {
   item: T;
+  /** The column the card is in, left out of its "Move to" menu. */
+  column: string;
   columns: KanbanColumn[];
   label: string;
   onMove: (item: T, toColumn: string) => void;
@@ -88,7 +93,7 @@ function Card<T extends KanbanItem>({
             <DropdownMenuGroup>
               <DropdownMenuLabel>Move to</DropdownMenuLabel>
               {columns
-                .filter((c) => c.id !== item.status)
+                .filter((c) => c.id !== column)
                 .map((c) => (
                   <DropdownMenuItem key={c.id} onClick={() => onMove(item, c.id)}>
                     {c.label}
@@ -107,7 +112,7 @@ function Card<T extends KanbanItem>({
  * touch drag starts after a 250ms press (so a swipe still scrolls the board). Every card also
  * has a "Move to" menu, which is the keyboard path.
  */
-export function KanbanBoard<T extends KanbanItem>({ columns, items, onMove, renderCard, getItemLabel }: KanbanBoardProps<T>) {
+export function KanbanBoard<T extends KanbanItem>({ columns, items, onMove, renderCard, getItemLabel, getColumn = (item) => (item as { status?: string }).status ?? "" }: KanbanBoardProps<T>) {
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 8 } }),
@@ -123,18 +128,18 @@ export function KanbanBoard<T extends KanbanItem>({ columns, items, onMove, rend
     setActiveId(null);
     const item = items.find((i) => i.id === event.active.id);
     const to = event.over ? String(event.over.id) : null;
-    if (item && to && to !== item.status) onMove(item, to);
+    if (item && to && to !== getColumn(item)) onMove(item, to);
   }
 
   return (
     <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd} onDragCancel={() => setActiveId(null)}>
       <div className="flex items-start gap-3 overflow-x-auto pb-3">
         {columns.map((column) => {
-          const columnItems = items.filter((i) => i.status === column.id);
+          const columnItems = items.filter((i) => getColumn(i) === column.id);
           return (
             <Column key={column.id} column={column} count={columnItems.length}>
               {columnItems.map((item) => (
-                <Card key={item.id} item={item} columns={columns} label={getItemLabel(item)} onMove={onMove}>
+                <Card key={item.id} item={item} columns={columns} label={getItemLabel(item)} column={column.id} onMove={onMove}>
                   {renderCard(item)}
                 </Card>
               ))}

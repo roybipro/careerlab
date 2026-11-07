@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { BarChart3, Bell, Briefcase, FlaskConical, LayoutDashboard, LogOut, Menu, Settings, Users } from "lucide-react";
+import { BarChart3, Bell, Briefcase, FlaskConical, FolderKanban, LayoutDashboard, LogOut, Menu, Settings, Users } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
@@ -30,6 +30,7 @@ export const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/jobs", label: "Job Applications", icon: Briefcase },
   { href: "/research", label: "Research Opportunities", icon: FlaskConical },
+  { href: "/projects", label: "Research Projects", icon: FolderKanban },
   { href: "/contacts", label: "Contacts", icon: Users },
   { href: "/reminders", label: "Reminders", icon: Bell },
   { href: "/analytics", label: "Analytics", icon: BarChart3 },
