@@ -118,6 +118,53 @@ def test_past_abstract_is_overdue_while_future_paper_is_upcoming(db):
     assert count(db, user) == 1
 
 
+def test_abstract_submitted_stops_counting_and_returns_when_cleared(db):
+    user = make_user(db)
+    project = make_project(db, user)
+    sub = make_sub(db, project, abstract_deadline=days(-2), paper_deadline=days(5))
+    assert len(service.overdue_research(db, user, now=NOW, today=TODAY)) == 1
+
+    sub.abstract_submitted_on = days(-3)
+    db.commit()
+    assert service.overdue_research(db, user, now=NOW, today=TODAY) == []
+    # The paper deadline still counts while the submission is planned.
+    assert [i["title"] for i in research_items(db, user)] == ["Northfield Symposium paper"]
+    assert count(db, user) == 1
+
+    sub.abstract_submitted_on = None
+    db.commit()
+    assert [i["title"] for i in service.overdue_research(db, user, now=NOW, today=TODAY)] == [
+        "Northfield Symposium abstract"
+    ]
+    assert count(db, user) == 1
+
+
+def test_future_abstract_submitted_early_stops_counting_but_paper_stays(db):
+    user = make_user(db)
+    project = make_project(db, user)
+    make_sub(
+        db,
+        project,
+        abstract_deadline=days(3),
+        paper_deadline=days(10),
+        abstract_submitted_on=days(0),
+    )
+    assert [(i["title"], i["due"]) for i in research_items(db, user)] == [
+        ("Northfield Symposium paper", days(10))
+    ]
+    assert count(db, user) == 1
+
+
+def test_past_abstract_without_submitted_date_is_still_overdue(db):
+    user = make_user(db)
+    project = make_project(db, user)
+    make_sub(db, project, abstract_deadline=days(-4))
+    overdue = service.overdue_research(db, user, now=NOW, today=TODAY)
+    assert [(i["title"], i["due"]) for i in overdue] == [
+        ("Northfield Symposium abstract", days(-4))
+    ]
+
+
 def test_submission_leaving_planned_stops_counting(db):
     user = make_user(db)
     project = make_project(db, user)

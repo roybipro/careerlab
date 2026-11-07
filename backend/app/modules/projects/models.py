@@ -115,6 +115,7 @@ class ProjectSubmission(TimestampMixin, Base):
     venue_url: Mapped[str | None] = mapped_column(String(2048))
     abstract_deadline: Mapped[date | None] = mapped_column(Date)
     paper_deadline: Mapped[date | None] = mapped_column(Date)
+    abstract_submitted_on: Mapped[date | None] = mapped_column(Date)
     notification_date: Mapped[date | None] = mapped_column(Date)
     submitted_on: Mapped[date | None] = mapped_column(Date)
     status: Mapped[SubmissionStatus] = mapped_column(

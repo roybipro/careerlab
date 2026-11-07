@@ -318,6 +318,24 @@ def test_items_isolated_between_users(ana, second_client):
     assert activity_for(ana, p["id"]) == events_before
 
 
+def test_abstract_submitted_on_is_isolated_between_users(ana, second_client):
+    p = make_project(ana)
+    s = make_sub(ana, p["id"], abstract_deadline="2031-01-01", paper_deadline="2031-02-01")
+    assert s["abstract_submitted_on"] is None
+    url = f"{subs(p['id'])}/{s['id']}"
+    r = second_client.patch(url, json={"abstract_submitted_on": "2030-12-30"})
+    assert r.status_code == 404
+    assert ana.get(subs(p["id"])).json()["items"][0]["abstract_submitted_on"] is None
+    # The owner can set and clear it; a null clears.
+    assert (
+        ana.patch(url, json={"abstract_submitted_on": "2030-12-30"}).json()["abstract_submitted_on"]
+        == "2030-12-30"
+    )
+    assert (
+        ana.patch(url, json={"abstract_submitted_on": None}).json()["abstract_submitted_on"] is None
+    )
+
+
 def test_counts_and_next_deadline_follow_changes(ana):
     p = make_project(ana)
     pid = p["id"]

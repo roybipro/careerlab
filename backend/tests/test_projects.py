@@ -230,6 +230,28 @@ def test_counts_and_next_deadline(ana, db):
     assert listing[other["id"]]["milestones_total"] == 1
 
 
+def test_next_deadline_follows_abstract_submitted_on(ana, db):
+    user = _user(db)
+    p = make_project(ana)
+    t = today()
+    sub = _add_submission(
+        db,
+        user,
+        p["id"],
+        abstract_deadline=t + timedelta(days=2),
+        paper_deadline=t + timedelta(days=9),
+    )
+    url = f"{PROJECTS}/{p['id']}"
+    assert ana.get(url).json()["next_deadline"] == (t + timedelta(days=2)).isoformat()
+    r = ana.patch(f"{url}/submissions/{sub.id}", json={"abstract_submitted_on": t.isoformat()})
+    assert r.status_code == 200 and r.json()["abstract_submitted_on"] == t.isoformat()
+    # The abstract no longer counts; the paper deadline does.
+    assert ana.get(url).json()["next_deadline"] == (t + timedelta(days=9)).isoformat()
+    r = ana.patch(f"{url}/submissions/{sub.id}", json={"abstract_submitted_on": None})
+    assert r.status_code == 200 and r.json()["abstract_submitted_on"] is None
+    assert ana.get(url).json()["next_deadline"] == (t + timedelta(days=2)).isoformat()
+
+
 def test_next_deadline_follows_client_today(ana, db):
     user = _user(db)
     p = make_project(ana)

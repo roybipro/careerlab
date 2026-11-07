@@ -51,10 +51,12 @@ def active_project_clause() -> ColumnElement[bool]:
 def planned_submission_deadlines(user: User) -> Subquery:
     """Each abstract and paper deadline of a `planned` submission in an active project.
 
+    An abstract deadline is left out once `abstract_submitted_on` is set.
+
     Columns: project_id, item_id (the submission), title (the venue), due, field.
     """
 
-    def part(column: Any, field: str) -> Select[Any]:
+    def part(column: Any, field: str, *extra: ColumnElement[bool]) -> Select[Any]:
         return (
             select(
                 ProjectSubmission.project_id.label("project_id"),
@@ -69,11 +71,17 @@ def planned_submission_deadlines(user: User) -> Subquery:
                 ProjectSubmission.status == SubmissionStatus.planned,
                 column.is_not(None),
                 active_project_clause(),
+                *extra,
             )
         )
 
     return union_all(
-        part(ProjectSubmission.abstract_deadline, "abstract_deadline"),
+        # An abstract stops being an open item once it is marked submitted.
+        part(
+            ProjectSubmission.abstract_deadline,
+            "abstract_deadline",
+            ProjectSubmission.abstract_submitted_on.is_(None),
+        ),
         part(ProjectSubmission.paper_deadline, "paper_deadline"),
     ).subquery("planned_submission_deadlines")
 
