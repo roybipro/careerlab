@@ -174,3 +174,23 @@ def test_reminder_related_to_another_users_record_returns_404(ana, second_client
     assert r.status_code == 404
     assert ana.get(REMINDERS).json()["items"] == [own]
     assert second_client.get(REMINDERS).json()["total"] == 0
+
+
+def test_reminder_patch_to_another_users_project_returns_404_and_changes_nothing(
+    ana, second_client
+):
+    bobs_project = second_client.post(
+        "/api/v1/projects", json={"title": "Bob's Graph Study"}
+    ).json()
+    own = make_reminder(ana)
+    url = f"{REMINDERS}/{own['id']}"
+    r = ana.patch(url, json={"related_type": "project", "related_id": bobs_project["id"]})
+    assert r.status_code == 404
+    # Nothing was written, even when the patch also changes another field.
+    r = ana.patch(
+        url,
+        json={"title": "Changed", "related_type": "project", "related_id": bobs_project["id"]},
+    )
+    assert r.status_code == 404
+    assert ana.get(REMINDERS).json()["items"] == [own]
+    assert second_client.get(REMINDERS).json()["total"] == 0

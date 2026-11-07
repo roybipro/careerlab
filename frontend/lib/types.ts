@@ -191,6 +191,8 @@ export type Project = {
   submissions_total: number;
   /** The earliest open submission deadline or milestone due date that is today or later. */
   next_deadline: string | null;
+  /** True when an open submission deadline or milestone is dated before today. */
+  has_overdue: boolean;
   created_at: string;
   updated_at: string;
 };
@@ -203,6 +205,8 @@ export type ProjectSubmission = {
   venue_url: string | null;
   abstract_deadline: string | null;
   paper_deadline: string | null;
+  /** When the abstract went in. Once set, the abstract deadline no longer counts as open. */
+  abstract_submitted_on: string | null;
   notification_date: string | null;
   submitted_on: string | null;
   status: string;

@@ -28,7 +28,7 @@ The screenshots in this repo use invented data from the demo seed script.
 - Reminders have overdue, upcoming and completed views, with search and sorting. The header
   bell shows incomplete reminders that are overdue or due in the next 3 days.
 - A dashboard with eight summary numbers and an Active research projects card, job and
-  research pipelines, upcoming deadlines (including submission deadlines and milestones), a
+  opportunity pipelines, upcoming deadlines (including submission deadlines and milestones), a
   section for overdue reminders and research items (shown only when there are some) and recent activity, all
   computed from the database on each request. "Today" is the browser's local date.
 - An analytics page with status charts and monthly application counts.
@@ -155,10 +155,10 @@ npm run build
 
 End-to-end tests run against the full stack. Start it first with `docker compose up -d --build`.
 The tests register several users from one IP, so start the stack with a higher registration
-limit than the default of 5 per minute:
+limit than the default of 5 per minute (and the all-IPs limit of 30, which back-to-back runs would share):
 
 ```bash
-RATE_LIMIT_REGISTER_PER_MINUTE=1000 docker compose up -d --build
+RATE_LIMIT_REGISTER_PER_MINUTE=1000 RATE_LIMIT_REGISTER_GLOBAL_PER_MINUTE=1000 docker compose up -d --build
 cd frontend
 npx playwright install chromium
 npm run test:e2e

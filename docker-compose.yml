@@ -32,6 +32,7 @@ services:
       TRUST_PROXY: ${TRUST_PROXY:-false}
       # Production keeps the default of 5. CI raises it so the e2e suite can register several users.
       RATE_LIMIT_REGISTER_PER_MINUTE: ${RATE_LIMIT_REGISTER_PER_MINUTE:-5}
+      RATE_LIMIT_REGISTER_GLOBAL_PER_MINUTE: ${RATE_LIMIT_REGISTER_GLOBAL_PER_MINUTE:-30}
     ports:
       - "127.0.0.1:8000:8000"
 

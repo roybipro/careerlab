@@ -68,7 +68,7 @@ Every error uses one shape:
 | 404 | `not_found` | The record does not exist or is not yours. |
 | 405 | `method_not_allowed` | The method is not supported on that path. |
 | 409 | `conflict` | Email already registered, or a contact already linked to a record. |
-| 422 | `validation_error` | Invalid input. `details` is a list of `{loc, message, type}`. |
+| 422 | `validation_error` | Invalid input. `details` is a list of `{loc, message, type}`. Messages from the app's own validators have no "Value error, " prefix. |
 | 429 | `rate_limited` | Too many requests. |
 | 500 | `internal_error` | An unexpected server error. |
 
@@ -119,7 +119,7 @@ Limits are counted in memory per API process, per rolling minute, and answer `42
 
 | Endpoint | Limit |
 |---|---|
-| `POST /auth/register` | 5 per client IP (set by `RATE_LIMIT_REGISTER_PER_MINUTE`), and 30 across all IPs |
+| `POST /auth/register` | 5 per client IP (set by `RATE_LIMIT_REGISTER_PER_MINUTE`), and 30 across all IPs (set by `RATE_LIMIT_REGISTER_GLOBAL_PER_MINUTE`). Only the end-to-end environment raises either |
 | `POST /auth/login` | 10 per client IP, and 5 per email address |
 
 The client IP is the connection's address, or the first `X-Forwarded-For` entry when
@@ -159,17 +159,17 @@ and `/health` needs a session.
 | `GET /research/{id}` | Get | |
 | `PATCH /research/{id}` | Update | List fields are replaced as a whole |
 | `DELETE /research/{id}` | Delete | `204` |
-| `GET /projects` | List research projects (your own papers, theses and studies) | Filters: `stage`, `project_type`, `active`, `q` (title, topic, institution). `active=true` hides `published` and `paused` projects. `active=false` is **not** a filter and returns every project, the same as leaving it out. Sort: `created_at`, `updated_at`, `title`, `target_date`. Optional `today`. Each project has `milestones_total`, `milestones_done`, `submissions_total` and `next_deadline` |
+| `GET /projects` | List research projects (your own papers, theses and studies) | Filters: `stage`, `project_type`, `active`, `q` (title, topic, institution). `active=true` hides `published` and `paused` projects. `active=false` is **not** a filter and returns every project, the same as leaving it out. Sort: `created_at`, `updated_at`, `title`, `target_date`. Optional `today`. Each project has `milestones_total`, `milestones_done`, `submissions_total`, `next_deadline` and `has_overdue`. `has_overdue` is true when an open item (the same items the dashboard counts) is dated before `today` |
 | `POST /projects` | Create | `201`. Optional `today` |
 | `GET /projects/{id}` | Get | Optional `today` |
 | `PATCH /projects/{id}` | Update, including `stage` | Optional `today` |
 | `DELETE /projects/{id}` | Delete, with its submissions, milestones, notes and reminders | `204` |
 | `GET /projects/{id}/submissions` | List the venues a project is sent to | Every submission, up to 100 |
-| `POST /projects/{id}/submissions` | Add a submission | `201`. `abstract_deadline` after `paper_deadline` is `422`, checked against the stored other date when only one is sent. `venue_url` must be `http` or `https` |
-| `PATCH /projects/{id}/submissions/{submission_id}` | Update, including `status` | A submission of another project or user is `404` |
+| `POST /projects/{id}/submissions` | Add a submission | `201`. `abstract_deadline` after `paper_deadline` is `422`, checked against the stored other date when only one is sent. `venue_url` must be `http` or `https`. Optional `abstract_submitted_on` (a date): once it is set, the abstract deadline no longer counts as an open item, while the paper deadline still counts as long as the status is `planned` |
+| `PATCH /projects/{id}/submissions/{submission_id}` | Update, including `status` | A submission of another project or user is `404`. `abstract_submitted_on` can be set, and cleared with `null`. The API never fills `submitted_on` when `status` changes; the client sends it |
 | `DELETE /projects/{id}/submissions/{submission_id}` | Delete | `204` |
 | `GET /projects/{id}/milestones` | List milestones | Due date order, undated last |
-| `POST /projects/{id}/milestones` | Add a milestone | `201` |
+| `POST /projects/{id}/milestones` | Add a milestone | `201`. Adding, changing or deleting a submission or milestone also updates the project's `updated_at` |
 | `PATCH /projects/{id}/milestones/{milestone_id}` | Update, or tick with `is_done` | `completed_at` is set when done and cleared when reopened |
 | `DELETE /projects/{id}/milestones/{milestone_id}` | Delete | `204` |
 | `GET /contacts` | List contacts | Filters: `contact_type`, `entity_type`, `entity_id`, `follow_up_due` |

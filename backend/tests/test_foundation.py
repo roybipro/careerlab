@@ -7,6 +7,7 @@ from sqlalchemy.orm import Mapped, Session, mapped_column
 from app.core.db import Base, TimestampMixin
 from app.core.errors import AppError, not_found
 from app.core.lists import ListParams, escape_like, paginate
+from tests.conftest import register_user
 
 
 def test_health(client):
@@ -23,6 +24,20 @@ def test_validation_error_uses_envelope(client):
     r = client.get("/api/v1/_test/validate?n=abc")
     assert r.status_code == 422 and r.json()["error"]["code"] == "validation_error"
     assert r.json()["error"]["details"][0]["loc"] == ["query", "n"]
+
+
+def test_validation_messages_drop_pydantic_value_error_prefix(client):
+    # A schema validator that raises ValueError ("Value error, ..." in pydantic) and a
+    # built-in check keep reading naturally.
+    register_user(client)
+    r = client.post(
+        "/api/v1/projects/00000000-0000-0000-0000-000000000000/submissions",
+        json={"venue_name": "V", "venue_url": "venue.example.org"},
+    )
+    assert r.status_code == 422
+    messages = [d["message"] for d in r.json()["error"]["details"]]
+    assert "must be an http or https URL" in messages
+    assert not any(m.startswith("Value error") for m in messages)
 
 
 def test_unhandled_exception_uses_envelope_and_is_logged(lenient_client, caplog):

@@ -30,6 +30,7 @@ import { DataState, EmptyState } from "@/components/data-state";
 import { ActivityIcon, describeActivity } from "@/components/entity/activity-timeline";
 import { JobFormDialog } from "@/components/jobs/job-form";
 import { PageHeader } from "@/components/page-header";
+import { ProjectFormDialog } from "@/components/projects/project-form";
 import { ReminderFormDialog } from "@/components/reminders/reminder-form";
 import { ResearchFormDialog } from "@/components/research/research-form";
 import { Button } from "@/components/ui/button";
@@ -180,7 +181,7 @@ function Pipelines() {
         {(data) => (
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <Pipeline title="Job pipeline" icon={Briefcase} counts={data.job_status} basePath="/jobs" />
-            <Pipeline title="Research pipeline" icon={FlaskConical} counts={data.research_status} basePath="/research" />
+            <Pipeline title="Opportunity pipeline" icon={FlaskConical} counts={data.research_status} basePath="/research" />
           </div>
         )}
       </DataState>
@@ -192,7 +193,7 @@ type ItemKind = Deadline["kind"];
 
 const KIND_LABEL: Record<ItemKind, string> = {
   job_deadline: "Job deadline",
-  research_deadline: "Research deadline",
+  research_deadline: "Opportunity deadline",
   reminder: "Reminder",
   project_submission_deadline: "Submission deadline",
   project_milestone: "Milestone",
@@ -252,7 +253,7 @@ function Deadlines() {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <DataState query={query} empty={<p className="text-sm text-muted-foreground">Nothing due in the next 14 days. Deadlines on active jobs and research, and your reminders, show up here.</p>}>
+        <DataState query={query} empty={<p className="text-sm text-muted-foreground">Nothing due in the next 14 days. Deadlines on active jobs, opportunities and research projects, and your reminders, show up here.</p>}>
           {(items) => (
             <ul className="-my-1 divide-y">
               {items.map((d) => {
@@ -522,7 +523,7 @@ const SECONDARY_ACTION = "max-lg:border-border max-lg:bg-card max-lg:hover:bg-mu
 
 export default function DashboardPage() {
   const user = useCurrentUser();
-  const [adding, setAdding] = useState<"job" | "research" | "contact" | "reminder" | null>(null);
+  const [adding, setAdding] = useState<"job" | "project" | "research" | "contact" | "reminder" | null>(null);
   const close = (open: boolean) => !open && setAdding(null);
   const isDesktop = useMediaQuery("(min-width: 64rem)", true);
   const sections: Record<(typeof DESKTOP_ORDER)[number], ReactNode> = {
@@ -538,21 +539,27 @@ export default function DashboardPage() {
         title={user.data ? `Welcome, ${user.data.full_name.split(" ")[0]}` : "Welcome"}
         description="Your pipeline at a glance."
         icon={LayoutDashboard}
+        // Five quick actions: they sit under the title until the screen is wide enough for one row.
+        wideActions
         actions={
-          <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:flex-wrap lg:justify-end">
+          <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:flex-wrap xl:justify-end">
             <Button onClick={() => setAdding("job")}>
               <Briefcase data-icon="inline-start" />
               Add job
             </Button>
+            <Button variant="ghost" className={SECONDARY_ACTION} onClick={() => setAdding("project")}>
+              <FolderKanban data-icon="inline-start" />
+              Add project
+            </Button>
             <Button variant="ghost" className={SECONDARY_ACTION} onClick={() => setAdding("research")}>
               <FlaskConical data-icon="inline-start" />
-              Add research
+              Add opportunity
             </Button>
             <Button variant="ghost" className={SECONDARY_ACTION} onClick={() => setAdding("contact")}>
               <Contact data-icon="inline-start" />
               Add contact
             </Button>
-            <Button variant="ghost" className={SECONDARY_ACTION} onClick={() => setAdding("reminder")}>
+            <Button variant="ghost" className={cn(SECONDARY_ACTION, "max-sm:col-span-2")} onClick={() => setAdding("reminder")}>
               <BellPlus data-icon="inline-start" />
               Add reminder
             </Button>
@@ -568,6 +575,7 @@ export default function DashboardPage() {
         ))}
       </div>
       <JobFormDialog open={adding === "job"} onOpenChange={close} />
+      <ProjectFormDialog open={adding === "project"} onOpenChange={close} />
       <ResearchFormDialog open={adding === "research"} onOpenChange={close} />
       <ContactFormDialog open={adding === "contact"} onOpenChange={close} />
       <ReminderFormDialog open={adding === "reminder"} onOpenChange={close} />

@@ -55,6 +55,7 @@ All tables use a UUID primary key and `created_at` and `updated_at`. `user_id` i
 | `venue_type` | enum | `conference`, `journal`, `workshop`, `other`; default `conference` |
 | `venue_url` | text | optional, `http` or `https` only |
 | `abstract_deadline`, `paper_deadline`, `notification_date`, `submitted_on` | date | optional |
+| `abstract_submitted_on` | date | optional; when the abstract was sent. Added in migration `0007` (a nullable column only) after the final review. Once set, the abstract deadline no longer counts as open |
 | `status` | enum | `planned`, `submitted`, `under_review`, `revisions_requested`, `accepted`, `rejected`, `withdrawn`; default `planned` |
 | `feedback` | text | optional reviewer comments |
 
@@ -89,6 +90,7 @@ Milestones are listed by due date with undated ones last, and then by creation t
 on submissions. `(user_id, project_id)`, `(user_id, is_done, due_date)` on milestones.
 
 The migration only adds tables and indexes and widens constraints, so existing rows do not change.
+Migration `0007` adds the nullable `project_submissions.abstract_submitted_on` and nothing else.
 
 ## 3. API
 
@@ -108,6 +110,10 @@ Base path `/api/v1`. All routes need a session and follow the list, error and CS
 - **Project responses** include `milestones_total`, `milestones_done`, `submissions_total` and
   `next_deadline`, computed with SQL, without loading every row for each project on a list page.
   `next_deadline` is the earliest open item that is today or later, using the definitions below.
+- `has_overdue` on a project is true when an open item (below) is dated before `today`. It is
+  computed in the same grouped query as `next_deadline`, with no query per row.
+- Writing a submission or milestone also sets the parent project's `updated_at`, in the same
+  transaction, so "recently updated" follows work on the project.
 - **Sub-lists** return every record for one project, up to the standard page size cap of 100.
 
 ### Activity events
@@ -121,7 +127,9 @@ Written in the same transaction as the change: `created`, `stage_changed` (old a
 **Open research items:**
 - A **submission deadline** is the `abstract_deadline` or `paper_deadline` of a submission in
   `planned`. Each date counts as its own item. Once a submission leaves `planned`, its deadlines no
-  longer count.
+  longer count. An `abstract_deadline` also stops counting once `abstract_submitted_on` is set, so a
+  planned submission with the abstract sent and a paper still to come shows only the paper. An
+  abstract deadline with no `abstract_submitted_on` that has passed is still overdue.
 - A **milestone** is one with a `due_date` and `is_done` false.
 - Items count only when the parent project's stage is not `published` or `paused`.
 
@@ -149,9 +157,14 @@ Written in the same transaction as the change: `created`, `stage_changed` (old a
   the shared panels and the detail page scaffolding.
 - **Submissions panel:** one row per venue with its status, deadlines and how soon they're due.
   Adding or editing uses a dialog with the feedback field, and deleting asks for confirmation.
+  A planned submission with an abstract deadline has a **Mark abstract submitted** button (today's
+  local date, with undo). For a `published` or `paused` project the panels show dates but no overdue
+  or late alarms. Changing a status from `planned` to `submitted` fills `submitted_on` with today's
+  local date when it is empty; the client sends it, the API does not infer it.
 - **Milestones panel:** a checklist with due dates, inline add, edit and delete, and an "N of M done"
   progress bar. A failed save reverts and shows an error. Overdue items stand out in text and colour.
-- **Dashboard:** a compact Active research projects card, with research items in Upcoming deadlines
+- **Dashboard:** quick actions Add job, Add project, Add opportunity, Add contact and Add reminder;
+  the research opportunity pipeline reads "Opportunity pipeline". A compact Active research projects card, with research items in Upcoming deadlines
   and Overdue, each labelled with its kind and project and linking to the project page.
 - **Empty states** explain what a research project is and offer to create the first one.
 - **Style:** the existing Crisp cobalt tokens. Each stage and submission status gets a colour, an

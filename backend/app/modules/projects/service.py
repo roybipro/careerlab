@@ -51,10 +51,12 @@ def active_project_clause() -> ColumnElement[bool]:
 def planned_submission_deadlines(user: User) -> Subquery:
     """Each abstract and paper deadline of a `planned` submission in an active project.
 
+    An abstract deadline is left out once `abstract_submitted_on` is set.
+
     Columns: project_id, item_id (the submission), title (the venue), due, field.
     """
 
-    def part(column: Any, field: str) -> Select[Any]:
+    def part(column: Any, field: str, *extra: ColumnElement[bool]) -> Select[Any]:
         return (
             select(
                 ProjectSubmission.project_id.label("project_id"),
@@ -69,11 +71,17 @@ def planned_submission_deadlines(user: User) -> Subquery:
                 ProjectSubmission.status == SubmissionStatus.planned,
                 column.is_not(None),
                 active_project_clause(),
+                *extra,
             )
         )
 
     return union_all(
-        part(ProjectSubmission.abstract_deadline, "abstract_deadline"),
+        # An abstract stops being an open item once it is marked submitted.
+        part(
+            ProjectSubmission.abstract_deadline,
+            "abstract_deadline",
+            ProjectSubmission.abstract_submitted_on.is_(None),
+        ),
         part(ProjectSubmission.paper_deadline, "paper_deadline"),
     ).subquery("planned_submission_deadlines")
 
@@ -104,7 +112,10 @@ def open_milestones(user: User) -> Select[Any]:
 def _counts(
     db: Session, user: User, ids: Sequence[uuid.UUID], today: date
 ) -> dict[uuid.UUID, dict[str, Any]]:
-    """Counts and next deadline for a page of projects, in a fixed number of queries."""
+    """Counts, next deadline and overdue flag for a page of projects, in a fixed number of queries.
+
+    `has_overdue` uses the same open items as the dashboard: an item dated before `today`.
+    """
     if not ids:
         return {}
     result: dict[uuid.UUID, dict[str, Any]] = {i: {} for i in ids}
@@ -134,12 +145,17 @@ def _counts(
         select(submissions.c.project_id, submissions.c.due),
         select(milestones.c.project_id, milestones.c.due),
     ).subquery("open_items")
-    for project_id, due in db.execute(
-        select(open_items.c.project_id, func.min(open_items.c.due))
-        .where(open_items.c.project_id.in_(ids), open_items.c.due >= today)
+    # One grouped query: the earliest open date from today on, and whether any is before today.
+    for project_id, due, overdue in db.execute(
+        select(
+            open_items.c.project_id,
+            func.min(open_items.c.due).filter(open_items.c.due >= today),
+            func.bool_or(open_items.c.due < today),
+        )
+        .where(open_items.c.project_id.in_(ids))
         .group_by(open_items.c.project_id)
     ):
-        result[project_id].update(next_deadline=due)
+        result[project_id].update(next_deadline=due, has_overdue=bool(overdue))
     return result
 
 
@@ -251,6 +267,14 @@ MILESTONE_SORT_FIELDS = {
 }
 
 
+def _touch(project: ResearchProject) -> None:
+    """Bump the parent's `updated_at`, so "recently updated" reflects work on its items.
+
+    The change is flushed with the item write and committed in the same transaction.
+    """
+    project.updated_at = func.now()
+
+
 def list_submissions(
     db: Session, user: User, project_id: uuid.UUID, params: ListParams
 ) -> Page[Any]:
@@ -310,6 +334,7 @@ def create_submission(
         project_label(project),
         venue=submission.venue_name,
     )
+    _touch(project)
     db.commit()
     return submission
 
@@ -347,6 +372,7 @@ def update_submission(
                 old=old_status.value,
                 new=submission.status.value,
             )
+        _touch(project)
         db.commit()
     return submission
 
@@ -354,8 +380,9 @@ def update_submission(
 def delete_submission(
     db: Session, user: User, project_id: uuid.UUID, submission_id: uuid.UUID
 ) -> None:
-    get_project(db, user, project_id)
+    project = get_project(db, user, project_id)
     db.delete(_get_submission(db, user, project_id, submission_id))
+    _touch(project)
     db.commit()
 
 
@@ -408,6 +435,7 @@ def create_milestone(
     db.flush()
     if milestone.is_done:
         _log_completed(db, user, project, milestone.title)
+    _touch(project)
     db.commit()
     return milestone
 
@@ -432,6 +460,7 @@ def update_milestone(
             milestone.completed_at = datetime.now(UTC) if milestone.is_done else None
             if milestone.is_done:
                 _log_completed(db, user, project, milestone.title)
+        _touch(project)
         db.commit()
     return milestone
 
@@ -439,6 +468,7 @@ def update_milestone(
 def delete_milestone(
     db: Session, user: User, project_id: uuid.UUID, milestone_id: uuid.UUID
 ) -> None:
-    get_project(db, user, project_id)
+    project = get_project(db, user, project_id)
     db.delete(_get_milestone(db, user, project_id, milestone_id))
+    _touch(project)
     db.commit()

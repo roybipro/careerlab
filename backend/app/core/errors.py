@@ -53,7 +53,13 @@ def register_error_handlers(app: FastAPI) -> None:
     @app.exception_handler(RequestValidationError)
     async def _validation_error(_: Request, exc: RequestValidationError) -> JSONResponse:
         details = [
-            {"loc": list(e["loc"]), "message": e["msg"], "type": e["type"]} for e in exc.errors()
+            {
+                "loc": list(e["loc"]),
+                # Pydantic prefixes messages from our own validators with "Value error, ".
+                "message": e["msg"].removeprefix("Value error, "),
+                "type": e["type"],
+            }
+            for e in exc.errors()
         ]
         return _envelope(422, "validation_error", "Request validation failed", details)
 

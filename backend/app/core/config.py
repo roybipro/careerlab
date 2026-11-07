@@ -34,6 +34,9 @@ class Settings(BaseSettings):
     TRUST_PROXY: bool = False
     # Per-IP limit on POST /auth/register. Only the end-to-end test environment raises it.
     RATE_LIMIT_REGISTER_PER_MINUTE: int = 5
+    # Limit on POST /auth/register across all IPs, a backstop if forwarded IPs are spoofed.
+    # Only the end-to-end test environment raises it.
+    RATE_LIMIT_REGISTER_GLOBAL_PER_MINUTE: int = 30
     # How many Argon2 hashes may run at once. Each takes about 64 MiB, so this bounds the
     # memory spent on hashing. Lower it on small hosts (render.yaml sets 2 for the free plan).
     MAX_CONCURRENT_HASHES: int = Field(default=4, ge=1)

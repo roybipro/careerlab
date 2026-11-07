@@ -1,7 +1,7 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ExternalLink, Pencil, Plus, Send, Trash2 } from "lucide-react";
+import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
+import { CircleCheck, ExternalLink, Pencil, Plus, Send, Trash2, Undo2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/confirm-dialog";
@@ -12,15 +12,24 @@ import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { api, ApiError } from "@/lib/api";
-import { SUBMISSION_STATUSES, VENUE_TYPES, optionLabel } from "@/lib/enums";
-import { daysFromToday, dueLabel, formatDateOnly, safeHttpUrl } from "@/lib/format";
+import { SUBMISSION_STATUSES, VENUE_TYPES, isInactiveStage, optionLabel } from "@/lib/enums";
+import { daysFromToday, dueLabel, formatDateOnly, localToday, safeHttpUrl } from "@/lib/format";
 import { invalidateProject, keys } from "@/lib/keys";
 import type { Paginated, ProjectSubmission } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const WRAP = "[overflow-wrap:anywhere]";
 
-/** A labelled plain date. A deadline of a planned submission also says how soon it is. */
+type SubmissionList = Paginated<ProjectSubmission>;
+
+/** Changes one submission in the cached list and leaves the others as they are. */
+function patchSubmission(client: QueryClient, projectId: string, id: string, patch: Partial<ProjectSubmission>) {
+  client.setQueryData<SubmissionList>(keys.projectSubmissions(projectId), (old) =>
+    old ? { ...old, items: old.items.map((s) => (s.id === id ? { ...s, ...patch } : s)) } : old,
+  );
+}
+
+/** A labelled plain date. A deadline that still counts also says how soon it is. */
 function DateLine({ label, value, countdown }: { label: string; value: string | null; countdown?: boolean }) {
   if (!value) return null;
   const days = countdown ? daysFromToday(value) : null;
@@ -34,18 +43,48 @@ function DateLine({ label, value, countdown }: { label: string; value: string | 
   );
 }
 
-function SubmissionRow({ projectId, submission, onEdit, onDelete }: { projectId: string; submission: ProjectSubmission; onEdit: () => void; onDelete: () => void }) {
+function SubmissionRow({ projectId, submission, inactive, onEdit, onDelete }: { projectId: string; submission: ProjectSubmission; inactive: boolean; onEdit: () => void; onDelete: () => void }) {
   const client = useQueryClient();
   const href = safeHttpUrl(submission.venue_url);
   // Deadlines stop counting once the submission leaves "planned".
   const planned = submission.status === "planned";
+  // A published or paused project keeps its dates but shows no countdown or late label, like the dashboard.
+  const counting = planned && !inactive;
+  const abstractOpen = planned && submission.abstract_deadline !== null && submission.abstract_submitted_on === null;
 
+  // The status and the submitted date go in one request, so they are saved or refused together and
+  // the row keeps showing what is stored until the server answers.
   const changeStatus = useMutation({
-    mutationFn: (status: string) => api<ProjectSubmission>(`/projects/${projectId}/submissions/${submission.id}`, { method: "PATCH", body: { status } }),
+    mutationFn: (status: string) => {
+      const body: Record<string, unknown> = { status };
+      if (planned && status === "submitted" && !submission.submitted_on) body.submitted_on = localToday();
+      return api<ProjectSubmission>(`/projects/${projectId}/submissions/${submission.id}`, { method: "PATCH", body });
+    },
     onError: (e) => toast.error(`Could not change the status. ${e instanceof ApiError ? e.message : "Something went wrong."}`),
     // Success or failure, ask again: the row, the project's activity and the dashboard all follow the server.
     onSettled: () => invalidateProject(client, projectId),
   });
+
+  // One click records the abstract as sent, with the browser's local date. It shows at once and goes
+  // back if the save fails. Requests for one submission run in order, so mark and undo cannot cross.
+  const markAbstract = useMutation({
+    scope: { id: `submission-${submission.id}-abstract` },
+    mutationFn: (value: string | null) => api<ProjectSubmission>(`/projects/${projectId}/submissions/${submission.id}`, { method: "PATCH", body: { abstract_submitted_on: value } }),
+    onMutate: async () => {
+      await client.cancelQueries({ queryKey: keys.projectSubmissions(projectId) });
+      return { previous: submission.abstract_submitted_on };
+    },
+    onError: (e, _value, context) => {
+      patchSubmission(client, projectId, submission.id, { abstract_submitted_on: context?.previous ?? null });
+      toast.error(`Could not save the abstract date. It shows what is saved. ${e instanceof ApiError ? e.message : "Something went wrong."}`);
+    },
+    onSettled: () => invalidateProject(client, projectId),
+  });
+
+  function setAbstractSubmitted(value: string | null) {
+    patchSubmission(client, projectId, submission.id, { abstract_submitted_on: value });
+    markAbstract.mutate(value);
+  }
 
   return (
     <li className="space-y-3 py-4 first:pt-0 last:pb-0">
@@ -66,8 +105,23 @@ function SubmissionRow({ projectId, submission, onEdit, onDelete }: { projectId:
       </div>
 
       <dl className="space-y-1 text-sm">
-        <DateLine label="Abstract deadline" value={submission.abstract_deadline} countdown={planned} />
-        <DateLine label="Paper deadline" value={submission.paper_deadline} countdown={planned} />
+        <DateLine label="Abstract deadline" value={submission.abstract_deadline} countdown={counting && submission.abstract_submitted_on === null} />
+        {submission.abstract_submitted_on ? (
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <dt className="sr-only">Abstract</dt>
+            <dd className="flex items-center gap-1.5 font-medium">
+              <CircleCheck className="size-4 text-tone-green-fg" aria-hidden="true" />
+              Abstract submitted on {formatDateOnly(submission.abstract_submitted_on)}
+            </dd>
+            <dd>
+              <Button type="button" variant="ghost" size="sm" className="min-h-10 md:min-h-0" onClick={() => setAbstractSubmitted(null)} aria-label={`Undo abstract submitted for ${submission.venue_name}`}>
+                <Undo2 data-icon="inline-start" />
+                Undo
+              </Button>
+            </dd>
+          </div>
+        ) : null}
+        <DateLine label="Paper deadline" value={submission.paper_deadline} countdown={counting} />
         <DateLine label="Submitted on" value={submission.submitted_on} />
         <DateLine label="Notification" value={submission.notification_date} />
       </dl>
@@ -81,6 +135,12 @@ function SubmissionRow({ projectId, submission, onEdit, onDelete }: { projectId:
       ) : null}
 
       <div className="flex flex-wrap items-end gap-2">
+        {abstractOpen ? (
+          <Button type="button" variant="outline" size="sm" className="min-h-10 w-full sm:w-auto md:min-h-0" onClick={() => setAbstractSubmitted(localToday())} aria-label={`Mark abstract submitted for ${submission.venue_name}`}>
+            <CircleCheck data-icon="inline-start" />
+            Mark abstract submitted
+          </Button>
+        ) : null}
         <div className="w-full sm:w-52">
           <NativeSelect
             label={`Status of ${submission.venue_name}`}
@@ -105,7 +165,8 @@ function SubmissionRow({ projectId, submission, onEdit, onDelete }: { projectId:
 }
 
 /** The venues a project is sent to, one row each, with add, edit, status change and delete. */
-export function SubmissionsPanel({ projectId }: { projectId: string }) {
+export function SubmissionsPanel({ projectId, stage }: { projectId: string; stage: string }) {
+  const inactive = isInactiveStage(stage);
   const client = useQueryClient();
   const query = useQuery({
     queryKey: keys.projectSubmissions(projectId),
@@ -145,7 +206,7 @@ export function SubmissionsPanel({ projectId }: { projectId: string }) {
           {(data) => (
             <ul className="divide-y">
               {data.items.map((s) => (
-                <SubmissionRow key={s.id} projectId={projectId} submission={s} onEdit={() => setEditing(s)} onDelete={() => setDeleting(s)} />
+                <SubmissionRow key={s.id} projectId={projectId} submission={s} inactive={inactive} onEdit={() => setEditing(s)} onDelete={() => setDeleting(s)} />
               ))}
             </ul>
           )}

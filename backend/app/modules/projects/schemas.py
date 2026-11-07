@@ -69,6 +69,7 @@ class ProjectOut(BaseModel):
     milestones_done: int = 0
     submissions_total: int = 0
     next_deadline: date | None = None
+    has_overdue: bool = False
     created_at: datetime
     updated_at: datetime
 
@@ -79,6 +80,7 @@ class _SubmissionFields(BaseModel):
     venue_url: HttpUrl | None = None
     abstract_deadline: date | None = None
     paper_deadline: date | None = None
+    abstract_submitted_on: date | None = None
     notification_date: date | None = None
     submitted_on: date | None = None
     feedback: Text | None = None
@@ -128,6 +130,7 @@ class SubmissionOut(BaseModel):
     venue_url: str | None
     abstract_deadline: date | None
     paper_deadline: date | None
+    abstract_submitted_on: date | None
     notification_date: date | None
     submitted_on: date | None
     status: SubmissionStatus

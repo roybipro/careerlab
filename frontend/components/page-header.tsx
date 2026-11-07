@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
+import { cn } from "@/lib/utils";
 
 type PageHeaderProps = {
   title: string;
@@ -8,11 +9,13 @@ type PageHeaderProps = {
   icon?: LucideIcon;
   /** Buttons shown on the right (stacked below the title on narrow screens). */
   actions?: ReactNode;
+  /** A page with many buttons: stack the actions under the title until `xl`, so the title is never squeezed. */
+  wideActions?: boolean;
 };
 
-export function PageHeader({ title, description, icon: Icon, actions }: PageHeaderProps) {
+export function PageHeader({ title, description, icon: Icon, actions, wideActions }: PageHeaderProps) {
   return (
-    <header className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+    <header className={cn("mb-8 flex flex-col gap-4", wideActions ? "xl:flex-row xl:items-start xl:justify-between" : "lg:flex-row lg:items-start lg:justify-between")}>
       <div className="flex min-w-0 items-start gap-3.5">
         {Icon ? (
           <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-accent text-accent-foreground">
@@ -24,7 +27,7 @@ export function PageHeader({ title, description, icon: Icon, actions }: PageHead
           {description ? <p className="mt-1 text-sm break-words text-muted-foreground">{description}</p> : null}
         </div>
       </div>
-      {actions ? <div className="flex shrink-0 flex-wrap gap-2 lg:max-w-[60%] lg:justify-end">{actions}</div> : null}
+      {actions ? <div className={cn("flex shrink-0 flex-wrap gap-2", wideActions ? "xl:max-w-[78%] xl:justify-end" : "lg:max-w-[60%] lg:justify-end")}>{actions}</div> : null}
     </header>
   );
 }

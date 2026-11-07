@@ -278,6 +278,11 @@ export const VENUE_TYPES: Option[] = [
   { value: "other", label: "Other" },
 ];
 
+/** Stages that no longer count towards open work: no overdue or late alarms. Matches the API. */
+export function isInactiveStage(stage: string): boolean {
+  return stage === "published" || stage === "paused";
+}
+
 /** The All / Active switch above the project list. "" means All; Active leaves out published and paused projects. */
 export const PROJECT_SCOPES: Option[] = [
   { value: "", label: "All" },

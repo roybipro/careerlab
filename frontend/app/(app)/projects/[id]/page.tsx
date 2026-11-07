@@ -66,8 +66,8 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
             <ProjectDetails project={project} />
           </div>
           <div className="min-w-0 space-y-6">
-            <SubmissionsPanel projectId={project.id} />
-            <MilestonesPanel projectId={project.id} />
+            <SubmissionsPanel projectId={project.id} stage={project.stage} />
+            <MilestonesPanel projectId={project.id} stage={project.stage} />
           </div>
           <div className="min-w-0 space-y-6">
             <NotesPanel entityType="project" entityId={project.id} />

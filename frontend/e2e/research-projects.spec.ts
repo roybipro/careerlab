@@ -91,11 +91,74 @@ test("a research project: add a submission and milestones, tick one, move it, se
 
   // The project, and its deadline, are gone everywhere.
   await page.goto("/dashboard");
-  await expect(page.locator("body")).not.toContainText(title);
+  // Wait until the dashboard has loaded its deadlines, so "not there" is not just "not there yet".
+  await expect(page.getByRole("heading", { name: /^Welcome/ })).toBeVisible();
+  await expect(page.getByText(/Nothing due in the next 14 days/)).toBeVisible();
+  // The activity feed keeps a "deleted" entry with the title, by design, so check the deadline lists.
+  await expect(page.getByTestId("overdue-section")).toBeHidden();
+  await expect(upcoming).not.toContainText(title);
   await page.goto(projectUrl);
   await expect(page.getByRole("heading", { name: "Research project not found" })).toBeVisible();
 
   // The page never needs sideways scrolling, which matters most at 375px.
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   expect(overflow).toBeLessThanOrEqual(0);
+});
+
+test("marking an abstract submitted clears its Overdue and keeps the paper deadline", async ({ page }) => {
+  await registerUser(page);
+  const title = uniqueName("Graph Study");
+  const venue = uniqueName("Northfield Conf");
+  // The abstract went in two days ago and the paper is due in a week: the normal state of a two-stage conference.
+  const abstract = localDate(-2);
+  const paper = localDate(7);
+
+  await page.goto("/projects");
+  await page.getByRole("button", { name: /^Add (your first )?project$/ }).first().click();
+  const projectDialog = page.getByRole("dialog", { name: "Add a research project" });
+  await projectDialog.getByLabel("Title", { exact: true }).fill(title);
+  await projectDialog.getByRole("button", { name: "Add project" }).click();
+  await expect(projectDialog).toBeHidden();
+  await page.getByRole("link", { name: title }).click();
+  await expect(page.getByRole("heading", { name: title })).toBeVisible();
+  const projectUrl = page.url();
+
+  await page.getByRole("button", { name: "Add submission" }).click();
+  const dialog = page.getByRole("dialog", { name: "Add a submission" });
+  await dialog.getByLabel("Venue", { exact: true }).fill(venue);
+  await dialog.getByLabel("Abstract deadline").fill(abstract);
+  await dialog.getByLabel("Paper deadline").fill(paper);
+  await dialog.getByRole("button", { name: "Add submission" }).click();
+  await expect(dialog).toBeHidden();
+
+  const dashboardCard = (name: string) =>
+    page.locator('[data-slot="card"]').filter({ has: page.locator('[data-slot="card-title"]', { hasText: name }) });
+
+  // Before: the abstract shows as Overdue, in the panel and on the dashboard.
+  await expect(page.getByText("2 days late")).toBeVisible();
+  await page.goto("/dashboard");
+  await expect(page.getByTestId("overdue-section")).toContainText(`${venue} abstract`);
+  await expect(dashboardCard("Upcoming deadlines")).toContainText(`${venue} paper`);
+
+  // Mark it submitted with one click.
+  await page.goto(projectUrl);
+  await page.getByRole("button", { name: `Mark abstract submitted for ${venue}` }).click();
+  await expect(page.getByText(/Abstract submitted on/)).toBeVisible();
+  await expect(page.getByText("2 days late")).toBeHidden();
+  await expect(page.getByRole("button", { name: `Mark abstract submitted for ${venue}` })).toBeHidden();
+  // It is saved, not only shown.
+  await page.reload();
+  await expect(page.getByText(/Abstract submitted on/)).toBeVisible();
+
+  // After: no Overdue, and the paper deadline still counts down in Upcoming deadlines.
+  await page.goto("/dashboard");
+  await expect(dashboardCard("Upcoming deadlines")).toContainText(`${venue} paper`);
+  await expect(page.getByTestId("overdue-section")).toBeHidden();
+  await expect(page.locator("body")).not.toContainText(`${venue} abstract`);
+
+  // Undo brings the Overdue back.
+  await page.goto(projectUrl);
+  await page.getByRole("button", { name: `Undo abstract submitted for ${venue}` }).click();
+  await expect(page.getByText("2 days late")).toBeVisible();
+  await expect(page.getByRole("button", { name: `Mark abstract submitted for ${venue}` })).toBeVisible();
 });

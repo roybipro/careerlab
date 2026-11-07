@@ -119,3 +119,50 @@ def test_migration_upgrade_downgrade_keeps_existing_rows() -> None:
                 text("UPDATE notes SET entity_type = 'nonsense' WHERE id = :i"),
                 {"i": ids["keep_note"]},
             )
+
+
+def test_migration_0007_adds_and_drops_abstract_submitted_on() -> None:
+    config = Config("alembic.ini")
+
+    def columns() -> set[str]:
+        return {c["name"] for c in inspect(engine).get_columns("project_submissions")}
+
+    user, project, sub = uuid.uuid4(), uuid.uuid4(), uuid.uuid4()
+    try:
+        assert "abstract_submitted_on" in columns()
+        command.downgrade(config, "0006")
+        assert "abstract_submitted_on" not in columns()
+        # A row written under 0006 survives the upgrade, with the new column empty.
+        with engine.begin() as conn:
+            conn.execute(
+                text(
+                    "INSERT INTO users (id, full_name, email, password_hash) "
+                    "VALUES (:u, 'M', :e, 'x')"
+                ),
+                {"u": user, "e": f"m-{user}@example.com"},
+            )
+            conn.execute(
+                text("INSERT INTO research_projects (id, user_id, title) VALUES (:p, :u, 'Study')"),
+                {"p": project, "u": user},
+            )
+            conn.execute(
+                text(
+                    "INSERT INTO project_submissions (id, user_id, project_id, venue_name, "
+                    "abstract_deadline) VALUES (:s, :u, :p, 'Venue', '2031-01-01')"
+                ),
+                {"s": sub, "u": user, "p": project},
+            )
+        command.upgrade(config, "0007")
+        assert "abstract_submitted_on" in columns()
+        assert (
+            _count(
+                "SELECT count(*) FROM project_submissions "
+                "WHERE id = :s AND abstract_submitted_on IS NULL "
+                "AND abstract_deadline = '2031-01-01'",
+                s=sub,
+            )
+            == 1
+        )
+    finally:
+        command.upgrade(config, "head")
+    assert "abstract_submitted_on" in columns()
