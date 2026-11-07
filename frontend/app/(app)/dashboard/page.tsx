@@ -71,7 +71,7 @@ function SummarySkeleton() {
           <Skeleton key={c.key} className="h-36 rounded-2xl" />
         ))}
       </div>
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-5">
         {COMPACT_CARDS.map((c) => (
           <Skeleton key={c.key} className="h-20 rounded-2xl" />
         ))}
@@ -109,9 +109,9 @@ function SummaryCards() {
               </li>
             ))}
           </ul>
-          <ul className="grid grid-cols-2 gap-4 lg:grid-cols-5">
+          <ul className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-5">
             {COMPACT_CARDS.map((c) => (
-              <li key={c.key} className="flex flex-wrap items-start gap-x-3 gap-y-1 rounded-2xl border bg-card p-4 shadow-card sm:flex-nowrap">
+              <li key={c.key} className="flex flex-wrap items-start gap-x-3 gap-y-1 rounded-2xl border bg-card p-4 shadow-card sm:flex-nowrap max-md:last:col-span-2">
                 <c.icon className="mt-1 size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
                 <p className="min-w-5 shrink-0 text-xl leading-6 font-semibold tabular-nums" data-testid={`card-${c.key}`}>
                   {data[c.key]}

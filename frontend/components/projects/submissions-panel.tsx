@@ -51,16 +51,16 @@ function SubmissionRow({ projectId, submission, onEdit, onDelete }: { projectId:
     <li className="space-y-3 py-4 first:pt-0 last:pb-0">
       <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
         <div className="min-w-0 flex-1">
-          <p className={cn("font-medium", WRAP)}>
-            {submission.venue_name}
-            {href ? (
-              <a href={href} target="_blank" rel="noopener noreferrer" aria-label={`Open the ${submission.venue_name} website`} className="ml-1.5 inline-block align-middle text-link">
-                <ExternalLink className="size-3.5" aria-hidden="true" />
-              </a>
-            ) : null}
-          </p>
+          <p className={cn("font-medium", WRAP)}>{submission.venue_name}</p>
           <p className="text-xs text-muted-foreground">{optionLabel(VENUE_TYPES, submission.venue_type)}</p>
-          {submission.venue_url && !href ? <p className={cn("text-xs text-muted-foreground", WRAP)}>{submission.venue_url}</p> : null}
+          {href ? (
+            <a href={href} target="_blank" rel="noopener noreferrer" aria-label={`Open the ${submission.venue_name} website`} className="inline-flex min-h-10 items-center gap-1 text-xs text-link underline-offset-4 hover:underline md:min-h-0">
+              Venue website
+              <ExternalLink className="size-3" aria-hidden="true" />
+            </a>
+          ) : submission.venue_url ? (
+            <p className={cn("text-xs text-muted-foreground", WRAP)}>{submission.venue_url}</p>
+          ) : null}
         </div>
         <StatusBadge status={submission.status} />
       </div>

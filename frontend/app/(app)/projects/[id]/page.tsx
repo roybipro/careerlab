@@ -7,7 +7,6 @@ import { Field, TextSection } from "@/components/entity/detail-parts";
 import { EntityDetailPage } from "@/components/entity/entity-detail-page";
 import { NotesPanel } from "@/components/entity/notes-panel";
 import { RemindersPanel } from "@/components/entity/reminders-panel";
-import { MilestoneProgress } from "@/components/projects/milestone-progress";
 import { MilestonesPanel } from "@/components/projects/milestones-panel";
 import { ProjectFormDialog } from "@/components/projects/project-form";
 import { SubmissionsPanel } from "@/components/projects/submissions-panel";
@@ -34,7 +33,6 @@ function ProjectDetails({ project }: { project: Project }) {
           <Field label="Institution" icon={Landmark}>{project.institution}</Field>
           <Field label="Target date" icon={CalendarClock}>{formatDateOnly(project.target_date)}</Field>
         </dl>
-        <MilestoneProgress done={project.milestones_done} total={project.milestones_total} className="max-w-md" />
         <TextSection title="Description" value={project.description} />
         <TextSection title="Notes" value={project.notes} />
       </CardContent>
