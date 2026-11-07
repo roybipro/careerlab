@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 import {
   ArrowRight,
   Bell,
@@ -63,6 +63,12 @@ const COMPACT_CARDS: StatCard[] = [
   { key: "active_research_projects", label: "Active research projects", hint: "Not published or paused", icon: FolderKanban },
 ];
 
+// Five compact cards, laid out on purpose at each width: two columns with the last one full width (phone),
+// then a six-column grid of three over two (768 to 1279px, so no empty cell), then five in a row (xl). The
+// text always sits under the number, because the cards are narrow at every one of these widths.
+const COMPACT_GRID = "grid grid-cols-2 gap-4 md:grid-cols-6 xl:grid-cols-5";
+const COMPACT_ITEM = "max-md:last:col-span-2 md:col-span-2 md:nth-[n+4]:col-span-3 xl:col-span-1 xl:nth-[n+4]:col-span-1";
+
 function SummarySkeleton() {
   return (
     <div className="space-y-4" aria-busy="true" aria-label="Loading">
@@ -71,9 +77,9 @@ function SummarySkeleton() {
           <Skeleton key={c.key} className="h-36 rounded-2xl" />
         ))}
       </div>
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-5">
+      <div className={COMPACT_GRID}>
         {COMPACT_CARDS.map((c) => (
-          <Skeleton key={c.key} className="h-20 rounded-2xl" />
+          <Skeleton key={c.key} className={cn("h-28 rounded-2xl", COMPACT_ITEM)} />
         ))}
       </div>
     </div>
@@ -109,14 +115,14 @@ function SummaryCards() {
               </li>
             ))}
           </ul>
-          <ul className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-5">
+          <ul className={COMPACT_GRID}>
             {COMPACT_CARDS.map((c) => (
-              <li key={c.key} className="flex flex-wrap items-start gap-x-3 gap-y-1 rounded-2xl border bg-card p-4 shadow-card sm:flex-nowrap max-md:last:col-span-2">
+              <li key={c.key} className={cn("flex flex-wrap items-start gap-x-3 gap-y-1 rounded-2xl border bg-card p-4 shadow-card", COMPACT_ITEM)}>
                 <c.icon className="mt-1 size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
                 <p className="min-w-5 shrink-0 text-xl leading-6 font-semibold tabular-nums" data-testid={`card-${c.key}`}>
                   {data[c.key]}
                 </p>
-                <div className="w-full min-w-0 sm:w-auto">
+                <div className="w-full min-w-0">
                   <p className="text-sm leading-6 font-medium">{c.label}</p>
                   <p className="text-xs text-muted-foreground">{c.hint}</p>
                 </div>
@@ -317,14 +323,8 @@ function OverdueItems() {
     queryFn: () => api<OverdueResearch[]>("/dashboard/overdue-research", { query: { today } }),
     refetchInterval: 60_000,
   });
+  const [expanded, setExpanded] = useState(false);
   if (reminders.isPending || research.isPending) return null;
-  if (!reminders.data && !research.data) {
-    return (
-      <div className="min-w-0 lg:col-span-2">
-        {reminders.isError ? <DataState query={reminders}>{() => null}</DataState> : <DataState query={research}>{() => null}</DataState>}
-      </div>
-    );
-  }
   const reminderRows: OverdueRow[] = (reminders.data?.items ?? []).map((r) => ({
     key: `reminder-${r.id}`,
     href: OVERDUE_HREF,
@@ -346,24 +346,38 @@ function OverdueItems() {
   // The API caps the research list at 50, so its length is the count it can show.
   const reminderTotal = reminders.data?.total ?? 0;
   const total = reminderTotal + researchRows.length;
-  if (total === 0) return null;
-  const rows = [...reminderRows, ...researchRows].sort((a, b) => a.at - b.at).slice(0, OVERDUE_SHOWN);
-  const failed = reminders.isError ? "reminders" : research.isError ? "research items" : null;
+  // A source that failed is named, with Retry. One that never loaded may be hiding rows; one that did load is stale.
+  const sources = [
+    { name: "reminders", query: reminders as UseQueryResult<unknown> },
+    { name: "research items", query: research as UseQueryResult<unknown> },
+  ].filter((x) => x.query.isError);
+  const neverLoaded = sources.some((x) => x.query.data === undefined);
+  if (total === 0 && sources.length === 0) return null;
+  const merged = [...reminderRows, ...researchRows].sort((a, b) => a.at - b.at);
+  const rows = expanded ? merged : merged.slice(0, OVERDUE_SHOWN);
+  const hidden = merged.length - OVERDUE_SHOWN;
 
   return (
     <Card data-testid="overdue-section" className="border-destructive/50 lg:col-span-2">
       <CardHeader>
         <CardTitle className="text-destructive [&>svg]:text-destructive">
           <TriangleAlert aria-hidden="true" />
-          Overdue ({total})
+          {neverLoaded ? (total > 0 ? `Overdue (${total}+)` : "Overdue") : `Overdue (${total})`}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-2">
-        {failed ? (
-          <p role="alert" className="text-sm text-destructive">
-            Could not refresh overdue {failed}. Showing the last loaded list.
-          </p>
-        ) : null}
+        {sources.map(({ name, query }) => (
+          <div key={name} role="alert" className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-destructive">
+            <span>
+              {query.data === undefined
+                ? `Could not load overdue ${name}. This list may be incomplete.`
+                : `Could not refresh overdue ${name}. Showing the last loaded list.`}
+            </span>
+            <Button variant="outline" size="sm" onClick={() => void query.refetch()} disabled={query.isFetching}>
+              {query.isFetching ? "Retrying..." : "Retry"}
+            </Button>
+          </div>
+        ))}
         <ul className="-my-1 divide-y">
           {rows.map((r) => {
             const KindIcon = KIND_ICON[r.kind];
@@ -388,6 +402,11 @@ function OverdueItems() {
             );
           })}
         </ul>
+        {hidden > 0 ? (
+          <Button variant="ghost" size="sm" aria-expanded={expanded} onClick={() => setExpanded((v) => !v)}>
+            {expanded ? "Show fewer" : `Show ${hidden} more`}
+          </Button>
+        ) : null}
         {reminderTotal > 0 ? (
           <Link href={OVERDUE_HREF} className="inline-flex min-h-10 items-center gap-1.5 text-sm font-medium text-link underline-offset-4 hover:underline">
             {reminderTotal > OVERDUE_SHOWN ? `View all ${reminderTotal} overdue reminders` : "View in reminders"}
