@@ -309,7 +309,49 @@ function dayStart(value: string): number {
   return new Date(y, m - 1, d).getTime();
 }
 
-/** Incomplete reminders and open research items already past due, oldest first. Shows nothing at all when there are none. */
+/**
+ * True once the query has failed, and stays true while it retries. Refetching a query that never loaded puts
+ * it back to `pending` (and clears its error), so without this a failing source would flip between "failed"
+ * and "loading" on every Retry click and every poll.
+ */
+function useHasFailed(query: UseQueryResult<unknown>): boolean {
+  const [seen, setSeen] = useState(false);
+  if (query.isError && !seen) setSeen(true);
+  // Once data has arrived, only a current error counts (a later success clears the failure).
+  return query.isError || (seen && query.data === undefined);
+}
+
+/** The notice for one source that failed, with Retry. Only a click shows "Retrying", so a poll does not flicker it. */
+function SourceNotice({ name, query }: { name: string; query: UseQueryResult<unknown> }) {
+  const [clicked, setClicked] = useState(false);
+  const message = clicked
+    ? `Retrying overdue ${name}...`
+    : query.data === undefined
+      ? `Could not load overdue ${name}. This list may be incomplete.`
+      : `Could not refresh overdue ${name}. Showing the last loaded list.`;
+  return (
+    <div role="alert" className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-destructive">
+      <span>{message}</span>
+      <Button
+        variant="outline"
+        size="sm"
+        disabled={clicked}
+        onClick={() => {
+          setClicked(true);
+          void query.refetch().finally(() => setClicked(false));
+        }}
+      >
+        {clicked ? "Retrying..." : "Retry"}
+      </Button>
+    </div>
+  );
+}
+
+/**
+ * Incomplete reminders and open research items already past due, oldest first. Shows nothing at all when there
+ * are none. Once a source has rows or has failed, the card stays: a source that is retrying or polling never
+ * hides it, or the other source's rows.
+ */
 function OverdueItems() {
   const today = localToday();
   const reminders = useQuery({
@@ -324,7 +366,8 @@ function OverdueItems() {
     refetchInterval: 60_000,
   });
   const [expanded, setExpanded] = useState(false);
-  if (reminders.isPending || research.isPending) return null;
+  const remindersFailed = useHasFailed(reminders as UseQueryResult<unknown>);
+  const researchFailed = useHasFailed(research as UseQueryResult<unknown>);
   const reminderRows: OverdueRow[] = (reminders.data?.items ?? []).map((r) => ({
     key: `reminder-${r.id}`,
     href: OVERDUE_HREF,
@@ -346,13 +389,15 @@ function OverdueItems() {
   // The API caps the research list at 50, so its length is the count it can show.
   const reminderTotal = reminders.data?.total ?? 0;
   const total = reminderTotal + researchRows.length;
-  // A source that failed is named, with Retry. One that never loaded may be hiding rows; one that did load is stale.
+  // A source with no data that has not failed is still on its first load.
   const sources = [
-    { name: "reminders", query: reminders as UseQueryResult<unknown> },
-    { name: "research items", query: research as UseQueryResult<unknown> },
-  ].filter((x) => x.query.isError);
-  const neverLoaded = sources.some((x) => x.query.data === undefined);
-  if (total === 0 && sources.length === 0) return null;
+    { name: "reminders", query: reminders as UseQueryResult<unknown>, failed: remindersFailed },
+    { name: "research items", query: research as UseQueryResult<unknown>, failed: researchFailed },
+  ];
+  const failedSources = sources.filter((x) => x.failed);
+  const incomplete = sources.some((x) => x.query.data === undefined);
+  // Hidden only when nothing is worth showing: the true first load, or no overdue items and no failure.
+  if (total === 0 && failedSources.length === 0) return null;
   const merged = [...reminderRows, ...researchRows].sort((a, b) => a.at - b.at);
   const rows = expanded ? merged : merged.slice(0, OVERDUE_SHOWN);
   const hidden = merged.length - OVERDUE_SHOWN;
@@ -362,21 +407,12 @@ function OverdueItems() {
       <CardHeader>
         <CardTitle className="text-destructive [&>svg]:text-destructive">
           <TriangleAlert aria-hidden="true" />
-          {neverLoaded ? (total > 0 ? `Overdue (${total}+)` : "Overdue") : `Overdue (${total})`}
+          {incomplete ? (total > 0 ? `Overdue (${total}+)` : "Overdue") : `Overdue (${total})`}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-2">
-        {sources.map(({ name, query }) => (
-          <div key={name} role="alert" className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-destructive">
-            <span>
-              {query.data === undefined
-                ? `Could not load overdue ${name}. This list may be incomplete.`
-                : `Could not refresh overdue ${name}. Showing the last loaded list.`}
-            </span>
-            <Button variant="outline" size="sm" onClick={() => void query.refetch()} disabled={query.isFetching}>
-              {query.isFetching ? "Retrying..." : "Retry"}
-            </Button>
-          </div>
+        {failedSources.map(({ name, query }) => (
+          <SourceNotice key={name} name={name} query={query} />
         ))}
         <ul className="-my-1 divide-y">
           {rows.map((r) => {
