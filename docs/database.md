@@ -146,6 +146,7 @@ erDiagram
         string venue_url
         date abstract_deadline
         date paper_deadline
+        date abstract_submitted_on
         date notification_date
         date submitted_on
         string status
@@ -270,11 +271,16 @@ A research project is the user's own work (a paper, thesis or study), separate f
   `status`: `planned` (default), `submitted`, `under_review`, `revisions_requested`, `accepted`,
   `rejected`, `withdrawn`. One project can hold several submissions, so a rejected paper can go to
   another venue. `abstract_deadline` must not be after `paper_deadline` (a `CHECK`, and the API).
+  `abstract_submitted_on` (nullable date, added in migration `0007`, which only adds the column) is
+  when the abstract went in. Once set, the abstract deadline is no longer an open item.
 - `project_milestones.completed_at` is set when `is_done` becomes true and cleared when reopened.
   They are listed by `due_date` with undated ones last.
 - Submissions and milestones are deleted with their project (`ON DELETE CASCADE`).
 - Dashboard rule: a deadline counts only for a `planned` submission or an undone milestone with a
-  date, and only while the project is active.
+  date, and only while the project is active. An abstract deadline stops counting once
+  `abstract_submitted_on` is set; the paper deadline keeps counting while the status is `planned`.
+- Writing a submission or milestone also sets the parent project's `updated_at`, in the same
+  transaction.
 
 ### contacts and contact_links
 

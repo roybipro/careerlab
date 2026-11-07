@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { api, ApiError } from "@/lib/api";
+import { isInactiveStage } from "@/lib/enums";
 import { daysFromToday, dueLabel, formatDateOnly } from "@/lib/format";
 import { invalidateProject, keys } from "@/lib/keys";
 import type { Paginated, ProjectMilestone } from "@/lib/types";
@@ -44,13 +45,15 @@ function validateTitle(value: string): string | null {
 type RowProps = {
   projectId: string;
   milestone: ProjectMilestone;
+  /** A published or paused project: dates stay, but nothing is flagged overdue. */
+  inactive: boolean;
   /** Ticks that have not finished, across all rows. The list reloads only when this reaches zero. */
   inFlightRef: MutableRefObject<number>;
   onError: (message: string | null) => void;
   onDelete: () => void;
 };
 
-function MilestoneRow({ projectId, milestone, inFlightRef, onError, onDelete }: RowProps) {
+function MilestoneRow({ projectId, milestone, inactive, inFlightRef, onError, onDelete }: RowProps) {
   const client = useQueryClient();
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState(milestone.title);
@@ -141,7 +144,7 @@ function MilestoneRow({ projectId, milestone, inFlightRef, onError, onDelete }: 
   }
 
   const days = milestone.due_date && !milestone.is_done ? daysFromToday(milestone.due_date) : null;
-  const overdue = days !== null && days < 0;
+  const overdue = !inactive && days !== null && days < 0;
 
   return (
     <li className="flex items-center gap-1">
@@ -169,7 +172,8 @@ function MilestoneRow({ projectId, milestone, inFlightRef, onError, onDelete }: 
 }
 
 /** A project's milestones as a checklist, with progress, inline add and edit, and delete. */
-export function MilestonesPanel({ projectId }: { projectId: string }) {
+export function MilestonesPanel({ projectId, stage }: { projectId: string; stage: string }) {
+  const inactive = isInactiveStage(stage);
   const client = useQueryClient();
   const query = useQuery({
     queryKey: keys.projectMilestones(projectId),
@@ -235,7 +239,7 @@ export function MilestonesPanel({ projectId }: { projectId: string }) {
           {(data) => (
             <ul className="space-y-0.5">
               {data.items.map((m) => (
-                <MilestoneRow key={m.id} projectId={projectId} milestone={m} inFlightRef={inFlight} onError={setError} onDelete={() => setDeleting(m)} />
+                <MilestoneRow key={m.id} projectId={projectId} milestone={m} inactive={inactive} inFlightRef={inFlight} onError={setError} onDelete={() => setDeleting(m)} />
               ))}
             </ul>
           )}

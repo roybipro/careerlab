@@ -1,3 +1,4 @@
+import { TriangleAlert } from "lucide-react";
 import Link from "next/link";
 import { MilestoneProgress } from "@/components/projects/milestone-progress";
 import { StatusBadge } from "@/components/status-badge";
@@ -13,9 +14,25 @@ function subtitle(project: Project): string | null {
   return [project.topic, project.institution].filter(Boolean).join(" · ") || null;
 }
 
+/** A project with only overdue items has no next deadline; this says so in text and colour, not colour alone. */
+function OverdueMark() {
+  return (
+    <span className="inline-flex items-center gap-1 text-xs font-medium text-destructive">
+      <TriangleAlert className="size-3.5 shrink-0" aria-hidden="true" />
+      Overdue
+    </span>
+  );
+}
+
 function NextDeadline({ project }: { project: Project }) {
   const date = formatDateOnly(project.next_deadline);
-  return date ? <span className="text-xs text-muted-foreground">Next deadline {date}</span> : null;
+  if (date) return <span className="text-xs text-muted-foreground">Next deadline {date}</span>;
+  return project.has_overdue ? <OverdueMark /> : null;
+}
+
+function TargetDate({ project }: { project: Project }) {
+  const date = formatDateOnly(project.target_date);
+  return date ? <span className="text-xs text-muted-foreground">Target {date}</span> : null;
 }
 
 /** A table from `lg` up, a stack of cards below it. */
@@ -31,6 +48,7 @@ export function ProjectsTable({ projects }: { projects: Project[] }) {
               <TableHead>Stage</TableHead>
               <TableHead>Milestones</TableHead>
               <TableHead>Next deadline</TableHead>
+              <TableHead>Target date</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -49,7 +67,8 @@ export function ProjectsTable({ projects }: { projects: Project[] }) {
                 <TableCell className="min-w-40">
                   {project.milestones_total > 0 ? <MilestoneProgress done={project.milestones_done} total={project.milestones_total} /> : <span className="text-muted-foreground">-</span>}
                 </TableCell>
-                <TableCell className="text-muted-foreground tabular-nums">{formatDateOnly(project.next_deadline) ?? "-"}</TableCell>
+                <TableCell className="text-muted-foreground tabular-nums">{formatDateOnly(project.next_deadline) ?? (project.has_overdue ? <OverdueMark /> : "-")}</TableCell>
+                <TableCell className="text-muted-foreground tabular-nums">{formatDateOnly(project.target_date) ?? "-"}</TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -65,6 +84,7 @@ export function ProjectsTable({ projects }: { projects: Project[] }) {
                 <StatusBadge status={project.stage} />
                 <span className="text-xs text-muted-foreground">{optionLabel(PROJECT_TYPES, project.project_type)}</span>
                 <NextDeadline project={project} />
+                <TargetDate project={project} />
               </div>
               <MilestoneProgress done={project.milestones_done} total={project.milestones_total} className="mt-3" />
             </Link>
@@ -88,6 +108,7 @@ export function ProjectKanbanCard({ project }: { project: Project }) {
       <MilestoneProgress done={project.milestones_done} total={project.milestones_total} className="mt-2" />
       <div className="mt-2 flex flex-wrap items-center gap-2">
         <NextDeadline project={project} />
+        <TargetDate project={project} />
       </div>
     </Link>
   );

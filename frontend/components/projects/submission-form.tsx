@@ -18,14 +18,20 @@ import { buildBody } from "@/lib/form-body";
 import { invalidateProject } from "@/lib/keys";
 import type { ProjectSubmission } from "@/lib/types";
 
+const url = z
+  .string()
+  .trim()
+  .refine((v) => v === "" || /^https?:\/\/\S+$/i.test(v), "Enter a link starting with http:// or https://");
+
 const schema = z
   .object({
     venue_name: z.string().trim().min(1, "Enter the venue name").max(200, "At most 200 characters"),
     venue_type: z.string(),
     status: z.string(),
-    venue_url: z.string().max(2000, "At most 2,000 characters"),
+    venue_url: url.pipe(z.string().max(2000, "At most 2,000 characters")),
     abstract_deadline: z.string(),
     paper_deadline: z.string(),
+    abstract_submitted_on: z.string(),
     notification_date: z.string(),
     submitted_on: z.string(),
     feedback: z.string().max(50_000, "At most 50,000 characters"),
@@ -39,7 +45,7 @@ const schema = z
 type Values = z.infer<typeof schema>;
 type Field = keyof Values;
 
-const FIELDS: Field[] = ["venue_name", "venue_type", "status", "venue_url", "abstract_deadline", "paper_deadline", "notification_date", "submitted_on", "feedback"];
+const FIELDS: Field[] = ["venue_name", "venue_type", "status", "venue_url", "abstract_deadline", "paper_deadline", "abstract_submitted_on", "notification_date", "submitted_on", "feedback"];
 const REQUIRED: Field[] = ["venue_name", "venue_type", "status"];
 
 const EMPTY: Values = {
@@ -49,6 +55,7 @@ const EMPTY: Values = {
   venue_url: "",
   abstract_deadline: "",
   paper_deadline: "",
+  abstract_submitted_on: "",
   notification_date: "",
   submitted_on: "",
   feedback: "",
@@ -62,6 +69,7 @@ function toValues(s: ProjectSubmission): Values {
     venue_url: s.venue_url ?? "",
     abstract_deadline: s.abstract_deadline ?? "",
     paper_deadline: s.paper_deadline ?? "",
+    abstract_submitted_on: s.abstract_submitted_on ?? "",
     notification_date: s.notification_date ?? "",
     submitted_on: s.submitted_on ?? "",
     feedback: s.feedback ?? "",
@@ -117,6 +125,7 @@ function SubmissionFormBody({ projectId, submission, onDone }: { projectId: stri
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <TextField label="Abstract deadline" type="date" error={err("abstract_deadline")} {...register("abstract_deadline")} />
         <TextField label="Paper deadline" type="date" error={err("paper_deadline")} {...register("paper_deadline")} />
+        <TextField label="Abstract submitted on" type="date" error={err("abstract_submitted_on")} {...register("abstract_submitted_on")} />
         <TextField label="Submitted on" type="date" error={err("submitted_on")} {...register("submitted_on")} />
         <TextField label="Notification date" type="date" error={err("notification_date")} {...register("notification_date")} />
       </div>
