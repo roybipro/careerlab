@@ -145,18 +145,79 @@ export type DashboardSummary = {
   rejected: number;
   upcoming_deadlines: number;
   pending_follow_ups: number;
+  active_research_projects: number;
 };
 
 export type Deadline = {
-  kind: "job_deadline" | "research_deadline" | "reminder";
+  kind: "job_deadline" | "research_deadline" | "reminder" | "project_submission_deadline" | "project_milestone";
   id: string;
   title: string;
   /** A date ("YYYY-MM-DD") for job and research deadlines, a timestamp for reminders. */
   due: string;
-  related_type: "job" | "research" | "contact" | null;
+  related_type: "job" | "research" | "contact" | "project" | null;
   related_id: string | null;
+  /** Set for the two research project kinds, which link to the project page. */
+  project_id?: string | null;
+  project_title?: string | null;
+};
+
+/** An open submission deadline or milestone dated before today (`/dashboard/overdue-research`). */
+export type OverdueResearch = {
+  kind: "project_submission_deadline" | "project_milestone";
+  id: string;
+  title: string;
+  /** "YYYY-MM-DD" */
+  due: string;
+  project_id: string;
+  project_title: string;
 };
 
 export type StatusCount = { status: string; count: number };
 export type MonthlyCount = { month: string; jobs: number; research: number };
 export type Analytics = { job_status: StatusCount[]; research_status: StatusCount[]; monthly: MonthlyCount[] };
+
+export type Project = {
+  id: string;
+  title: string;
+  project_type: string;
+  stage: string;
+  topic: string | null;
+  description: string | null;
+  institution: string | null;
+  notes: string | null;
+  target_date: string | null;
+  milestones_total: number;
+  milestones_done: number;
+  submissions_total: number;
+  /** The earliest open submission deadline or milestone due date that is today or later. */
+  next_deadline: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ProjectSubmission = {
+  id: string;
+  project_id: string;
+  venue_name: string;
+  venue_type: string;
+  venue_url: string | null;
+  abstract_deadline: string | null;
+  paper_deadline: string | null;
+  notification_date: string | null;
+  submitted_on: string | null;
+  status: string;
+  feedback: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ProjectMilestone = {
+  id: string;
+  project_id: string;
+  title: string;
+  due_date: string | null;
+  is_done: boolean;
+  completed_at: string | null;
+  created_at: string;
+  updated_at: string;
+};

@@ -7,16 +7,18 @@ import type { EntityType } from "@/lib/enums";
  *
  *   ["jobs", "list", params]            ["jobs", "detail", id]
  *   ["research", "list", params]        ["research", "detail", id]
+ *   ["projects", "list", params]        ["projects", "detail", id]   (list params include `today`)
+ *   ["projects", "submissions", id]     ["projects", "milestones", id]
  *   ["notes", entityType, entityId]
  *   ["activity", entityType, entityId]
  *   ["contacts", "linked", entityType, entityId]   ["contacts", "options", search]
  *   ["reminders", "related", relatedType, relatedId]
  *   ["contacts", "list", params]                   ["contacts", "detail", id]
  *   ["reminders", "list", params]                  ["reminders", "bell"]
- *   ["dashboard", "summary" | "deadlines", today]  ["dashboard", "overdue" | "activity" | "analytics"]
+ *   ["dashboard", "summary" | "deadlines" | "overdue-research", today]  ["dashboard", "overdue" | "activity" | "analytics"]
  *   ["link-options", kind, search]                 (job and research pickers, see invalidateEntity)
  */
-const RESOURCE: Record<EntityType, string> = { job: "jobs", research: "research", contact: "contacts" };
+const RESOURCE: Record<EntityType, string> = { job: "jobs", research: "research", contact: "contacts", project: "projects" };
 
 export const entityResource = (type: EntityType) => RESOURCE[type];
 
@@ -27,23 +29,38 @@ export const keys = {
   activity: (type: EntityType, id: string) => ["activity", type, id] as const,
   linkedContacts: (type: EntityType, id: string) => ["contacts", "linked", type, id] as const,
   contactOptions: (search: string) => ["contacts", "options", search] as const,
+  projectSubmissions: (id: string) => ["projects", "submissions", id] as const,
+  projectMilestones: (id: string) => ["projects", "milestones", id] as const,
   reminders: (type: EntityType, id: string) => ["reminders", "related", type, id] as const,
   dashboard: ["dashboard"] as const,
   // `today` is part of the key for the date-sensitive parts, so a page left open across
   // midnight asks again (with the new date) the next time it renders.
-  dashboardPart: (part: "summary" | "deadlines" | "activity" | "analytics" | "overdue", today?: string) =>
+  dashboardPart: (part: "summary" | "deadlines" | "activity" | "analytics" | "overdue" | "overdue-research", today?: string) =>
     (today ? (["dashboard", part, today] as const) : (["dashboard", part] as const)),
   reminderBell: ["reminders", "bell"] as const,
   reminderList: (params: unknown) => ["reminders", "list", params] as const,
 };
 
-/** After changing a job or research record: its lists and detail, its history, and the dashboard. */
+/** After changing a job, research opportunity or research project: its lists and detail, its history, and the dashboard. */
 export function invalidateEntity(client: QueryClient, type: EntityType, id: string) {
   return Promise.all([
     client.invalidateQueries({ queryKey: [RESOURCE[type]] }),
     // The contact link picker lists jobs and research, so it must not keep a stale list.
     client.invalidateQueries({ queryKey: ["link-options"] }),
     client.invalidateQueries({ queryKey: ["activity", type, id] }),
+    client.invalidateQueries({ queryKey: keys.dashboard }),
+  ]);
+}
+
+/**
+ * After changing a research project or anything on its page (a submission or milestone): every project list,
+ * its detail, its submissions and milestones (all under ["projects"]), its history, and the dashboard, whose
+ * deadlines, overdue items and counts depend on them.
+ */
+export function invalidateProject(client: QueryClient, id: string) {
+  return Promise.all([
+    client.invalidateQueries({ queryKey: ["projects"] }),
+    client.invalidateQueries({ queryKey: keys.activity("project", id) }),
     client.invalidateQueries({ queryKey: keys.dashboard }),
   ]);
 }

@@ -236,7 +236,7 @@ Services write these in the same transaction as the change: `created`,
 | Interviews scheduled | Jobs with `interview_at` in the future |
 | Offers received | Jobs in `offer` plus research in `accepted` |
 | Rejected applications | Jobs and research in `rejected` |
-| Upcoming deadlines | Items due in the next 14 days: deadlines on active jobs and research, plus incomplete reminders |
+| Upcoming deadlines | Items due in the next 14 days: deadlines on active jobs and research, open research project items (`planned` submission abstract and paper deadlines and undone milestones with a due date, in projects not `published` or `paused`), plus incomplete reminders |
 | Pending follow-ups | Job `follow_up_date` and contact `next_follow_up_at` that are overdue or due in the next 7 days |
 
 "Active" means not in `offer`, `rejected` or `withdrawn` for jobs, and not in

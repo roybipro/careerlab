@@ -9,7 +9,9 @@ export function hardNavigate(path: string) {
   window.location.assign(path);
 }
 
-/** The detail page of a job, research opportunity or contact. */
+const ENTITY_PATH: Record<string, string> = { job: "jobs", research: "research", project: "projects" };
+
+/** The detail page of a job, research opportunity, research project or contact. */
 export function entityHref(type: string, id: string): string {
-  return `/${type === "job" ? "jobs" : type === "research" ? "research" : "contacts"}/${id}`;
+  return `/${ENTITY_PATH[type] ?? "contacts"}/${id}`;
 }

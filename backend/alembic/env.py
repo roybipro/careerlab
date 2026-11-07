@@ -10,6 +10,7 @@ from app.modules.auth import models as _auth_models  # noqa: F401
 from app.modules.contacts import models as _contacts_models  # noqa: F401
 from app.modules.jobs import models as _jobs_models  # noqa: F401
 from app.modules.notes import models as _notes_models  # noqa: F401
+from app.modules.projects import models as _projects_models  # noqa: F401
 from app.modules.reminders import models as _reminders_models  # noqa: F401
 from app.modules.research import models as _research_models  # noqa: F401
 

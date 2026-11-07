@@ -45,7 +45,7 @@ const TABS = [
   { value: "completed", label: "Completed", sortOptions: COMPLETED_SORT, empty: "No completed reminders yet." },
 ] as const;
 
-const RELATED_LABEL: Record<string, string> = { job: "job", research: "research opportunity", contact: "contact" };
+const RELATED_LABEL: Record<string, string> = { job: "job", research: "research opportunity", project: "research project", contact: "contact" };
 
 /** Needs a Suspense boundary above it: the tab and page live in the URL search parameters. */
 export function RemindersList() {
