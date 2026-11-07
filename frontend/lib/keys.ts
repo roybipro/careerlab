@@ -7,6 +7,7 @@ import type { EntityType } from "@/lib/enums";
  *
  *   ["jobs", "list", params]            ["jobs", "detail", id]
  *   ["research", "list", params]        ["research", "detail", id]
+ *   ["projects", "list", params]        ["projects", "detail", id]   (list params include `today`)
  *   ["notes", entityType, entityId]
  *   ["activity", entityType, entityId]
  *   ["contacts", "linked", entityType, entityId]   ["contacts", "options", search]
@@ -16,7 +17,7 @@ import type { EntityType } from "@/lib/enums";
  *   ["dashboard", "summary" | "deadlines", today]  ["dashboard", "overdue" | "activity" | "analytics"]
  *   ["link-options", kind, search]                 (job and research pickers, see invalidateEntity)
  */
-const RESOURCE: Record<EntityType, string> = { job: "jobs", research: "research", contact: "contacts" };
+const RESOURCE: Record<EntityType, string> = { job: "jobs", research: "research", contact: "contacts", project: "projects" };
 
 export const entityResource = (type: EntityType) => RESOURCE[type];
 
@@ -37,7 +38,7 @@ export const keys = {
   reminderList: (params: unknown) => ["reminders", "list", params] as const,
 };
 
-/** After changing a job or research record: its lists and detail, its history, and the dashboard. */
+/** After changing a job, research opportunity or research project: its lists and detail, its history, and the dashboard. */
 export function invalidateEntity(client: QueryClient, type: EntityType, id: string) {
   return Promise.all([
     client.invalidateQueries({ queryKey: [RESOURCE[type]] }),

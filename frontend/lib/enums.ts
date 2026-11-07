@@ -1,22 +1,32 @@
 import {
   Archive,
+  BookCheck,
+  BookOpen,
   Bookmark,
   BriefcaseBusiness,
+  CalendarClock,
   ChevronDown,
   ChevronsUp,
   Circle,
   CircleCheck,
+  CirclePause,
   CircleX,
   ClipboardCheck,
   Compass,
   Equal,
+  FilePenLine,
   FileText,
+  FileUp,
+  FlaskConical,
   GraduationCap,
+  Hourglass,
   Landmark,
+  Lightbulb,
   Mail,
   MessagesSquare,
   Microscope,
   PencilLine,
+  PenLine,
   Send,
   Star,
   Trophy,
@@ -28,7 +38,7 @@ import {
 
 export type Option = { value: string; label: string };
 
-export type EntityType = "job" | "research" | "contact";
+export type EntityType = "job" | "research" | "contact" | "project";
 
 type ToneClasses = {
   /** Soft badge background and text. */
@@ -54,7 +64,7 @@ const tone = {
 
 type StatusMeta = ToneClasses & { label: string; icon: LucideIcon };
 
-/** Job and research statuses share one table: a status looks the same in badges, Kanban and pipelines. */
+/** Job, research, project stage and submission statuses share one table: a status looks the same in badges, Kanban and pipelines. */
 export const STATUS_META: Record<string, StatusMeta> = {
   // Jobs
   wishlist: { label: "Wishlist", icon: Bookmark, ...tone.slate },
@@ -72,6 +82,19 @@ export const STATUS_META: Record<string, StatusMeta> = {
   preparing_documents: { label: "Preparing documents", icon: FileText, ...tone.violet },
   accepted: { label: "Accepted", icon: CircleCheck, ...tone.green },
   archived: { label: "Archived", icon: Archive, ...tone.stone },
+  // Research project stages
+  idea: { label: "Idea", icon: Lightbulb, ...tone.slate },
+  literature_review: { label: "Literature review", icon: BookOpen, ...tone.sky },
+  experiments: { label: "Experiments", icon: FlaskConical, ...tone.violet },
+  writing: { label: "Writing", icon: PenLine, ...tone.blue },
+  submitting: { label: "Submitting", icon: FileUp, ...tone.amber },
+  published: { label: "Published", icon: BookCheck, ...tone.green },
+  paused: { label: "Paused", icon: CirclePause, ...tone.stone },
+  // Submission statuses (accepted, rejected and withdrawn are above and look the same)
+  planned: { label: "Planned", icon: CalendarClock, ...tone.slate },
+  submitted: { label: "Submitted", icon: Send, ...tone.blue },
+  under_review: { label: "Under review", icon: Hourglass, ...tone.amber },
+  revisions_requested: { label: "Revisions requested", icon: FilePenLine, ...tone.violet },
 };
 
 /** Style and icon for a status. An unknown value gets the neutral tone. */
@@ -234,4 +257,29 @@ export const FUNDING_STATUSES: Option[] = [
   { value: "partially_funded", label: "Partially funded" },
   { value: "self_funded", label: "Self funded" },
   { value: "unknown", label: "Unknown" },
+];
+
+export const PROJECT_STAGES = options(["idea", "literature_review", "experiments", "writing", "submitting", "published", "paused"]);
+
+export const PROJECT_TYPES: Option[] = [
+  { value: "personal", label: "Personal" },
+  { value: "university_course", label: "University course" },
+  { value: "thesis", label: "Thesis" },
+  { value: "research_group", label: "Research group" },
+  { value: "other", label: "Other" },
+];
+
+export const SUBMISSION_STATUSES = options(["planned", "submitted", "under_review", "revisions_requested", "accepted", "rejected", "withdrawn"]);
+
+export const VENUE_TYPES: Option[] = [
+  { value: "conference", label: "Conference" },
+  { value: "journal", label: "Journal" },
+  { value: "workshop", label: "Workshop" },
+  { value: "other", label: "Other" },
+];
+
+/** The All / Active switch above the project list. "" means All; Active leaves out published and paused projects. */
+export const PROJECT_SCOPES: Option[] = [
+  { value: "", label: "All" },
+  { value: "true", label: "Active" },
 ];
