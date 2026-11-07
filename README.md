@@ -1,10 +1,12 @@
 # CareerLab
 
 CareerLab is a private workspace for tracking job applications, research
-opportunities, contacts, deadlines and reminders. It replaces the spreadsheet,
-bookmarks and notes a student or early-career professional would otherwise juggle.
+opportunities, your own research projects, contacts, deadlines and reminders. It
+replaces the spreadsheet, bookmarks and notes a student or early-career professional
+would otherwise juggle.
 
-Live demo: coming soon
+**Live demo:** <https://careerlab-opal.vercel.app>. The API runs on a free tier that
+sleeps when idle, so the first load after a pause can take about a minute.
 
 ![CareerLab dashboard](docs/screenshots/dashboard.png)
 
