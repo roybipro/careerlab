@@ -94,7 +94,9 @@ test("a research project: add a submission and milestones, tick one, move it, se
   // Wait until the dashboard has loaded its deadlines, so "not there" is not just "not there yet".
   await expect(page.getByRole("heading", { name: /^Welcome/ })).toBeVisible();
   await expect(page.getByText(/Nothing due in the next 14 days/)).toBeVisible();
-  await expect(page.locator("body")).not.toContainText(title);
+  // The activity feed keeps a "deleted" entry with the title, by design, so check the deadline lists.
+  await expect(page.getByTestId("overdue-section")).toBeHidden();
+  await expect(upcoming).not.toContainText(title);
   await page.goto(projectUrl);
   await expect(page.getByRole("heading", { name: "Research project not found" })).toBeVisible();
 
