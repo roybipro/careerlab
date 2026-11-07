@@ -75,7 +75,7 @@ export function ProjectsList() {
     <EmptyState
       icon={FolderKanban}
       title="No active projects"
-      description="Every project you track is published or paused. Show everything, or add a new project."
+      description="Projects that are not published or paused show here. Show all projects, or add a new one."
       action={
         <Button variant="outline" onClick={() => update({ active: null })}>
           Show all

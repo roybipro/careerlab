@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { Archive, ArrowRightLeft, CalendarClock, CalendarPlus, Circle, History, Plus, Trash2, UserPlus, type LucideIcon } from "lucide-react";
+import { Archive, ArrowRightLeft, CalendarClock, CalendarPlus, Circle, CircleCheck, FileUp, History, Plus, Trash2, UserPlus, type LucideIcon } from "lucide-react";
 import { DataState } from "@/components/data-state";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { api } from "@/lib/api";
@@ -31,6 +31,14 @@ export function describeActivity(a: Activity): string {
       return `Interview scheduled for ${formatDateTime(str(m.interview_at)) ?? "a new time"}`;
     case "contact_added":
       return `Contact added: ${str(m.contact_name) ?? "a contact"}`;
+    case "stage_changed":
+      return `Stage changed from ${statusLabel(str(m.old) ?? "none")} to ${statusLabel(str(m.new) ?? "none")}`;
+    case "submission_added":
+      return `Submission added: ${str(m.venue) ?? "a venue"}`;
+    case "submission_status_changed":
+      return `${str(m.venue) ?? "Submission"} changed from ${statusLabel(str(m.old) ?? "none")} to ${statusLabel(str(m.new) ?? "none")}`;
+    case "milestone_completed":
+      return `Milestone completed: ${str(m.milestone) ?? "a milestone"}`;
     case "archived":
       return "Archived";
     case "deleted":
@@ -43,6 +51,10 @@ export function describeActivity(a: Activity): string {
 const ACTION_ICON: Record<string, LucideIcon> = {
   created: Plus,
   status_changed: ArrowRightLeft,
+  stage_changed: ArrowRightLeft,
+  submission_added: FileUp,
+  submission_status_changed: ArrowRightLeft,
+  milestone_completed: CircleCheck,
   deadline_updated: CalendarClock,
   interview_scheduled: CalendarPlus,
   contact_added: UserPlus,

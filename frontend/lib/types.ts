@@ -145,16 +145,31 @@ export type DashboardSummary = {
   rejected: number;
   upcoming_deadlines: number;
   pending_follow_ups: number;
+  active_research_projects: number;
 };
 
 export type Deadline = {
-  kind: "job_deadline" | "research_deadline" | "reminder";
+  kind: "job_deadline" | "research_deadline" | "reminder" | "project_submission_deadline" | "project_milestone";
   id: string;
   title: string;
   /** A date ("YYYY-MM-DD") for job and research deadlines, a timestamp for reminders. */
   due: string;
   related_type: "job" | "research" | "contact" | "project" | null;
   related_id: string | null;
+  /** Set for the two research project kinds, which link to the project page. */
+  project_id?: string | null;
+  project_title?: string | null;
+};
+
+/** An open submission deadline or milestone dated before today (`/dashboard/overdue-research`). */
+export type OverdueResearch = {
+  kind: "project_submission_deadline" | "project_milestone";
+  id: string;
+  title: string;
+  /** "YYYY-MM-DD" */
+  due: string;
+  project_id: string;
+  project_title: string;
 };
 
 export type StatusCount = { status: string; count: number };
