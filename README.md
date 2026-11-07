@@ -28,7 +28,7 @@ The screenshots in this repo use invented data from the demo seed script.
 - Reminders have overdue, upcoming and completed views, with search and sorting. The header
   bell shows incomplete reminders that are overdue or due in the next 3 days.
 - A dashboard with eight summary numbers and an Active research projects card, job and
-  research pipelines, upcoming deadlines (including submission deadlines and milestones), a
+  opportunity pipelines, upcoming deadlines (including submission deadlines and milestones), a
   section for overdue reminders and research items (shown only when there are some) and recent activity, all
   computed from the database on each request. "Today" is the browser's local date.
 - An analytics page with status charts and monthly application counts.

@@ -13,7 +13,7 @@ a phone-width window for the last step.
 | Time | Screen | Say and do |
 |---|---|---|
 | 0:00 to 0:10 | Login page, then dashboard | "CareerLab is one place for job applications, research opportunities, contacts and deadlines." Sign in. The dashboard loads. |
-| 0:10 to 0:30 | Dashboard | Point at the eight summary cards. "These numbers come from live queries, not stored counts." Show the job and research pipelines, then the upcoming deadlines and recent activity lists. Click the bell: "It shows reminders that are overdue or due in the next three days." |
+| 0:10 to 0:30 | Dashboard | Point at the eight summary cards. "These numbers come from live queries, not stored counts." Show the job and opportunity pipelines, then the upcoming deadlines and recent activity lists. Click the bell: "It shows reminders that are overdue or due in the next three days." |
 | 0:30 to 0:50 | Job Applications, Kanban | Open **Job Applications** and switch to **Kanban**. Drag a card from Applied to Interview. "The card moves at once and rolls back with a message if the save fails." Open a card's menu: "Every card has a status menu, so it works from the keyboard." |
 | 0:50 to 1:05 | Job detail | Open the card. Show the details, notes by kind, linked contact, reminder and the activity timeline. "The timeline shows the status change I just made." |
 | 1:05 to 1:20 | Research Opportunities, detail | Open **Graduate Research Program in Machine Learning**. Tick a document in the checklist: "2 of 5 ready" becomes "3 of 5". "This is a program I apply to." |
