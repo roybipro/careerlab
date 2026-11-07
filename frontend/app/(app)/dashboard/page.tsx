@@ -539,6 +539,8 @@ export default function DashboardPage() {
         title={user.data ? `Welcome, ${user.data.full_name.split(" ")[0]}` : "Welcome"}
         description="Your pipeline at a glance."
         icon={LayoutDashboard}
+        // Five quick actions need more than the default 60% of the header on a laptop-width screen.
+        actionsClassName="lg:max-w-[78%]"
         actions={
           <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:flex-wrap lg:justify-end">
             <Button onClick={() => setAdding("job")}>
