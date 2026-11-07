@@ -19,20 +19,29 @@ The screenshots in this repo use invented data from the demo seed script.
   on a Kanban board. Each card also has a status menu that works from the keyboard.
 - Jobs and internships: an All / Jobs / Internships switch, co-ops, apprenticeships, freelance and graduate programs, plus optional source, start and end dates with a duration, pay period, visa sponsorship and academic credit.
 - Research detail pages have a required-documents checklist and publication links.
+- Research Projects track your own research, such as a paper, thesis or course project, from
+  idea to publication: the conferences or journals you plan to submit to (a rejected paper can
+  go to another venue), deadlines, a milestone checklist with progress, notes and reminders.
+  This is different from Research Opportunities, which tracks positions and programs you apply
+  to, such as a research assistant job or a PhD. A project has a stage, which you can change
+  from a form or on a Kanban board.
 - Reminders have overdue, upcoming and completed views, with search and sorting. The header
   bell shows incomplete reminders that are overdue or due in the next 3 days.
-- A dashboard with eight summary numbers, job and research pipelines, upcoming deadlines,
-  a section for overdue reminders (shown only when there are some) and recent activity, all
+- A dashboard with eight summary numbers and an Active research projects card, job and
+  research pipelines, upcoming deadlines (including submission deadlines and milestones), a
+  section for overdue reminders and research items (shown only when there are some) and recent activity, all
   computed from the database on each request. "Today" is the browser's local date.
 - An analytics page with status charts and monthly application counts.
 - Search, filters, sorting and pagination on every list. Filters live in the URL.
-- An activity timeline on each job, research opportunity and contact.
+- An activity timeline on each job, research opportunity, research project and contact.
 - Light and dark themes, and layouts for desktop, tablet and phone widths.
 - Every record belongs to one user. Another user's record returns `404`.
 
 | Kanban board | Research detail |
 |---|---|
 | ![Kanban board](docs/screenshots/kanban.png) | ![Research detail page](docs/screenshots/research-detail.png) |
+
+![Research project page with submissions, milestones, notes and activity](docs/screenshots/project-detail.png)
 
 | Phone width (375px) | Dark mode |
 |---|---|

@@ -62,6 +62,21 @@ from app.modules.jobs.schemas import JobCreate, JobUpdate  # noqa: E402
 from app.modules.notes import service as notes_service  # noqa: E402
 from app.modules.notes.models import NoteKind  # noqa: E402
 from app.modules.notes.schemas import NoteCreate  # noqa: E402
+from app.modules.projects import service as projects_service  # noqa: E402
+from app.modules.projects.models import (  # noqa: E402
+    ProjectStage,
+    ProjectType,
+    SubmissionStatus,
+    VenueType,
+)
+from app.modules.projects.schemas import (  # noqa: E402
+    MilestoneCreate,
+    MilestoneUpdate,
+    ProjectCreate,
+    ProjectUpdate,
+    SubmissionCreate,
+    SubmissionUpdate,
+)
 from app.modules.reminders import service as reminders_service  # noqa: E402
 from app.modules.reminders.schemas import ReminderCreate, ReminderUpdate  # noqa: E402
 from app.modules.research import service as research_service  # noqa: E402
@@ -513,6 +528,147 @@ def seed(db: Session, password: str, today: date) -> User:
         [ResearchStatus.interested, ResearchStatus.applied, ResearchStatus.rejected],
     )
 
+    # --- Research projects ------------------------------------------------------------
+    # The user's own work, unlike the opportunities above. Created in the first stage and then
+    # moved, so the timeline shows real stage changes. Venues and colleges are invented.
+
+    def project(create: ProjectCreate, stages: Sequence[ProjectStage] = ()) -> uuid.UUID:
+        created = projects_service.create_project(db, user, create, today)
+        for stage in stages:
+            projects_service.update_project(db, user, created.id, ProjectUpdate(stage=stage), today)
+        return created.id
+
+    def submission(
+        project_id: uuid.UUID,
+        create: SubmissionCreate,
+        moves: Sequence[SubmissionUpdate] = (),
+    ) -> None:
+        created = projects_service.create_submission(db, user, project_id, create)
+        for move in moves:
+            projects_service.update_submission(db, user, project_id, created.id, move)
+
+    def milestone(
+        project_id: uuid.UUID, title: str, due: date | None = None, done: bool = False
+    ) -> None:
+        created = projects_service.create_milestone(
+            db, user, project_id, MilestoneCreate(title=title, due_date=due)
+        )
+        if done:
+            projects_service.update_milestone(
+                db, user, project_id, created.id, MilestoneUpdate(is_done=True)
+            )
+
+    sensor_paper_id = project(
+        ProjectCreate(
+            title="Adaptive Sampling for Sparse Sensor Networks",
+            project_type=ProjectType.research_group,
+            topic="Signal processing",
+            institution="Redfern College of Mathematics",
+            description="A sampling method that adapts to how fast each sensor's readings change, "
+            "so a small network can track a large area.",
+            target_date=d(75),
+        ),
+        [
+            ProjectStage.literature_review,
+            ProjectStage.experiments,
+            ProjectStage.writing,
+            ProjectStage.submitting,
+        ],
+    )
+    # One venue said no. The same paper is now planned for a second one.
+    submission(
+        sensor_paper_id,
+        SubmissionCreate(
+            venue_name="Northgate Workshop on Sensing Systems",
+            venue_type=VenueType.workshop,
+            venue_url="https://northgate-workshop.example/sensing",
+            paper_deadline=d(-40),
+            notification_date=d(-12),
+        ),
+        [
+            SubmissionUpdate(status=SubmissionStatus.submitted, submitted_on=d(-38)),
+            SubmissionUpdate(status=SubmissionStatus.under_review),
+            SubmissionUpdate(
+                status=SubmissionStatus.rejected,
+                feedback="Reviewers liked the method but wanted a comparison with fixed-rate "
+                "sampling and results on a second dataset.",
+            ),
+        ],
+    )
+    submission(
+        sensor_paper_id,
+        SubmissionCreate(
+            venue_name="Journal of Applied Signal Methods",
+            venue_type=VenueType.journal,
+            venue_url="https://signal-methods.example",
+            abstract_deadline=d(4),
+            paper_deadline=d(11),
+            notification_date=d(70),
+        ),
+    )
+    milestone(sensor_paper_id, "Add fixed-rate sampling baseline", d(-30), done=True)
+    milestone(sensor_paper_id, "Run the second dataset", d(2), done=True)
+    milestone(sensor_paper_id, "Rewrite the evaluation section", d(6))
+    milestone(sensor_paper_id, "Ask Dr. Wennick to read the draft", d(8))
+
+    tide_thesis_id = project(
+        ProjectCreate(
+            title="Forecasting Tide Gauge Anomalies",
+            project_type=ProjectType.thesis,
+            topic="Time series forecasting",
+            institution="Redfern College of Mathematics",
+            target_date=d(120),
+        ),
+        [ProjectStage.literature_review, ProjectStage.experiments],
+    )
+    milestone(tide_thesis_id, "Agree the thesis outline with my supervisor", d(-3))
+    milestone(tide_thesis_id, "Clean the gauge data", d(5))
+    milestone(tide_thesis_id, "Finish the baseline models")
+    submission(
+        tide_thesis_id,
+        SubmissionCreate(
+            venue_name="Harbour Conference on Coastal Data",
+            paper_deadline=d(95),
+        ),
+    )
+
+    project(
+        ProjectCreate(
+            title="Survey of Graph Methods for Course Planning",
+            project_type=ProjectType.university_course,
+            topic="Graph algorithms",
+            institution="Redfern College of Mathematics",
+            target_date=d(30),
+        ),
+        [ProjectStage.literature_review],
+    )
+
+    open_data_id = project(
+        ProjectCreate(
+            title="Reproducibility Notes on Open Datasets",
+            project_type=ProjectType.personal,
+            topic="Open science",
+        ),
+        [
+            ProjectStage.literature_review,
+            ProjectStage.experiments,
+            ProjectStage.writing,
+            ProjectStage.submitting,
+            ProjectStage.published,
+        ],
+    )
+    submission(
+        open_data_id,
+        SubmissionCreate(
+            venue_name="Linden Workshop on Open Data",
+            venue_type=VenueType.workshop,
+            submitted_on=d(-150),
+            notification_date=d(-100),
+        ),
+        [SubmissionUpdate(status=SubmissionStatus.accepted)],
+    )
+    milestone(open_data_id, "Publish the notes with the data", d(-90), done=True)
+
     # --- Contacts and links -----------------------------------------------------------
 
     def contact(create: ContactCreate) -> uuid.UUID:
@@ -658,6 +814,13 @@ def seed(db: Session, password: str, today: date) -> User:
         "Video call with Dr. Wennick went well. Waiting to hear about the internship panel.",
     )
     note(
+        NoteKind.note,
+        EntityType.project,
+        sensor_paper_id,
+        "The second venue allows 10 pages. Move the proofs to an appendix and keep the "
+        "comparison figures in the main text.",
+    )
+    note(
         NoteKind.communication,
         EntityType.contact,
         valdry,
@@ -701,6 +864,11 @@ def seed(db: Session, password: str, today: date) -> User:
     reminder("Follow up with Dr. Anselm", _at(d(5), 10), (EntityType.contact, anselm))
     reminder("Review Marlowe & Finch job posting again", _at(d(3), 18), (EntityType.job, marlowe))
     reminder("Reply to Tidewater Labs offer", _at(d(10), 12), (EntityType.job, tidewater))
+    reminder(
+        "Send the sensor paper draft to Dr. Wennick",
+        _at(d(3), 16),
+        (EntityType.project, sensor_paper_id),
+    )
     done = reminder(
         "Finish Ashgrove statement of purpose", _at(d(-3), 20), (EntityType.research, ml_program_id)
     )
@@ -771,7 +939,10 @@ def main(argv: Sequence[str] | None = None, environ: Mapping[str, str] | None = 
         print(f"seed_demo: {error}", file=sys.stderr)
         return 1
 
-    print(f"Created demo account {DEMO_EMAIL} with sample jobs, research, contacts and reminders.")
+    print(
+        f"Created demo account {DEMO_EMAIL} with sample jobs, research, research projects, "
+        "contacts and reminders."
+    )
     print(f"Sign in with the password you set in {PASSWORD_ENV}.")
     return 0
 
