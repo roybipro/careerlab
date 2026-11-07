@@ -11,7 +11,8 @@ PostgreSQL 16, managed with Alembic migrations in `backend/alembic/versions/`. M
 - Enums are stored as plain text, with `CHECK` constraints added in the migrations.
 - `date` fields (deadlines, application dates) are stored as dates with no time zone conversion.
 - Deletes are permanent. Deleting a job, research opportunity or contact removes its notes,
-  reminders and contact links in the same transaction. Activity logs are kept.
+  reminders and contact links in the same transaction. Deleting a research project removes its
+  submissions and milestones (foreign keys) and its notes and reminders. Activity logs are kept.
 
 ## ER diagram
 
@@ -23,7 +24,12 @@ service layer checks that the target exists and belongs to the user, and returns
 erDiagram
     users ||--o{ job_applications : owns
     users ||--o{ research_opportunities : owns
+    users ||--o{ research_projects : owns
+    users ||--o{ project_submissions : owns
+    users ||--o{ project_milestones : owns
     users ||--o{ contacts : owns
+    research_projects ||--o{ project_submissions : "project_id (FK)"
+    research_projects ||--o{ project_milestones : "project_id (FK)"
     users ||--o{ contact_links : owns
     users ||--o{ reminders : owns
     users ||--o{ notes : owns
@@ -37,6 +43,9 @@ erDiagram
     notes }o..o| contacts : "entity_id, entity_type=contact (no FK)"
     reminders }o..o| job_applications : "related_id, related_type=job (no FK)"
     reminders }o..o| research_opportunities : "related_id, related_type=research (no FK)"
+    notes }o..o| research_projects : "entity_id, entity_type=project (no FK)"
+    reminders }o..o| research_projects : "related_id, related_type=project (no FK)"
+    activity_logs }o..o| research_projects : "entity_id (no FK, kept after delete)"
     reminders }o..o| contacts : "related_id, related_type=contact (no FK)"
     activity_logs }o..o| job_applications : "entity_id (no FK, kept after delete)"
     activity_logs }o..o| research_opportunities : "entity_id (no FK, kept after delete)"
@@ -111,6 +120,47 @@ erDiagram
         string status
         date application_date
         date deadline
+        timestamptz created_at
+        timestamptz updated_at
+    }
+    research_projects {
+        uuid id PK
+        uuid user_id FK
+        string title
+        string project_type
+        string stage
+        string topic
+        text description
+        string institution
+        text notes
+        date target_date
+        timestamptz created_at
+        timestamptz updated_at
+    }
+    project_submissions {
+        uuid id PK
+        uuid user_id FK
+        uuid project_id FK
+        string venue_name
+        string venue_type
+        string venue_url
+        date abstract_deadline
+        date paper_deadline
+        date notification_date
+        date submitted_on
+        string status
+        text feedback
+        timestamptz created_at
+        timestamptz updated_at
+    }
+    project_milestones {
+        uuid id PK
+        uuid user_id FK
+        uuid project_id FK
+        string title
+        date due_date
+        boolean is_done
+        timestamptz completed_at
         timestamptz created_at
         timestamptz updated_at
     }
@@ -207,6 +257,25 @@ Name, unique lowercase email, Argon2 hash and `token_version`. Changing the pass
 - `research_interests` is a list of strings, `publication_links` a list of `{title, url}` and
   `required_documents` a checklist of `{name, done}`, all stored as JSONB.
 
+### research_projects, project_submissions and project_milestones
+
+A research project is the user's own work (a paper, thesis or study), separate from
+`research_opportunities`, which are positions and programs the user applies to. Added in migration
+`0006`, which only adds tables and indexes and widens the `notes` and `reminders` type checks.
+
+- `project_type`: `personal` (default), `university_course`, `thesis`, `research_group`, `other`.
+- `stage`: `idea` (default), `literature_review`, `experiments`, `writing`, `submitting`,
+  `published`, `paused`. A project is *active* unless it is `published` or `paused`.
+- `project_submissions.venue_type`: `conference` (default), `journal`, `workshop`, `other`.
+  `status`: `planned` (default), `submitted`, `under_review`, `revisions_requested`, `accepted`,
+  `rejected`, `withdrawn`. One project can hold several submissions, so a rejected paper can go to
+  another venue. `abstract_deadline` must not be after `paper_deadline` (a `CHECK`, and the API).
+- `project_milestones.completed_at` is set when `is_done` becomes true and cleared when reopened.
+  They are listed by `due_date` with undated ones last.
+- Submissions and milestones are deleted with their project (`ON DELETE CASCADE`).
+- Dashboard rule: a deadline counts only for a `planned` submission or an undone milestone with a
+  date, and only while the project is active.
+
 ### contacts and contact_links
 
 A contact can be linked to any number of jobs and research opportunities. A contact survives when
@@ -220,14 +289,15 @@ set or both null (a `CHECK` constraint). A reminder due right now counts as upco
 
 ### notes
 
-`entity_type` is `job`, `research` or `contact`. `kind` is `note` (default), `interview_feedback`
+`entity_type` is `job`, `research`, `project` or `contact`. `kind` is `note` (default), `interview_feedback`
 or `communication`. A note stays on the record it was written on.
 
 ### activity_logs
 
 Append-only history written by the services in the same transaction as the change. `action` is one
 of `created`, `status_changed`, `deadline_updated`, `interview_scheduled`, `contact_added`,
-`archived` or `deleted`. `metadata` stores the item's label, and old and new values for status and
+`archived`, `deleted`, or for projects `stage_changed`, `submission_added`,
+`submission_status_changed` and `milestone_completed`. `metadata` stores the item's label, and old and new values for status and
 deadline changes, so history stays readable after the item is deleted. Timestamps use
 `clock_timestamp()` so events written in one transaction keep their order.
 
@@ -236,6 +306,9 @@ deadline changes, so history stays readable after the item is deleted. Timestamp
 | Table | Index |
 |---|---|
 | `job_applications`, `research_opportunities` | `(user_id, status)`, `(user_id, deadline)`, `(user_id, created_at)` |
+| `research_projects` | `(user_id, stage)`, `(user_id, created_at)`, `(user_id, target_date)` |
+| `project_submissions` | `(user_id, project_id)`, `(user_id, status, paper_deadline)`, `(user_id, status, abstract_deadline)` |
+| `project_milestones` | `(user_id, project_id)`, `(user_id, is_done, due_date)` |
 | `reminders` | `(user_id, due_at, is_completed)` |
 | `notes`, `activity_logs`, `contact_links` | `(user_id, entity_type, entity_id)` |
 | `activity_logs` | `(user_id, created_at)` |

@@ -19,7 +19,9 @@ the CSRF header, the cookie and the limits.
   without an offset is rejected with `422`, not guessed. Timestamps must also have a year between
   1900 and 2200.
 - **Today:** the API has no user time zone, so `GET /dashboard/summary`,
-  `GET /dashboard/upcoming-deadlines` and `GET /contacts?follow_up_due=true` take an optional
+  `GET /dashboard/upcoming-deadlines`, `GET /dashboard/overdue-research`,
+  `GET /contacts?follow_up_due=true` and every project route that returns a project
+  (`GET`, `POST` and `PATCH /projects`, and `GET /projects/{id}`) take an optional
   `today=YYYY-MM-DD` query parameter, the client's local date. It must be within one day of the UTC
   date, otherwise the response is `422`, and when omitted the UTC date is used. It applies to
   date-only fields only; reminders always compare exact instants. The app sends the browser's
@@ -31,7 +33,8 @@ the CSRF header, the cookie and the limits.
 - **Ownership:** every record belongs to one user. A record that does not exist and a record that
   belongs to someone else both return `404`.
 - **Deletes:** `DELETE` returns `204` and is permanent. Deleting a job, research opportunity or
-  contact also removes its notes, reminders and contact links.
+  contact also removes its notes, reminders and contact links. Deleting a research project also
+  removes its submissions, milestones, notes and reminders.
 
 ### Lists
 
@@ -156,12 +159,25 @@ and `/health` needs a session.
 | `GET /research/{id}` | Get | |
 | `PATCH /research/{id}` | Update | List fields are replaced as a whole |
 | `DELETE /research/{id}` | Delete | `204` |
+| `GET /projects` | List research projects (your own papers, theses and studies) | Filters: `stage`, `project_type`, `active`, `q` (title, topic, institution). `active=true` hides `published` and `paused` projects. `active=false` is **not** a filter and returns every project, the same as leaving it out. Sort: `created_at`, `updated_at`, `title`, `target_date`. Optional `today`. Each project has `milestones_total`, `milestones_done`, `submissions_total` and `next_deadline` |
+| `POST /projects` | Create | `201`. Optional `today` |
+| `GET /projects/{id}` | Get | Optional `today` |
+| `PATCH /projects/{id}` | Update, including `stage` | Optional `today` |
+| `DELETE /projects/{id}` | Delete, with its submissions, milestones, notes and reminders | `204` |
+| `GET /projects/{id}/submissions` | List the venues a project is sent to | Every submission, up to 100 |
+| `POST /projects/{id}/submissions` | Add a submission | `201`. `abstract_deadline` after `paper_deadline` is `422`, checked against the stored other date when only one is sent. `venue_url` must be `http` or `https` |
+| `PATCH /projects/{id}/submissions/{submission_id}` | Update, including `status` | A submission of another project or user is `404` |
+| `DELETE /projects/{id}/submissions/{submission_id}` | Delete | `204` |
+| `GET /projects/{id}/milestones` | List milestones | Due date order, undated last |
+| `POST /projects/{id}/milestones` | Add a milestone | `201` |
+| `PATCH /projects/{id}/milestones/{milestone_id}` | Update, or tick with `is_done` | `completed_at` is set when done and cleared when reopened |
+| `DELETE /projects/{id}/milestones/{milestone_id}` | Delete | `204` |
 | `GET /contacts` | List contacts | Filters: `contact_type`, `entity_type`, `entity_id`, `follow_up_due` |
 | `POST /contacts` | Create | `201` |
 | `GET /contacts/{id}` | Get, with linked records | |
 | `PATCH /contacts/{id}` | Update | |
 | `DELETE /contacts/{id}` | Delete | `204` |
-| `POST /contacts/{id}/links` | Link a contact to a job or research opportunity | `201`. A repeat link is `409` |
+| `POST /contacts/{id}/links` | Link a contact to a job or research opportunity | `201`. A repeat link is `409`. `project` is `422`, because contacts do not link to projects |
 | `DELETE /contacts/{id}/links/{link_id}` | Remove a link | `204` |
 | `GET /reminders` | List reminders | Filters: `state` (`overdue`, `upcoming`, `completed`), `related_type`, `related_id`, `due_within_days` |
 | `POST /reminders` | Create | `201`. `related_type` and `related_id` go together |
@@ -172,8 +188,9 @@ and `/health` needs a session.
 | `PATCH /notes/{id}` | Edit `kind` or `content` | |
 | `DELETE /notes/{id}` | Delete | `204` |
 | `GET /activity` | Activity history | Filters: `entity_type`, `entity_id`. Newest first |
-| `GET /dashboard/summary` | The eight dashboard numbers | Optional `today` |
-| `GET /dashboard/upcoming-deadlines` | Items due in the next 14 days | Optional `today` |
+| `GET /dashboard/summary` | The dashboard numbers, including `active_research_projects` | Optional `today` |
+| `GET /dashboard/upcoming-deadlines` | Items due in the next 14 days. Includes the kinds `project_submission_deadline` and `project_milestone`, with `project_id` and `project_title` | Optional `today` |
+| `GET /dashboard/overdue-research` | Open research project items dated before today, oldest first, at most 50 | Optional `today` |
 | `GET /dashboard/recent-activities` | The 10 most recent activity rows | |
 | `GET /dashboard/analytics` | Status counts and monthly counts for the last 12 months | |
 

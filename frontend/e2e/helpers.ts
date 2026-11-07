@@ -47,3 +47,12 @@ export function localDatetime(offsetHours: number): string {
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
+
+/** A calendar date `offsetDays` from today as `YYYY-MM-DD`, in local time and with no UTC conversion. */
+export function localDate(offsetDays: number): string {
+  const now = new Date();
+  // The Date constructor rolls the day over months and years in local time, so month ends are safe.
+  const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + offsetDays);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
