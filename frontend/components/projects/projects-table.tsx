@@ -14,7 +14,7 @@ function subtitle(project: Project): string | null {
   return [project.topic, project.institution].filter(Boolean).join(" · ") || null;
 }
 
-/** A project with only overdue items has no next deadline; this says so in text and colour, not colour alone. */
+/** Shown whenever an open item is dated before today, next to the next deadline if there is one. Text and colour, not colour alone. */
 function OverdueMark() {
   return (
     <span className="inline-flex items-center gap-1 text-xs font-medium text-destructive">
@@ -26,8 +26,12 @@ function OverdueMark() {
 
 function NextDeadline({ project }: { project: Project }) {
   const date = formatDateOnly(project.next_deadline);
-  if (date) return <span className="text-xs text-muted-foreground">Next deadline {date}</span>;
-  return project.has_overdue ? <OverdueMark /> : null;
+  return (
+    <>
+      {project.has_overdue ? <OverdueMark /> : null}
+      {date ? <span className="text-xs text-muted-foreground">Next deadline {date}</span> : null}
+    </>
+  );
 }
 
 function TargetDate({ project }: { project: Project }) {
@@ -67,7 +71,10 @@ export function ProjectsTable({ projects }: { projects: Project[] }) {
                 <TableCell className="min-w-40">
                   {project.milestones_total > 0 ? <MilestoneProgress done={project.milestones_done} total={project.milestones_total} /> : <span className="text-muted-foreground">-</span>}
                 </TableCell>
-                <TableCell className="text-muted-foreground tabular-nums">{formatDateOnly(project.next_deadline) ?? (project.has_overdue ? <OverdueMark /> : "-")}</TableCell>
+                <TableCell className="text-muted-foreground tabular-nums">
+                  {formatDateOnly(project.next_deadline) ?? (project.has_overdue ? null : "-")}
+                  {project.has_overdue ? <div><OverdueMark /></div> : null}
+                </TableCell>
                 <TableCell className="text-muted-foreground tabular-nums">{formatDateOnly(project.target_date) ?? "-"}</TableCell>
               </TableRow>
             ))}

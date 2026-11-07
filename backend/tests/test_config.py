@@ -34,6 +34,29 @@ def test_register_rate_limit_defaults_to_5_per_minute() -> None:
     assert settings.RATE_LIMIT_REGISTER_PER_MINUTE == 5
 
 
+def test_register_global_rate_limit_defaults_to_30_per_minute() -> None:
+    settings = Settings(_env_file=None, DATABASE_URL=DB_URL, JWT_SECRET="x" * 32)
+    assert settings.RATE_LIMIT_REGISTER_GLOBAL_PER_MINUTE == 30
+
+
+def test_register_global_rate_limit_setting_is_honoured_by_the_limiter(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from app.core.config import get_settings
+    from app.modules.auth import router
+
+    assert router._register_global_limiter.limit == 30
+    monkeypatch.setenv("RATE_LIMIT_REGISTER_GLOBAL_PER_MINUTE", "500")
+    get_settings.cache_clear()
+    try:
+        reloaded = importlib.reload(router)
+        assert reloaded._register_global_limiter.limit == 500
+    finally:
+        monkeypatch.delenv("RATE_LIMIT_REGISTER_GLOBAL_PER_MINUTE")
+        get_settings.cache_clear()
+        importlib.reload(router)
+
+
 def test_register_rate_limit_setting_is_honoured_by_the_register_limiter(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

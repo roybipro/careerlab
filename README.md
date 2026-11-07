@@ -155,10 +155,10 @@ npm run build
 
 End-to-end tests run against the full stack. Start it first with `docker compose up -d --build`.
 The tests register several users from one IP, so start the stack with a higher registration
-limit than the default of 5 per minute:
+limit than the default of 5 per minute (and the all-IPs limit of 30, which back-to-back runs would share):
 
 ```bash
-RATE_LIMIT_REGISTER_PER_MINUTE=1000 docker compose up -d --build
+RATE_LIMIT_REGISTER_PER_MINUTE=1000 RATE_LIMIT_REGISTER_GLOBAL_PER_MINUTE=1000 docker compose up -d --build
 cd frontend
 npx playwright install chromium
 npm run test:e2e

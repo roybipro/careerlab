@@ -119,7 +119,7 @@ Limits are counted in memory per API process, per rolling minute, and answer `42
 
 | Endpoint | Limit |
 |---|---|
-| `POST /auth/register` | 5 per client IP (set by `RATE_LIMIT_REGISTER_PER_MINUTE`), and 30 across all IPs |
+| `POST /auth/register` | 5 per client IP (set by `RATE_LIMIT_REGISTER_PER_MINUTE`), and 30 across all IPs (set by `RATE_LIMIT_REGISTER_GLOBAL_PER_MINUTE`). Only the end-to-end environment raises either |
 | `POST /auth/login` | 10 per client IP, and 5 per email address |
 
 The client IP is the connection's address, or the first `X-Forwarded-For` entry when
