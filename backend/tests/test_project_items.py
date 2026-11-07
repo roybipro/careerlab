@@ -284,6 +284,8 @@ def test_item_under_wrong_project_returns_404_and_changes_nothing(ana, kind):
         patch = {"title": "Hacked"}
     base = f"{PROJECTS}/{b['id']}/{kind}/{item['id']}"
     before = ana.get(f"{PROJECTS}/{a['id']}/{kind}").json()
+    # Creating the item touched A; the rejected requests must not touch either project.
+    updated_before = (_updated_at(ana, a["id"]), _updated_at(ana, b["id"]))
     events_before = activity_for(ana, a["id"]) + activity_for(ana, b["id"])
 
     assert ana.patch(base, json=patch).status_code == 404
@@ -292,7 +294,7 @@ def test_item_under_wrong_project_returns_404_and_changes_nothing(ana, kind):
     assert ana.get(f"{PROJECTS}/{a['id']}/{kind}").json() == before
     assert ana.get(f"{PROJECTS}/{b['id']}/{kind}").json()["total"] == 0
     assert activity_for(ana, a["id"]) + activity_for(ana, b["id"]) == events_before
-    assert ana.get(f"{PROJECTS}/{a['id']}").json()["updated_at"] == a["updated_at"]
+    assert (_updated_at(ana, a["id"]), _updated_at(ana, b["id"])) == updated_before
 
 
 def test_items_isolated_between_users(ana, second_client):
@@ -379,3 +381,94 @@ def test_counts_and_next_deadline_follow_changes(ana):
     assert after_sub["submissions_total"] == 0 and after_sub["next_deadline"] is None
     assert ana.delete(mile_url).status_code == 204
     assert project()["milestones_total"] == 0
+
+
+def _updated_at(c: TestClient, project_id: str) -> str:
+    return c.get(f"{PROJECTS}/{project_id}").json()["updated_at"]
+
+
+def test_item_writes_touch_the_parent_updated_at(ana):
+    p = make_project(ana)
+    seen = [_updated_at(ana, p["id"])]
+
+    def touched() -> None:
+        now = _updated_at(ana, p["id"])
+        assert now > seen[-1]
+        seen.append(now)
+
+    s = make_sub(ana, p["id"], paper_deadline="2031-02-01")
+    touched()
+    assert (
+        ana.patch(f"{subs(p['id'])}/{s['id']}", json={"venue_name": "Lakeside"}).status_code == 200
+    )
+    touched()
+    m = make_mile(ana, p["id"])
+    touched()
+    assert ana.patch(f"{miles(p['id'])}/{m['id']}", json={"is_done": True}).status_code == 200
+    touched()
+    assert ana.delete(f"{miles(p['id'])}/{m['id']}").status_code == 204
+    touched()
+    assert ana.delete(f"{subs(p['id'])}/{s['id']}").status_code == 204
+    touched()
+
+
+def test_wrong_project_or_foreign_item_write_does_not_touch_updated_at(ana, second_client):
+    p1 = make_project(ana, title="One")
+    p2 = make_project(ana, title="Two")
+    s = make_sub(ana, p1["id"])
+    m = make_mile(ana, p1["id"])
+    before = (_updated_at(ana, p1["id"]), _updated_at(ana, p2["id"]))
+
+    # The item belongs to p1, so a request through p2 is a 404 and p2 stays as it was.
+    assert ana.patch(f"{subs(p2['id'])}/{s['id']}", json={"venue_name": "X"}).status_code == 404
+    assert ana.patch(f"{miles(p2['id'])}/{m['id']}", json={"title": "X"}).status_code == 404
+    assert ana.delete(f"{subs(p2['id'])}/{s['id']}").status_code == 404
+    assert ana.delete(f"{miles(p2['id'])}/{m['id']}").status_code == 404
+    # A foreign user changes nothing either.
+    assert second_client.post(subs(p1["id"]), json={"venue_name": "X"}).status_code == 404
+    assert (
+        second_client.patch(f"{miles(p1['id'])}/{m['id']}", json={"title": "X"}).status_code == 404
+    )
+    assert second_client.delete(f"{subs(p1['id'])}/{s['id']}").status_code == 404
+
+    assert (_updated_at(ana, p1["id"]), _updated_at(ana, p2["id"])) == before
+
+
+def test_has_overdue_matches_the_dashboard_rules(ana):
+    pid = make_project(ana)["id"]
+    today_s = today()
+    params = {"today": today_s.isoformat()}
+
+    def project() -> dict:
+        return ana.get(f"{PROJECTS}/{pid}", params=params).json()
+
+    assert project()["has_overdue"] is False
+    past = (today_s - timedelta(days=2)).isoformat()
+    soon = (today_s + timedelta(days=3)).isoformat()
+    m = make_mile(ana, pid, due_date=past)
+    assert project()["has_overdue"] is True and project()["next_deadline"] is None
+    # Due today is not overdue; a done milestone is not open.
+    assert (
+        ana.patch(f"{miles(pid)}/{m['id']}", json={"due_date": today_s.isoformat()}).status_code
+        == 200
+    )
+    assert project()["has_overdue"] is False
+    assert ana.patch(f"{miles(pid)}/{m['id']}", json={"due_date": past}).status_code == 200
+    assert ana.patch(f"{miles(pid)}/{m['id']}", json={"is_done": True}).status_code == 200
+    assert project()["has_overdue"] is False
+    # A past abstract with a future paper is overdue, and it clears once marked submitted.
+    s = make_sub(ana, pid, abstract_deadline=past, paper_deadline=soon)
+    got = project()
+    assert got["has_overdue"] is True and got["next_deadline"] == soon
+    sub_url = f"{subs(pid)}/{s['id']}"
+    assert ana.patch(sub_url, json={"abstract_submitted_on": past}).status_code == 200
+    assert project()["has_overdue"] is False
+    # Leaving planned stops every deadline; a paused project has no alarms.
+    assert ana.patch(sub_url, json={"abstract_submitted_on": None}).status_code == 200
+    assert project()["has_overdue"] is True
+    assert ana.patch(f"{PROJECTS}/{pid}", json={"stage": "paused"}).status_code == 200
+    assert project()["has_overdue"] is False
+    # The list reports it too.
+    assert ana.patch(f"{PROJECTS}/{pid}", json={"stage": "writing"}).status_code == 200
+    listed = ana.get(PROJECTS, params=params).json()["items"]
+    assert [i["has_overdue"] for i in listed] == [True]
