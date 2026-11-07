@@ -4,7 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { api, ApiError } from "@/lib/api";
 import { statusLabel, type EntityType } from "@/lib/enums";
-import { entityResource, invalidateEntity } from "@/lib/keys";
+import { entityResource, invalidateEntity, invalidateProject } from "@/lib/keys";
 import type { Paginated } from "@/lib/types";
 
 /**
@@ -35,6 +35,6 @@ export function useStatusMove<T extends { id: string }>(type: EntityType, path: 
       const reason = error instanceof ApiError ? error.message : "Something went wrong.";
       toast.error(`Could not move ${nameOf(item)} to ${statusLabel(status)}. ${reason}`);
     },
-    onSettled: (_data, _error, { item }) => invalidateEntity(client, type, item.id),
+    onSettled: (_data, _error, { item }) => (type === "project" ? invalidateProject(client, item.id) : invalidateEntity(client, type, item.id)),
   });
 }

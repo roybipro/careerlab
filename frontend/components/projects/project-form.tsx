@@ -18,7 +18,7 @@ import { api, applyServerErrors } from "@/lib/api";
 import { PROJECT_STAGES, PROJECT_TYPES } from "@/lib/enums";
 import { buildBody } from "@/lib/form-body";
 import { localToday } from "@/lib/format";
-import { invalidateEntity } from "@/lib/keys";
+import { invalidateProject } from "@/lib/keys";
 import type { Project } from "@/lib/types";
 
 const short = z.string().max(200, "At most 200 characters");
@@ -75,7 +75,7 @@ function ProjectFormBody({ project, onDone }: { project?: Project; onDone: () =>
       return project ? api<Project>(`/projects/${project.id}`, { method: "PATCH", body, query }) : api<Project>("/projects", { method: "POST", body, query });
     },
     onSuccess: async (saved) => {
-      await invalidateEntity(client, "project", saved.id);
+      await invalidateProject(client, saved.id);
       toast.success(project ? "Project updated" : "Project added");
       onDone();
     },

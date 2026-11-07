@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 import {
   ArrowRight,
   Bell,
@@ -9,10 +9,13 @@ import {
   CalendarClock,
   CircleX,
   Contact,
+  FileUp,
   FlaskConical,
+  FolderKanban,
   History,
   Hourglass,
   LayoutDashboard,
+  ListChecks,
   MessagesSquare,
   Plus,
   Reply,
@@ -39,7 +42,7 @@ import { statusLabel, statusMeta } from "@/lib/enums";
 import { dateChipParts, daysFromToday, dueLabel, formatDateOnly, formatDateTime, localToday } from "@/lib/format";
 import { keys } from "@/lib/keys";
 import { entityHref } from "@/lib/navigation";
-import type { Activity, Analytics, DashboardSummary, Deadline, Paginated, Reminder, StatusCount } from "@/lib/types";
+import type { Activity, Analytics, DashboardSummary, Deadline, OverdueResearch, Paginated, Reminder, StatusCount } from "@/lib/types";
 import { useMediaQuery } from "@/lib/use-media-query";
 import { cn } from "@/lib/utils";
 
@@ -55,9 +58,16 @@ const MAIN_CARDS: StatCard[] = [
 const COMPACT_CARDS: StatCard[] = [
   { key: "offers", label: "Offers received", hint: "Job offers and accepted research", icon: Trophy },
   { key: "rejected", label: "Rejected applications", hint: "Jobs and research rejected", icon: CircleX },
-  { key: "upcoming_deadlines", label: "Upcoming deadlines", hint: "Due in the next 14 days, with reminders", icon: CalendarClock },
+  { key: "upcoming_deadlines", label: "Upcoming deadlines", hint: "Due in the next 14 days, with reminders and research items", icon: CalendarClock },
   { key: "pending_follow_ups", label: "Pending follow-ups", hint: "Overdue or due in the next 7 days", icon: Reply },
+  { key: "active_research_projects", label: "Active research projects", hint: "Not published or paused", icon: FolderKanban },
 ];
+
+// Five compact cards, laid out on purpose at each width: two columns with the last one full width (phone),
+// then a six-column grid of three over two (768 to 1279px, so no empty cell), then five in a row (xl). The
+// text always sits under the number, because the cards are narrow at every one of these widths.
+const COMPACT_GRID = "grid grid-cols-2 gap-4 md:grid-cols-6 xl:grid-cols-5";
+const COMPACT_ITEM = "max-md:last:col-span-2 md:col-span-2 md:nth-[n+4]:col-span-3 xl:col-span-1 xl:nth-[n+4]:col-span-1";
 
 function SummarySkeleton() {
   return (
@@ -67,9 +77,9 @@ function SummarySkeleton() {
           <Skeleton key={c.key} className="h-36 rounded-2xl" />
         ))}
       </div>
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className={COMPACT_GRID}>
         {COMPACT_CARDS.map((c) => (
-          <Skeleton key={c.key} className="h-20 rounded-2xl" />
+          <Skeleton key={c.key} className={cn("h-28 rounded-2xl", COMPACT_ITEM)} />
         ))}
       </div>
     </div>
@@ -105,14 +115,14 @@ function SummaryCards() {
               </li>
             ))}
           </ul>
-          <ul className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <ul className={COMPACT_GRID}>
             {COMPACT_CARDS.map((c) => (
-              <li key={c.key} className="flex flex-wrap items-start gap-x-3 gap-y-1 rounded-2xl border bg-card p-4 shadow-card sm:flex-nowrap">
+              <li key={c.key} className={cn("flex flex-wrap items-start gap-x-3 gap-y-1 rounded-2xl border bg-card p-4 shadow-card", COMPACT_ITEM)}>
                 <c.icon className="mt-1 size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
                 <p className="min-w-5 shrink-0 text-xl leading-6 font-semibold tabular-nums" data-testid={`card-${c.key}`}>
                   {data[c.key]}
                 </p>
-                <div className="w-full min-w-0 sm:w-auto">
+                <div className="w-full min-w-0">
                   <p className="text-sm leading-6 font-medium">{c.label}</p>
                   <p className="text-xs text-muted-foreground">{c.hint}</p>
                 </div>
@@ -178,13 +188,40 @@ function Pipelines() {
   );
 }
 
-const KIND_LABEL: Record<Deadline["kind"], string> = { job_deadline: "Job deadline", research_deadline: "Research deadline", reminder: "Reminder" };
-const KIND_ICON: Record<Deadline["kind"], LucideIcon> = { job_deadline: Briefcase, research_deadline: FlaskConical, reminder: Bell };
+type ItemKind = Deadline["kind"];
+
+const KIND_LABEL: Record<ItemKind, string> = {
+  job_deadline: "Job deadline",
+  research_deadline: "Research deadline",
+  reminder: "Reminder",
+  project_submission_deadline: "Submission deadline",
+  project_milestone: "Milestone",
+};
+const KIND_ICON: Record<ItemKind, LucideIcon> = {
+  job_deadline: Briefcase,
+  research_deadline: FlaskConical,
+  reminder: Bell,
+  project_submission_deadline: FileUp,
+  project_milestone: ListChecks,
+};
 
 function deadlineHref(d: Deadline): string {
   if (d.kind === "job_deadline") return entityHref("job", d.id);
   if (d.kind === "research_deadline") return entityHref("research", d.id);
+  // Both research project kinds open the project, not the submission or milestone.
+  if ((d.kind === "project_submission_deadline" || d.kind === "project_milestone") && d.project_id) return entityHref("project", d.project_id);
   return "/reminders";
+}
+
+/** Where an item is from, for project items: "Kind · Project name". Other kinds show the kind alone. */
+function ProjectName({ name }: { name: string | null | undefined }) {
+  if (!name) return null;
+  return (
+    <>
+      <span aria-hidden="true">·</span>
+      <span className="font-medium text-foreground [overflow-wrap:anywhere]">{name}</span>
+    </>
+  );
 }
 
 /** A month and day tile, tinted by how soon it is. The tile repeats the date beside it, so it is hidden from screen readers. */
@@ -224,7 +261,7 @@ function Deadlines() {
                 const soon = late ? SOON.late : days <= 1 ? SOON.urgent : days <= 7 ? SOON.near : SOON.later;
                 const KindIcon = KIND_ICON[d.kind];
                 return (
-                  <li key={`${d.kind}-${d.id}`}>
+                  <li key={`${d.kind}-${d.id}-${d.title}`}>
                     <Link href={deadlineHref(d)} className="-mx-2 grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-1.5 rounded-lg px-2 py-3 transition-colors hover:bg-muted sm:grid-cols-[auto_minmax(0,1fr)_auto]">
                       <DateChip value={d.due} className={soon} />
                       <div className="min-w-0">
@@ -232,6 +269,7 @@ function Deadlines() {
                         <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground">
                           <KindIcon className="size-3.5 shrink-0" aria-hidden="true" />
                           <span>{KIND_LABEL[d.kind]}</span>
+                          <ProjectName name={d.project_title} />
                           <span aria-hidden="true">·</span>
                           <span>{d.kind === "reminder" ? formatDateTime(d.due) : formatDateOnly(d.due)}</span>
                         </p>
@@ -252,53 +290,165 @@ function Deadlines() {
 const OVERDUE_HREF = "/reminders?state=overdue";
 const OVERDUE_SHOWN = 5;
 
-/** Incomplete reminders already past due. Shows nothing at all when there are none. */
-function OverdueReminders() {
-  const query = useQuery({
+type OverdueRow = {
+  key: string;
+  href: string;
+  title: string;
+  kind: ItemKind;
+  /** Project name, for research items. */
+  project: string | null;
+  /** The chip date and the "was due" text. */
+  due: string;
+  /** Sort key: when it fell due, in the browser's time zone. A plain date counts from local midnight. */
+  at: number;
+};
+
+/** A plain date as the start of that day, without any time zone shift of the date itself. */
+function dayStart(value: string): number {
+  const [y, m, d] = value.split("-").map(Number);
+  return new Date(y, m - 1, d).getTime();
+}
+
+/**
+ * True once the query has failed, and stays true while it retries. Refetching a query that never loaded puts
+ * it back to `pending` (and clears its error), so without this a failing source would flip between "failed"
+ * and "loading" on every Retry click and every poll.
+ */
+function useHasFailed(query: UseQueryResult<unknown>): boolean {
+  const [seen, setSeen] = useState(false);
+  if (query.isError && !seen) setSeen(true);
+  // Once data has arrived, only a current error counts (a later success clears the failure).
+  return query.isError || (seen && query.data === undefined);
+}
+
+/** The notice for one source that failed, with Retry. Only a click shows "Retrying", so a poll does not flicker it. */
+function SourceNotice({ name, query }: { name: string; query: UseQueryResult<unknown> }) {
+  const [clicked, setClicked] = useState(false);
+  const message = clicked
+    ? `Retrying overdue ${name}...`
+    : query.data === undefined
+      ? `Could not load overdue ${name}. This list may be incomplete.`
+      : `Could not refresh overdue ${name}. Showing the last loaded list.`;
+  return (
+    <div role="alert" className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-destructive">
+      <span>{message}</span>
+      <Button
+        variant="outline"
+        size="sm"
+        disabled={clicked}
+        onClick={() => {
+          setClicked(true);
+          void query.refetch().finally(() => setClicked(false));
+        }}
+      >
+        {clicked ? "Retrying..." : "Retry"}
+      </Button>
+    </div>
+  );
+}
+
+/**
+ * Incomplete reminders and open research items already past due, oldest first. Shows nothing at all when there
+ * are none. Once a source has rows or has failed, the card stays: a source that is retrying or polling never
+ * hides it, or the other source's rows.
+ */
+function OverdueItems() {
+  const today = localToday();
+  const reminders = useQuery({
     queryKey: keys.dashboardPart("overdue"),
     queryFn: () => api<Paginated<Reminder>>("/reminders", { query: { state: "overdue", sort: "due_at", page_size: OVERDUE_SHOWN } }),
     // Overdue is judged when the list is fetched, so look again every minute.
     refetchInterval: 60_000,
   });
-  if (query.isPending) return null;
-  if (query.isError && !query.data) {
-    return (
-      <div className="min-w-0 lg:col-span-2">
-        <DataState query={query}>{() => null}</DataState>
-      </div>
-    );
-  }
-  const data = query.data;
-  if (!data || data.total === 0) return null;
+  const research = useQuery({
+    queryKey: keys.dashboardPart("overdue-research", today),
+    queryFn: () => api<OverdueResearch[]>("/dashboard/overdue-research", { query: { today } }),
+    refetchInterval: 60_000,
+  });
+  const [expanded, setExpanded] = useState(false);
+  const remindersFailed = useHasFailed(reminders as UseQueryResult<unknown>);
+  const researchFailed = useHasFailed(research as UseQueryResult<unknown>);
+  const reminderRows: OverdueRow[] = (reminders.data?.items ?? []).map((r) => ({
+    key: `reminder-${r.id}`,
+    href: OVERDUE_HREF,
+    title: r.title,
+    kind: "reminder",
+    project: null,
+    due: r.due_at,
+    at: new Date(r.due_at).getTime(),
+  }));
+  const researchRows: OverdueRow[] = (research.data ?? []).map((i) => ({
+    key: `${i.kind}-${i.id}-${i.title}`,
+    href: entityHref("project", i.project_id),
+    title: i.title,
+    kind: i.kind,
+    project: i.project_title,
+    due: i.due,
+    at: dayStart(i.due),
+  }));
+  // The API caps the research list at 50, so its length is the count it can show.
+  const reminderTotal = reminders.data?.total ?? 0;
+  const total = reminderTotal + researchRows.length;
+  // A source with no data that has not failed is still on its first load.
+  const sources = [
+    { name: "reminders", query: reminders as UseQueryResult<unknown>, failed: remindersFailed },
+    { name: "research items", query: research as UseQueryResult<unknown>, failed: researchFailed },
+  ];
+  const failedSources = sources.filter((x) => x.failed);
+  const incomplete = sources.some((x) => x.query.data === undefined);
+  // Hidden only when nothing is worth showing: the true first load, or no overdue items and no failure.
+  if (total === 0 && failedSources.length === 0) return null;
+  const merged = [...reminderRows, ...researchRows].sort((a, b) => a.at - b.at);
+  const rows = expanded ? merged : merged.slice(0, OVERDUE_SHOWN);
+  const hidden = merged.length - OVERDUE_SHOWN;
+
   return (
     <Card data-testid="overdue-section" className="border-destructive/50 lg:col-span-2">
       <CardHeader>
         <CardTitle className="text-destructive [&>svg]:text-destructive">
           <TriangleAlert aria-hidden="true" />
-          Overdue ({data.total})
+          {incomplete ? (total > 0 ? `Overdue (${total}+)` : "Overdue") : `Overdue (${total})`}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-2">
+        {failedSources.map(({ name, query }) => (
+          <SourceNotice key={name} name={name} query={query} />
+        ))}
         <ul className="-my-1 divide-y">
-          {data.items.map((r) => (
-            <li key={r.id}>
-              <Link href={OVERDUE_HREF} className="-mx-2 grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-1.5 rounded-lg px-2 py-3 transition-colors hover:bg-muted sm:grid-cols-[auto_minmax(0,1fr)_auto]">
-                <DateChip value={r.due_at} className={SOON.late} />
-                <div className="min-w-0">
-                  <p className="text-sm font-medium break-words">{r.title}</p>
-                  <p className="text-xs text-destructive">Was due {formatDateTime(r.due_at)}</p>
-                </div>
-                <Badge variant="destructive" className="col-start-2 sm:col-start-3 sm:row-start-1">
-                  Overdue
-                </Badge>
-              </Link>
-            </li>
-          ))}
+          {rows.map((r) => {
+            const KindIcon = KIND_ICON[r.kind];
+            return (
+              <li key={r.key}>
+                <Link href={r.href} className="-mx-2 grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-1.5 rounded-lg px-2 py-3 transition-colors hover:bg-muted sm:grid-cols-[auto_minmax(0,1fr)_auto]">
+                  <DateChip value={r.due} className={SOON.late} />
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium break-words">{r.title}</p>
+                    <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground">
+                      <KindIcon className="size-3.5 shrink-0" aria-hidden="true" />
+                      <span>{KIND_LABEL[r.kind]}</span>
+                      <ProjectName name={r.project} />
+                    </p>
+                    <p className="text-xs text-destructive">Was due {r.kind === "reminder" ? formatDateTime(r.due) : formatDateOnly(r.due)}</p>
+                  </div>
+                  <Badge variant="destructive" className="col-start-2 sm:col-start-3 sm:row-start-1">
+                    Overdue
+                  </Badge>
+                </Link>
+              </li>
+            );
+          })}
         </ul>
-        <Link href={OVERDUE_HREF} className="inline-flex min-h-10 items-center gap-1.5 text-sm font-medium text-link underline-offset-4 hover:underline">
-          {data.total > OVERDUE_SHOWN ? `View all ${data.total} overdue reminders` : "View in reminders"}
-          <ArrowRight className="size-4" aria-hidden="true" />
-        </Link>
+        {hidden > 0 ? (
+          <Button variant="ghost" size="sm" aria-expanded={expanded} onClick={() => setExpanded((v) => !v)}>
+            {expanded ? "Show fewer" : `Show ${hidden} more`}
+          </Button>
+        ) : null}
+        {reminderTotal > 0 ? (
+          <Link href={OVERDUE_HREF} className="inline-flex min-h-10 items-center gap-1.5 text-sm font-medium text-link underline-offset-4 hover:underline">
+            {reminderTotal > OVERDUE_SHOWN ? `View all ${reminderTotal} overdue reminders` : "View in reminders"}
+            <ArrowRight className="size-4" aria-hidden="true" />
+          </Link>
+        ) : null}
       </CardContent>
     </Card>
   );
@@ -377,7 +527,7 @@ export default function DashboardPage() {
   const isDesktop = useMediaQuery("(min-width: 64rem)", true);
   const sections: Record<(typeof DESKTOP_ORDER)[number], ReactNode> = {
     pipelines: <Pipelines />,
-    overdue: <OverdueReminders />,
+    overdue: <OverdueItems />,
     deadlines: <Deadlines />,
     activity: <RecentActivity onAddJob={() => setAdding("job")} />,
   };

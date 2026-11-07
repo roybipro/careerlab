@@ -20,7 +20,8 @@ import { keys } from "@/lib/keys";
 import type { Contact, ContactDetail, Paginated } from "@/lib/types";
 import { useDebounced } from "@/lib/use-debounced";
 
-type Linkable = Exclude<EntityType, "contact">;
+/** Contacts link to jobs and research opportunities only. A research project is not linkable, so mounting this on one does not compile. */
+type Linkable = Extract<EntityType, "job" | "research">;
 
 function contactSubtitle(c: Contact) {
   return [optionLabel(CONTACT_TYPES, c.contact_type), c.position, c.organization].filter(Boolean).join(" · ");
