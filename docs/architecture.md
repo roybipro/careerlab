@@ -31,8 +31,9 @@ flowchart TB
     Models --> Db[("PostgreSQL")]
 ```
 
-- **Domains:** `auth`, `jobs`, `research`, `contacts`, `reminders`, `notes`, `activity`,
-  `dashboard`.
+- **Domains:** `auth`, `jobs`, `research`, `projects`, `contacts`, `reminders`, `notes`,
+  `activity`, `dashboard`. `research` is positions and programs to apply to; `projects` is the
+  user's own research, with its submissions and milestones.
 - **Routers contain no queries.** They validate input, call one service function and return
   the result.
 - **Every service function takes the current user** and filters by `user_id`. A record that is
@@ -40,7 +41,7 @@ flowchart TB
 - **Shared code** is in `app/core/`: settings, the database engine, the error envelope, list
   pagination and sorting, password hashing and tokens, and the in-memory rate limiter.
 - **Polymorphic links** (notes, reminders, contact links and activity rows pointing at a job,
-  research opportunity or contact) cannot use foreign keys. `app/modules/entities.py` checks that
+  research opportunity, research project or contact; contact links do not accept projects) cannot use foreign keys. `app/modules/entities.py` checks that
   the target belongs to the user before a link is created, and removes the dependents when the
   target is deleted.
 - **Activity logs** are written by the services in the same transaction as the change they

@@ -12,6 +12,12 @@ from app.modules.activity.models import ActivityLog
 from app.modules.contacts.models import Contact
 from app.modules.dashboard import service as dashboard_service
 from app.modules.jobs.models import JobApplication
+from app.modules.projects.models import (
+    ProjectMilestone,
+    ProjectSubmission,
+    ResearchProject,
+    SubmissionStatus,
+)
 from app.modules.reminders.models import Reminder
 from app.modules.research.models import ResearchOpportunity
 from scripts import seed_demo
@@ -94,6 +100,26 @@ def test_seed_fills_the_account_and_a_second_run_changes_nothing(
     summary = dashboard_service.summary(db, user)
     assert summary["upcoming_deadlines"] > 0
     assert summary["interviews_scheduled"] > 0
+
+    # Research projects: one is published, so it is not active.
+    assert count(ResearchProject) == 4
+    assert summary["active_research_projects"] == 3
+    assert count(ProjectMilestone) >= 6
+    # One paper was rejected by a venue and is planned for another.
+    sensor = db.scalars(
+        select(ProjectSubmission)
+        .where(ProjectSubmission.user_id == user.id)
+        .where(ProjectSubmission.feedback.is_not(None))
+    ).one()
+    assert sensor.status == SubmissionStatus.rejected
+    siblings = db.scalars(
+        select(ProjectSubmission).where(
+            ProjectSubmission.project_id == sensor.project_id, ProjectSubmission.id != sensor.id
+        )
+    ).all()
+    assert [s.status for s in siblings] == [SubmissionStatus.planned]
+    kinds = {row["kind"] for row in dashboard_service.upcoming_deadlines(db, user, today=today)}
+    assert {"project_submission_deadline", "project_milestone"} <= kinds
 
     code = seed_demo.main([], {"DEMO_PASSWORD": "a-long-enough-password"})
     assert code == 1
