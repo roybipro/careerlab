@@ -40,6 +40,8 @@ class Settings(BaseSettings):
     # How many Argon2 hashes may run at once. Each takes about 64 MiB, so this bounds the
     # memory spent on hashing. Lower it on small hosts (render.yaml sets 2 for the free plan).
     MAX_CONCURRENT_HASHES: int = Field(default=4, ge=1)
+    # OAuth Web client ID from Google Cloud Console. Empty turns Google sign-in off.
+    GOOGLE_CLIENT_ID: str = ""
 
     @field_validator("DATABASE_URL")
     @classmethod

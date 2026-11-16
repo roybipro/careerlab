@@ -23,6 +23,8 @@ services:
       # Render generates a random 256-bit base64 value (44 characters, the app needs 32+).
       - key: JWT_SECRET
         generateValue: true
+      - key: GOOGLE_CLIENT_ID
+        sync: false
       # The Vercel URL, with no trailing slash, for example https://careerlab.vercel.app
       - key: FRONTEND_ORIGIN
         sync: false

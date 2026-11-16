@@ -294,3 +294,82 @@ def test_register_global_backstop_returns_429(
         json={"full_name": "Ana", "email": "user99@x.com", "password": PASSWORD},
     )
     assert blocked.status_code == 429
+
+
+# --- Google sign-in -------------------------------------------------------------
+
+GOOGLE_CLIENT = "test-client.apps.googleusercontent.com"
+
+
+@pytest.fixture
+def google_key(monkeypatch: pytest.MonkeyPatch):
+    from cryptography.hazmat.primitives.asymmetric import rsa
+
+    key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    monkeypatch.setattr(get_settings(), "GOOGLE_CLIENT_ID", GOOGLE_CLIENT)
+    signing = type("K", (), {"key": key.public_key()})()
+    with patch(
+        "app.modules.auth.service._google_keys.get_signing_key_from_jwt", return_value=signing
+    ):
+        yield key
+
+
+def _google_token(key, **overrides) -> str:
+    claims = {
+        "iss": "https://accounts.google.com",
+        "aud": GOOGLE_CLIENT,
+        "exp": datetime.now(UTC) + timedelta(minutes=5),
+        "email": "Ana@X.com",
+        "email_verified": True,
+        "name": "Ana Google",
+        **overrides,
+    }
+    return jwt.encode(claims, key, algorithm="RS256")
+
+
+def test_google_login_disabled_without_client_id(client: TestClient) -> None:
+    response = client.post(f"{BASE}/google", json={"credential": "x"})
+    assert response.status_code == 404
+
+
+def test_google_login_creates_user_and_sets_cookie(client: TestClient, google_key) -> None:
+    response = client.post(f"{BASE}/google", json={"credential": _google_token(google_key)})
+    assert response.status_code == 200
+    assert response.json()["email"] == "ana@x.com"
+    assert response.json()["full_name"] == "Ana Google"
+    assert COOKIE in response.headers["set-cookie"]
+    assert client.get(f"{BASE}/me").status_code == 200
+
+
+def test_google_login_signs_in_existing_account(client: TestClient, google_key) -> None:
+    existing = register_user(client)
+    client.post(f"{BASE}/logout")
+    response = client.post(f"{BASE}/google", json={"credential": _google_token(google_key)})
+    assert response.status_code == 200
+    assert response.json()["id"] == existing["id"]
+    assert response.json()["full_name"] == "Ana Lima"
+
+
+@pytest.mark.parametrize(
+    "overrides",
+    [
+        {"aud": "someone-else"},
+        {"iss": "https://evil.example"},
+        {"email_verified": False},
+        {"exp": datetime.now(UTC) - timedelta(minutes=5)},
+    ],
+)
+def test_google_login_rejects_bad_tokens(client: TestClient, google_key, overrides) -> None:
+    response = client.post(
+        f"{BASE}/google", json={"credential": _google_token(google_key, **overrides)}
+    )
+    assert response.status_code == 401
+    assert "set-cookie" not in response.headers
+
+
+def test_google_login_rejects_token_signed_by_another_key(client: TestClient, google_key) -> None:
+    from cryptography.hazmat.primitives.asymmetric import rsa
+
+    other = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    response = client.post(f"{BASE}/google", json={"credential": _google_token(other)})
+    assert response.status_code == 401

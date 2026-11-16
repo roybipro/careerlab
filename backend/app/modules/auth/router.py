@@ -8,6 +8,7 @@ from app.modules.auth import service
 from app.modules.auth.models import User
 from app.modules.auth.schemas import (
     ChangePasswordIn,
+    GoogleLoginIn,
     LoginIn,
     ProfileUpdateIn,
     RegisterIn,
@@ -53,6 +54,14 @@ def login(body: LoginIn, request: Request, response: Response, db: DbSession) ->
     _login_ip_limiter.check(client_ip(request))
     _login_email_limiter.check(body.email)
     user = service.authenticate(db, body.email, body.password)
+    _set_session_cookie(response, user)
+    return user
+
+
+@router.post("/google", response_model=UserOut)
+def google_login(body: GoogleLoginIn, request: Request, response: Response, db: DbSession) -> User:
+    _login_ip_limiter.check(client_ip(request))
+    user = service.google_login(db, body.credential)
     _set_session_cookie(response, user)
     return user
 

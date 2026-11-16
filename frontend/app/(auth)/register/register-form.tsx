@@ -11,6 +11,7 @@ import { z } from "zod";
 import { TextField } from "@/components/text-field";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { GoogleSignIn } from "@/components/google-sign-in";
 import { WakingHint } from "@/components/waking-hint";
 import { ApiError, api, applyServerErrors } from "@/lib/api";
 import { safeNextPath } from "@/lib/auth";
@@ -92,6 +93,7 @@ export function RegisterForm() {
           </Button>
           {signUp.isPending ? <WakingHint className="text-center text-sm text-muted-foreground" /> : null}
         </form>
+        <GoogleSignIn next={next} text="signup_with" />
         <p className="mt-3 text-center text-sm text-muted-foreground">
           Already have an account?{" "}
           <Link href={loginHref} className="inline-flex min-h-10 items-center font-medium text-link underline underline-offset-4">

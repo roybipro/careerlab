@@ -1,7 +1,12 @@
+import secrets
+from typing import Any
+
+import jwt
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.core.config import get_settings
 from app.core.errors import AppError
 from app.core.security import dummy_hash, hash_password, verify_password
 from app.modules.auth.models import User
@@ -34,6 +39,53 @@ def authenticate(db: Session, email: str, password: str) -> User:
     valid = verify_password(password, user.password_hash if user else dummy_hash())
     if user is None or not valid:
         raise AppError(401, "unauthorized", "Invalid email or password")
+    return user
+
+
+_google_keys = jwt.PyJWKClient("https://www.googleapis.com/oauth2/v3/certs", cache_keys=True)
+
+
+def verify_google_credential(credential: str) -> dict[str, Any]:
+    client_id = get_settings().GOOGLE_CLIENT_ID
+    if not client_id:
+        raise AppError(404, "not_found", "Google sign-in is not enabled")
+    try:
+        key = _google_keys.get_signing_key_from_jwt(credential).key
+        claims: dict[str, Any] = jwt.decode(
+            credential,
+            key,
+            algorithms=["RS256"],
+            audience=client_id,
+            issuer=["accounts.google.com", "https://accounts.google.com"],
+        )
+    except (jwt.PyJWTError, jwt.PyJWKClientError):
+        raise AppError(401, "unauthorized", "Google sign-in failed") from None
+    if claims.get("email_verified") is not True or not claims.get("email"):
+        raise AppError(401, "unauthorized", "Google sign-in failed")
+    return claims
+
+
+def google_login(db: Session, credential: str) -> User:
+    claims = verify_google_credential(credential)
+    email = str(claims["email"]).lower()
+    # A verified Google email signs in to the account already registered with it.
+    user = get_user_by_email(db, email)
+    if user is not None:
+        return user
+    full_name = (str(claims.get("name") or "").strip() or email.split("@")[0])[:120]
+    # Random unusable password: the account signs in with Google until the user sets one.
+    user = User(
+        full_name=full_name, email=email, password_hash=hash_password(secrets.token_urlsafe(32))
+    )
+    db.add(user)
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        existing = get_user_by_email(db, email)
+        if existing is None:
+            raise
+        return existing
     return user
 
 

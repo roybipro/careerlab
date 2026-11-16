@@ -27,6 +27,11 @@ class LoginIn(BaseModel):
     password: Annotated[str, Field(min_length=1, max_length=128)]
 
 
+class GoogleLoginIn(BaseModel):
+    # The ID token Google Identity Services hands the browser.
+    credential: Annotated[str, Field(min_length=1, max_length=4096)]
+
+
 class ProfileUpdateIn(BaseModel):
     full_name: FullName | None = None
     email: Email | None = None
