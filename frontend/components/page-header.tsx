@@ -23,7 +23,10 @@ export function PageHeader({ title, description, icon: Icon, actions, wideAction
           </span>
         ) : null}
         <div className="min-w-0">
-          <h1 className="text-2xl font-semibold tracking-tight break-words md:text-[1.75rem] md:leading-tight">{title}</h1>
+          <h1 className="text-2xl font-semibold tracking-tight break-words md:text-[1.75rem] md:leading-tight">
+            {/* Highlighter marker: full fill with its own text colour, so it passes contrast in both themes. */}
+            <span className="rounded-sm bg-highlight box-decoration-clone px-1.5 text-highlight-foreground">{title}</span>
+          </h1>
           {description ? <p className="mt-1 text-sm break-words text-muted-foreground">{description}</p> : null}
         </div>
       </div>

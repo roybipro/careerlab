@@ -7,9 +7,10 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
+  --font-sans: var(--font-body);
+  --font-heading: var(--font-display);
+  --color-highlight: var(--highlight);
+  --color-highlight-foreground: var(--highlight-foreground);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -93,48 +94,52 @@
 }
 
 :root {
-  /* Crisp cobalt. Every text and status pair is checked for WCAG AA with a contrast calculation. */
-  --radius: 0.625rem;
-  --background: #f4f6fa;
-  --foreground: #0f1a2e;
+  /* Ink and bottle green on sage paper. One highlighter yellow marks where you are: the page title and the active nav item.
+     Every text and status pair is checked for WCAG AA with a contrast calculation. */
+  --radius: 0.375rem;
+  --background: #f3f5f0;
+  --foreground: #14231c;
   --card: #ffffff;
-  --card-foreground: #0f1a2e;
+  --card-foreground: #14231c;
   --popover: #ffffff;
-  --popover-foreground: #0f1a2e;
-  --primary: #1f4fd1;
-  --primary-hover: #1a43b4;
+  --popover-foreground: #14231c;
+  --primary: #1f5e46;
+  --primary-hover: #184b38;
   --primary-foreground: #ffffff;
-  --secondary: #e9eef6;
-  --secondary-foreground: #1c2b47;
-  --muted: #edf0f6;
-  --muted-foreground: #526079;
-  --accent: #e7eefe;
-  --accent-foreground: #173da6;
-  --link: #1b48c4;
+  --secondary: #e6ebe3;
+  --secondary-foreground: #1e3329;
+  --muted: #e9ede6;
+  --muted-foreground: #55645c;
+  --accent: #e1ebe4;
+  --accent-foreground: #1a4d39;
+  --link: #1d5a43;
   --destructive: #b91c3c;
   --destructive-soft: #fdecef;
   --destructive-solid: #c81e3e;
-  --border: #e1e6ef;
-  --input: #7f8ba1;
+  --border: #d9dfd5;
+  --input: #7c8a82;
   --field: #ffffff;
-  --ring: #1f4fd1;
-  --overlay: rgb(15 28 58 / 45%);
-  --elevation-card: 0 1px 2px rgb(15 26 46 / 5%);
-  --elevation-lift: 0 6px 16px rgb(15 26 46 / 12%);
-  --chart-1: #1f4fd1;
+  --ring: #1f5e46;
+  --overlay: rgb(12 28 20 / 45%);
+  --highlight: #f2d64b;
+  --highlight-foreground: #14231c;
+  /* Cards are flat; only floating layers (menus, dialogs, drag overlays) get a shadow. */
+  --elevation-card: 0 0 #0000;
+  --elevation-lift: 0 8px 24px rgb(20 35 28 / 14%);
+  --chart-1: #1f5e46;
   --chart-2: #2a78d6;
   --chart-3: #0d9488;
   --chart-4: #7c3aed;
   --chart-5: #c2670a;
-  /* The sidebar is deep navy in both modes. */
-  --sidebar: #0f1c3a;
-  --sidebar-foreground: #c5d0e6;
-  --sidebar-primary: #2f5fe3;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #1b2b52;
+  /* The sidebar is ink green in both modes. */
+  --sidebar: #13261e;
+  --sidebar-foreground: #c8d6cd;
+  --sidebar-primary: #f2d64b;
+  --sidebar-primary-foreground: #13261e;
+  --sidebar-accent: #1e372c;
   --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: #1f2f55;
-  --sidebar-ring: #8fb0ff;
+  --sidebar-border: #223b30;
+  --sidebar-ring: #f2d64b;
   /* Status colours: dot, soft badge background, badge text, Kanban column tint. */
   --tone-slate: #64748b;
   --tone-slate-soft: #eceff4;
@@ -178,81 +183,83 @@
 }
 
 .dark {
-  --background: #0b1220;
-  --foreground: #e8edf6;
-  --card: #131c2e;
-  --card-foreground: #e8edf6;
-  --popover: #18233a;
-  --popover-foreground: #e8edf6;
-  --primary: #3565ea;
-  --primary-hover: #2a57d6;
-  --primary-foreground: #ffffff;
-  --secondary: #1e2a42;
-  --secondary-foreground: #dce4f3;
-  --muted: #1a2438;
-  --muted-foreground: #a0aec6;
-  --accent: #1c2c52;
-  --accent-foreground: #c9d8ff;
-  --link: #93b3ff;
+  --background: #0e1813;
+  --foreground: #e6eee9;
+  --card: #15221b;
+  --card-foreground: #e6eee9;
+  --popover: #1a2a22;
+  --popover-foreground: #e6eee9;
+  --primary: #5fbf93;
+  --primary-hover: #74cca3;
+  --primary-foreground: #0b1610;
+  --secondary: #1c2c24;
+  --secondary-foreground: #d5e2da;
+  --muted: #18261f;
+  --muted-foreground: #9fb3a8;
+  --accent: #1d3329;
+  --accent-foreground: #bfe3cf;
+  --link: #8fd6b3;
   --destructive: #ff8d9b;
   --destructive-soft: #3a1722;
   --destructive-solid: #d02c4a;
-  --border: #232f47;
-  --input: #62718d;
-  --field: #0f1829;
-  --ring: #7ea2ff;
-  --overlay: rgb(4 8 18 / 65%);
-  --elevation-card: 0 1px 2px rgb(0 0 0 / 25%);
-  --elevation-lift: 0 8px 20px rgb(0 0 0 / 45%);
-  --chart-1: #7ea2ff;
+  --border: #24352c;
+  --input: #61766b;
+  --field: #101c16;
+  --ring: #8fd6b3;
+  --overlay: rgb(4 10 7 / 65%);
+  --highlight: #d9bf3f;
+  --highlight-foreground: #14231c;
+  --elevation-card: 0 0 #0000;
+  --elevation-lift: 0 10px 28px rgb(0 0 0 / 50%);
+  --chart-1: #5fbf93;
   --chart-2: #3987e5;
   --chart-3: #2dd4bf;
   --chart-4: #a78bfa;
   --chart-5: #fbbf24;
-  --sidebar: #0a1122;
-  --sidebar-foreground: #b7c3da;
-  --sidebar-primary: #3565ea;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #18233f;
+  --sidebar: #0a130f;
+  --sidebar-foreground: #b9c9bf;
+  --sidebar-primary: #d9bf3f;
+  --sidebar-primary-foreground: #13261e;
+  --sidebar-accent: #172a21;
   --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: #18233a;
-  --sidebar-ring: #8fb0ff;
+  --sidebar-border: #16251d;
+  --sidebar-ring: #e5cc55;
   --tone-slate: #94a3b8;
-  --tone-slate-soft: #222d40;
+  --tone-slate-soft: #212d27;
   --tone-slate-fg: #c5cfde;
-  --tone-slate-tint: #172133;
+  --tone-slate-tint: #16201b;
   --tone-sky: #38bdf8;
   --tone-sky-soft: #0f2c40;
   --tone-sky-fg: #8fd4f8;
-  --tone-sky-tint: #12243a;
+  --tone-sky-tint: #12232b;
   --tone-blue: #6f9bff;
   --tone-blue-soft: #192c55;
   --tone-blue-fg: #aec6ff;
-  --tone-blue-tint: #15233f;
+  --tone-blue-tint: #141f30;
   --tone-teal: #2dd4bf;
   --tone-teal-soft: #0f3330;
   --tone-teal-fg: #86e8da;
-  --tone-teal-tint: #122833;
+  --tone-teal-tint: #11272a;
   --tone-violet: #a78bfa;
   --tone-violet-soft: #2a2152;
   --tone-violet-fg: #cbbcff;
-  --tone-violet-tint: #1c1f3c;
+  --tone-violet-tint: #1b1d33;
   --tone-amber: #fbbf24;
   --tone-amber-soft: #38290c;
   --tone-amber-fg: #f7d17a;
-  --tone-amber-tint: #211f28;
+  --tone-amber-tint: #1f1f1a;
   --tone-green: #4ade80;
   --tone-green-soft: #10341f;
   --tone-green-fg: #8fe7ac;
-  --tone-green-tint: #13262b;
+  --tone-green-tint: #13261c;
   --tone-red: #f87171;
   --tone-red-soft: #3d1a20;
   --tone-red-fg: #fca5a5;
-  --tone-red-tint: #231d2b;
+  --tone-red-tint: #231c1f;
   --tone-stone: #b3a896;
   --tone-stone-soft: #2c2924;
   --tone-stone-fg: #d6ccbc;
-  --tone-stone-tint: #1d2129;
+  --tone-stone-tint: #1c1f1b;
   --viz-1: #3987e5;
   --viz-2: #d95926;
 }
@@ -266,6 +273,12 @@
   }
   html {
     @apply font-sans;
+    font-variant-numeric: tabular-nums;
+  }
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-heading);
   }
   h1,
   h2,
