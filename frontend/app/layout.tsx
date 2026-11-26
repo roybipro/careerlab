@@ -1,16 +1,17 @@
 import type { Metadata } from "next";
-import { Bricolage_Grotesque, Public_Sans } from "next/font/google";
+import { Geist } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { QueryProvider } from "@/lib/query";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
-const display = Bricolage_Grotesque({
+// One family for text and headings: Geist is crisp at small sizes and holds up in tight display tracking.
+const display = Geist({
   variable: "--font-display",
   subsets: ["latin"],
 });
 
-const body = Public_Sans({
+const body = Geist({
   variable: "--font-body",
   subsets: ["latin"],
 });
