@@ -14,7 +14,6 @@ import {
   FolderKanban,
   History,
   Hourglass,
-  LayoutDashboard,
   ListChecks,
   MessagesSquare,
   Plus,
@@ -25,14 +24,10 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { Fragment, useState, type ReactNode } from "react";
-import { ContactFormDialog } from "@/components/contacts/contact-form";
 import { DataState, EmptyState } from "@/components/data-state";
 import { ActivityIcon, describeActivity } from "@/components/entity/activity-timeline";
-import { JobFormDialog } from "@/components/jobs/job-form";
 import { PageHeader } from "@/components/page-header";
-import { ProjectFormDialog } from "@/components/projects/project-form";
-import { ReminderFormDialog } from "@/components/reminders/reminder-form";
-import { ResearchFormDialog } from "@/components/research/research-form";
+import { useQuickCreate } from "@/components/quick-create";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -47,13 +42,13 @@ import type { Activity, Analytics, DashboardSummary, Deadline, OverdueResearch, 
 import { useMediaQuery } from "@/lib/use-media-query";
 import { cn } from "@/lib/utils";
 
-type StatCard = { key: keyof DashboardSummary; label: string; hint: string; icon: LucideIcon };
+type StatCard = { key: keyof DashboardSummary; label: string; hint: string; icon: LucideIcon; /** Icon chip colours. */ tone?: string };
 
 const MAIN_CARDS: StatCard[] = [
-  { key: "total_jobs", label: "Total job applications", hint: "All jobs you track", icon: Briefcase },
-  { key: "total_research", label: "Total research opportunities", hint: "All opportunities you track", icon: FlaskConical },
-  { key: "in_progress", label: "Applications in progress", hint: "Preparing, applied, assessment or interview", icon: Hourglass },
-  { key: "interviews_scheduled", label: "Interviews scheduled", hint: "Jobs with an interview in the future", icon: MessagesSquare },
+  { key: "total_jobs", label: "Total job applications", hint: "All jobs you track", icon: Briefcase, tone: "bg-accent text-accent-foreground" },
+  { key: "total_research", label: "Total research opportunities", hint: "All opportunities you track", icon: FlaskConical, tone: "bg-tone-violet-soft text-tone-violet-fg" },
+  { key: "in_progress", label: "Applications in progress", hint: "Preparing, applied, assessment or interview", icon: Hourglass, tone: "bg-tone-sky-soft text-tone-sky-fg" },
+  { key: "interviews_scheduled", label: "Interviews scheduled", hint: "Jobs with an interview in the future", icon: MessagesSquare, tone: "bg-tone-amber-soft text-tone-amber-fg" },
 ];
 
 const COMPACT_CARDS: StatCard[] = [
@@ -101,16 +96,18 @@ function SummaryCards() {
           <ul className="grid grid-cols-2 gap-4 lg:grid-cols-4">
             {MAIN_CARDS.map((c) => (
               <li key={c.key}>
-                <Card className="h-full">
+                <Card className="h-full transition-shadow hover:shadow-lift">
                   <CardContent>
-                    <span className="flex size-9 items-center justify-center rounded-lg bg-accent text-accent-foreground">
-                      <c.icon className="size-4" aria-hidden="true" />
-                    </span>
-                    <p className="mt-3 text-4xl font-semibold tracking-tight tabular-nums" data-testid={`card-${c.key}`}>
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="text-sm font-medium text-muted-foreground">{c.label}</p>
+                      <span className={cn("flex size-9 shrink-0 items-center justify-center rounded-xl", c.tone)}>
+                        <c.icon className="size-4.5" aria-hidden="true" />
+                      </span>
+                    </div>
+                    <p className="mt-2 text-4xl font-semibold tracking-tight tabular-nums" data-testid={`card-${c.key}`}>
                       {data[c.key]}
                     </p>
-                    <p className="mt-1 text-sm font-medium">{c.label}</p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">{c.hint}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">{c.hint}</p>
                   </CardContent>
                 </Card>
               </li>
@@ -118,9 +115,11 @@ function SummaryCards() {
           </ul>
           <ul className={COMPACT_GRID}>
             {COMPACT_CARDS.map((c) => (
-              <li key={c.key} className={cn("flex flex-wrap items-start gap-x-3 gap-y-1 rounded-2xl border bg-card p-4 shadow-card", COMPACT_ITEM)}>
-                <c.icon className="mt-1 size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-                <p className="min-w-5 shrink-0 text-xl leading-6 font-semibold tabular-nums" data-testid={`card-${c.key}`}>
+              <li key={c.key} className={cn("flex flex-wrap content-start items-center gap-x-3 gap-y-1.5 rounded-2xl border bg-card p-4 shadow-card", COMPACT_ITEM)}>
+                <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+                  <c.icon className="size-4" aria-hidden="true" />
+                </span>
+                <p className="min-w-5 shrink-0 text-2xl leading-7 font-semibold tracking-tight tabular-nums" data-testid={`card-${c.key}`}>
                   {data[c.key]}
                 </p>
                 <div className="w-full min-w-0">
@@ -148,7 +147,7 @@ function Pipeline({ title, icon: Icon, counts, basePath }: { title: string; icon
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        <div role="img" aria-label={`${title}: ${summary}`} className="flex h-3 gap-0.5 overflow-hidden rounded-full bg-muted">
+        <div role="img" aria-label={`${title}: ${summary}`} className="flex h-2.5 gap-1 overflow-hidden rounded-full bg-muted [&>span]:rounded-full">
           {filled.map((c) => (
             <span key={c.status} className={statusMeta(c.status).dot} style={{ flexGrow: c.count, flexBasis: 0 }} />
           ))}
@@ -404,7 +403,7 @@ function OverdueItems() {
   const hidden = merged.length - OVERDUE_SHOWN;
 
   return (
-    <Card data-testid="overdue-section" className="border-destructive/50 lg:col-span-2">
+    <Card data-testid="overdue-section" className="border-destructive/30 bg-linear-to-b from-destructive-soft/70 to-card to-40% lg:col-span-2">
       <CardHeader>
         <CardTitle className="text-destructive [&>svg]:text-destructive">
           <TriangleAlert aria-hidden="true" />
@@ -518,13 +517,14 @@ function RecentActivity({ onAddJob }: { onAddJob: () => void }) {
 const DESKTOP_ORDER = ["pipelines", "overdue", "deadlines", "activity"] as const;
 const STACKED_ORDER = ["overdue", "deadlines", "pipelines", "activity"] as const;
 
-/** Quiet on desktop. Below that the actions stack, so they need a border to read as buttons. */
-const SECONDARY_ACTION = "max-lg:border-border max-lg:bg-card max-lg:hover:bg-muted";
+function greeting(): string {
+  const hour = new Date().getHours();
+  return hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+}
 
 export default function DashboardPage() {
   const user = useCurrentUser();
-  const [adding, setAdding] = useState<"job" | "project" | "research" | "contact" | "reminder" | null>(null);
-  const close = (open: boolean) => !open && setAdding(null);
+  const setAdding = useQuickCreate();
   const isDesktop = useMediaQuery("(min-width: 64rem)", true);
   const sections: Record<(typeof DESKTOP_ORDER)[number], ReactNode> = {
     pipelines: <Pipelines />,
@@ -537,8 +537,8 @@ export default function DashboardPage() {
     <>
       <PageHeader
         title={user.data ? `Welcome, ${user.data.full_name.split(" ")[0]}` : "Welcome"}
-        description="Your pipeline at a glance."
-        icon={LayoutDashboard}
+        eyebrow={`${greeting()} · ${new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}`}
+        description="Here is where your applications stand today."
         // Five quick actions: they sit under the title until the screen is wide enough for one row.
         wideActions
         actions={
@@ -547,19 +547,19 @@ export default function DashboardPage() {
               <Briefcase data-icon="inline-start" />
               Add job
             </Button>
-            <Button variant="ghost" className={SECONDARY_ACTION} onClick={() => setAdding("project")}>
+            <Button variant="outline" onClick={() => setAdding("project")}>
               <FolderKanban data-icon="inline-start" />
               Add project
             </Button>
-            <Button variant="ghost" className={SECONDARY_ACTION} onClick={() => setAdding("research")}>
+            <Button variant="outline" onClick={() => setAdding("research")}>
               <FlaskConical data-icon="inline-start" />
               Add opportunity
             </Button>
-            <Button variant="ghost" className={SECONDARY_ACTION} onClick={() => setAdding("contact")}>
+            <Button variant="outline" onClick={() => setAdding("contact")}>
               <Contact data-icon="inline-start" />
               Add contact
             </Button>
-            <Button variant="ghost" className={cn(SECONDARY_ACTION, "max-sm:col-span-2")} onClick={() => setAdding("reminder")}>
+            <Button variant="outline" className="max-sm:col-span-2" onClick={() => setAdding("reminder")}>
               <BellPlus data-icon="inline-start" />
               Add reminder
             </Button>
@@ -574,11 +574,6 @@ export default function DashboardPage() {
           <Fragment key={key}>{sections[key]}</Fragment>
         ))}
       </div>
-      <JobFormDialog open={adding === "job"} onOpenChange={close} />
-      <ProjectFormDialog open={adding === "project"} onOpenChange={close} />
-      <ResearchFormDialog open={adding === "research"} onOpenChange={close} />
-      <ContactFormDialog open={adding === "contact"} onOpenChange={close} />
-      <ReminderFormDialog open={adding === "reminder"} onOpenChange={close} />
     </>
   );
 }
