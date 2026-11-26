@@ -1,16 +1,23 @@
+"use client";
+
 import Link from "next/link";
+import { InlineDate, InlineSelect } from "@/components/inline-edit";
 import { PriorityBadge, StatusBadge } from "@/components/status-badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { JOB_STATUSES, PRIORITIES } from "@/lib/enums";
 import { formatDateOnly } from "@/lib/format";
 import type { Job } from "@/lib/types";
+import { useInlineUpdate } from "@/lib/use-inline-update";
 
 function JobMeta({ job }: { job: Job }) {
   const deadline = formatDateOnly(job.deadline);
   return deadline ? <span className="text-xs text-muted-foreground">Deadline {deadline}</span> : null;
 }
 
-/** A table from `md` up, a stack of cards below it. */
+/** A table from `lg` up, a stack of cards below it. Status, priority and the two dates can be changed right in the table. */
 export function JobsTable({ jobs }: { jobs: Job[] }) {
+  const update = useInlineUpdate<Job>("job", "/jobs", (job) => job.company_name);
+  const save = (job: Job, field: string, value: string | null) => update.mutate({ item: job, changes: { [field]: value } });
   return (
     <>
       <div className="hidden lg:block">
@@ -35,13 +42,29 @@ export function JobsTable({ jobs }: { jobs: Job[] }) {
                 </TableCell>
                 <TableCell className="max-w-64 whitespace-normal break-words text-muted-foreground">{job.position_title}</TableCell>
                 <TableCell>
-                  <StatusBadge status={job.status} />
+                  <InlineSelect
+                    label={`Status for ${job.company_name}`}
+                    value={job.status}
+                    options={JOB_STATUSES}
+                    onChange={(v) => save(job, "status", v)}
+                    renderValue={(v) => <StatusBadge status={v} />}
+                  />
                 </TableCell>
                 <TableCell>
-                  <PriorityBadge priority={job.priority} />
+                  <InlineSelect
+                    label={`Priority for ${job.company_name}`}
+                    value={job.priority}
+                    options={PRIORITIES}
+                    onChange={(v) => save(job, "priority", v)}
+                    renderValue={(v) => <PriorityBadge priority={v} />}
+                  />
                 </TableCell>
-                <TableCell className="text-muted-foreground tabular-nums">{formatDateOnly(job.deadline) ?? "-"}</TableCell>
-                <TableCell className="text-muted-foreground tabular-nums">{formatDateOnly(job.application_date) ?? "-"}</TableCell>
+                <TableCell>
+                  <InlineDate label={`Deadline for ${job.company_name}`} value={job.deadline} onChange={(v) => save(job, "deadline", v)} />
+                </TableCell>
+                <TableCell>
+                  <InlineDate label={`Applied date for ${job.company_name}`} value={job.application_date} onChange={(v) => save(job, "application_date", v)} />
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>

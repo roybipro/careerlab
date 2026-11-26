@@ -1,9 +1,13 @@
+"use client";
+
 import Link from "next/link";
+import { InlineDate, InlineSelect } from "@/components/inline-edit";
 import { StatusBadge } from "@/components/status-badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { OPPORTUNITY_TYPES, optionLabel } from "@/lib/enums";
+import { OPPORTUNITY_TYPES, RESEARCH_STATUSES, optionLabel } from "@/lib/enums";
 import { formatDateOnly } from "@/lib/format";
 import type { Research } from "@/lib/types";
+import { useInlineUpdate } from "@/lib/use-inline-update";
 
 function ResearchMeta({ item }: { item: Research }) {
   const deadline = formatDateOnly(item.deadline);
@@ -12,6 +16,8 @@ function ResearchMeta({ item }: { item: Research }) {
 
 /** A table from `md` up, a stack of cards below it. */
 export function ResearchTable({ items }: { items: Research[] }) {
+  const update = useInlineUpdate<Research>("research", "/research", (item) => item.title);
+  const save = (item: Research, field: string, value: string | null) => update.mutate({ item, changes: { [field]: value } });
   return (
     <>
       <div className="hidden lg:block">
@@ -38,9 +44,17 @@ export function ResearchTable({ items }: { items: Research[] }) {
                 <TableCell className="text-muted-foreground">{optionLabel(OPPORTUNITY_TYPES, item.opportunity_type) ?? "-"}</TableCell>
                 <TableCell className="text-muted-foreground">{item.country ?? "-"}</TableCell>
                 <TableCell>
-                  <StatusBadge status={item.status} />
+                  <InlineSelect
+                    label={`Status for ${item.title}`}
+                    value={item.status}
+                    options={RESEARCH_STATUSES}
+                    onChange={(v) => save(item, "status", v)}
+                    renderValue={(v) => <StatusBadge status={v} />}
+                  />
                 </TableCell>
-                <TableCell className="text-muted-foreground tabular-nums">{formatDateOnly(item.deadline) ?? "-"}</TableCell>
+                <TableCell>
+                  <InlineDate label={`Deadline for ${item.title}`} value={item.deadline} onChange={(v) => save(item, "deadline", v)} />
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
