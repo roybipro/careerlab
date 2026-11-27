@@ -88,6 +88,18 @@ export function InlineDate({ value, label, onChange }: { value: string | null; l
     if (next !== undefined && next !== (value ?? null)) onChange(next);
   }
 
+  /**
+   * What the field holds: a date, null when it was emptied on purpose, or undefined when it
+   * holds a half-typed date (the browser reports that as "" too, but marks it `badInput`),
+   * which must not be saved as "no date".
+   */
+  function typed(): string | null | undefined {
+    const input = inputRef.current;
+    if (!input) return undefined;
+    if (input.validity.badInput) return undefined;
+    return input.value || null;
+  }
+
   if (editing) {
     return (
       <span
@@ -96,7 +108,8 @@ export function InlineDate({ value, label, onChange }: { value: string | null; l
         // clear button keeps it open.
         onBlur={(e) => {
           if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
-          close(inputRef.current?.value || null, false);
+          // A half-typed date is dropped and the saved one kept.
+          close(typed(), false);
         }}
         onKeyDown={(e) => {
           if (e.key === "Escape") {
@@ -122,7 +135,9 @@ export function InlineDate({ value, label, onChange }: { value: string | null; l
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               e.preventDefault();
-              close(e.currentTarget.value || null, true);
+              const next = typed();
+              // Half-typed: stay open so the date can be finished, rather than dropping it.
+              if (next !== undefined) close(next, true);
             }
           }}
           className="h-8 rounded-md border border-input bg-field px-2 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"

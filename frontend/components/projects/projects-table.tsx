@@ -1,8 +1,8 @@
 "use client";
 
 import { TriangleAlert } from "lucide-react";
-import { InlineDate, InlineSelect } from "@/components/inline-edit";
 import Link from "next/link";
+import { InlineDate, InlineSelect } from "@/components/inline-edit";
 import { MilestoneProgress } from "@/components/projects/milestone-progress";
 import { StatusBadge } from "@/components/status-badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
