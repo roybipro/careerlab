@@ -1,17 +1,17 @@
 import type { Metadata } from "next";
-import { Geist } from "next/font/google";
+import { Inter, Rubik } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { QueryProvider } from "@/lib/query";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
-// One family for text and headings: Geist is crisp at small sizes and holds up in tight display tracking.
-const display = Geist({
+// Rubik for headings (friendly, rounded), Inter for everything else.
+const display = Rubik({
   variable: "--font-display",
   subsets: ["latin"],
 });
 
-const body = Geist({
+const body = Inter({
   variable: "--font-body",
   subsets: ["latin"],
 });
@@ -29,7 +29,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className={`${display.variable} ${body.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+        {/* Everyone starts in light mode; dark mode is one click away and remembered once chosen. */}
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
           <QueryProvider>
             {children}
             <Toaster />

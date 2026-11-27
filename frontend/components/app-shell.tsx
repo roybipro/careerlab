@@ -141,7 +141,7 @@ function UserMenu({ compact }: { compact?: boolean }) {
     <DropdownMenu>
       <DropdownMenuTrigger render={<Button variant="ghost" className="min-w-10 gap-2 px-1.5" aria-label="Account menu" />}>
         <Avatar size="sm">
-          <AvatarFallback className="bg-linear-to-br from-brand-from to-brand-to text-[0.6875rem] font-semibold text-white">{initials(user?.full_name)}</AvatarFallback>
+          <AvatarFallback className="bg-[#6141c0] text-[0.6875rem] font-semibold text-white">{initials(user?.full_name)}</AvatarFallback>
         </Avatar>
         {compact ? null : (
           <>
@@ -155,7 +155,7 @@ function UserMenu({ compact }: { compact?: boolean }) {
           <>
             <div className="flex items-center gap-3 px-2 py-2">
               <Avatar>
-                <AvatarFallback className="bg-linear-to-br from-brand-from to-brand-to text-xs font-semibold text-white">{initials(user.full_name)}</AvatarFallback>
+                <AvatarFallback className="bg-[#6141c0] text-xs font-semibold text-white">{initials(user.full_name)}</AvatarFallback>
               </Avatar>
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium">{user.full_name}</p>

@@ -20,13 +20,15 @@ export function PageHeader({ title, description, icon: Icon, actions, wideAction
     <header className={cn("mb-8 flex flex-col gap-5", wideActions ? "xl:flex-row xl:items-end xl:justify-between" : "lg:flex-row lg:items-end lg:justify-between")}>
       <div className="flex min-w-0 items-center gap-4">
         {Icon ? (
-          <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl border bg-card text-primary shadow-card">
+          <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-accent text-accent-foreground">
             <Icon className="size-5.5" aria-hidden="true" />
           </span>
         ) : null}
         <div className="min-w-0">
           {eyebrow ? <p className="mb-0.5 text-xs font-medium tracking-wide text-muted-foreground uppercase">{eyebrow}</p> : null}
-          <h1 className="text-2xl font-semibold tracking-tight break-words md:text-3xl md:leading-tight">{title}</h1>
+          <h1 className="text-2xl font-medium tracking-tight break-words md:text-[2rem] md:leading-tight">
+            <span className="text-title-gradient box-decoration-clone">{title}</span>
+          </h1>
           {description ? <p className="mt-1 text-sm break-words text-muted-foreground md:text-[0.9375rem]">{description}</p> : null}
         </div>
       </div>

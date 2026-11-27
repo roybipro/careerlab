@@ -1,11 +1,15 @@
+"use client";
+
 import { TriangleAlert } from "lucide-react";
 import Link from "next/link";
+import { InlineDate, InlineSelect } from "@/components/inline-edit";
 import { MilestoneProgress } from "@/components/projects/milestone-progress";
 import { StatusBadge } from "@/components/status-badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PROJECT_TYPES, optionLabel } from "@/lib/enums";
+import { PROJECT_STAGES, PROJECT_TYPES, optionLabel } from "@/lib/enums";
 import { formatDateOnly } from "@/lib/format";
 import type { Project } from "@/lib/types";
+import { useInlineUpdate } from "@/lib/use-inline-update";
 
 // Titles are free text: a long one wraps, and a single long word breaks, instead of widening the card or column.
 const WRAP = "[overflow-wrap:anywhere]";
@@ -41,6 +45,8 @@ function TargetDate({ project }: { project: Project }) {
 
 /** A table from `lg` up, a stack of cards below it. */
 export function ProjectsTable({ projects }: { projects: Project[] }) {
+  const update = useInlineUpdate<Project>("project", "/projects", (project) => project.title);
+  const save = (project: Project, field: string, value: string | null) => update.mutate({ item: project, changes: { [field]: value } });
   return (
     <>
       <div className="hidden lg:block">
@@ -66,7 +72,13 @@ export function ProjectsTable({ projects }: { projects: Project[] }) {
                 </TableCell>
                 <TableCell className="text-muted-foreground">{optionLabel(PROJECT_TYPES, project.project_type) ?? "-"}</TableCell>
                 <TableCell>
-                  <StatusBadge status={project.stage} />
+                  <InlineSelect
+                    label={`Stage for ${project.title}`}
+                    value={project.stage}
+                    options={PROJECT_STAGES}
+                    onChange={(v) => save(project, "stage", v)}
+                    renderValue={(v) => <StatusBadge status={v} />}
+                  />
                 </TableCell>
                 <TableCell className="min-w-40">
                   {project.milestones_total > 0 ? <MilestoneProgress done={project.milestones_done} total={project.milestones_total} /> : <span className="text-muted-foreground">-</span>}
@@ -75,7 +87,9 @@ export function ProjectsTable({ projects }: { projects: Project[] }) {
                   {formatDateOnly(project.next_deadline) ?? (project.has_overdue ? null : "-")}
                   {project.has_overdue ? <div><OverdueMark /></div> : null}
                 </TableCell>
-                <TableCell className="text-muted-foreground tabular-nums">{formatDateOnly(project.target_date) ?? "-"}</TableCell>
+                <TableCell>
+                  <InlineDate label={`Target date for ${project.title}`} value={project.target_date} onChange={(v) => save(project, "target_date", v)} />
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>

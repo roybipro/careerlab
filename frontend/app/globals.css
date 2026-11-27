@@ -85,6 +85,9 @@
   --shadow-card: var(--elevation-card);
   --shadow-lift: var(--elevation-lift);
   --color-brand-from: var(--brand-from);
+  --color-wash: var(--wash);
+  --color-wash-violet: var(--wash-violet);
+  --color-title-via: var(--title-via);
   --color-brand-to: var(--brand-to);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
@@ -96,56 +99,62 @@
 }
 
 :root {
-  /* Modern neutral canvas with one indigo accent. Cool greys keep the status colours readable,
-     and every text and status pair keeps at least WCAG AA contrast. */
+  /* Fresh and friendly: a cool blue-grey canvas, emerald green for actions and violet for links,
+     focus and titles. Every text pair keeps at least WCAG AA contrast (white on primary is 4.5:1). */
   --radius: 0.625rem;
-  --background: #f6f7f9;
-  --foreground: #0f1222;
+  --background: #f4f6fb;
+  --foreground: #161b1d;
   --card: #ffffff;
-  --card-foreground: #0f1222;
+  --card-foreground: #161b1d;
   --popover: #ffffff;
-  --popover-foreground: #0f1222;
-  --primary: #4f46e5;
-  --primary-hover: #4338ca;
+  --popover-foreground: #161b1d;
+  --primary: #0e875f;
+  --primary-hover: #0b7d57;
   --primary-foreground: #ffffff;
-  --secondary: #eef0f4;
-  --secondary-foreground: #1f2433;
-  --muted: #f1f2f6;
-  --muted-foreground: #5b6072;
-  --accent: #eef0ff;
-  --accent-foreground: #3730a3;
-  --link: #4338ca;
+  --secondary: #e9edf5;
+  --secondary-foreground: #1f2a2e;
+  --muted: #eef1f7;
+  --muted-foreground: #56616a;
+  --accent: #efebfd;
+  --accent-foreground: #4f35a8;
+  --link: #6141c0;
   --destructive: #c0263f;
   --destructive-soft: #fdecef;
   --destructive-solid: #d0243f;
-  --border: #e4e6ec;
+  --border: #e1e6ef;
   /* Form control borders stay at 3:1 against white (WCAG 1.4.11). */
-  --input: #8b91a1;
+  --input: #8a94a0;
   --field: #ffffff;
-  --ring: #4f46e5;
-  --overlay: rgb(15 18 34 / 40%);
-  --highlight: #eef0ff;
-  --highlight-foreground: #3730a3;
+  --ring: #6141c0;
+  --overlay: rgb(22 27 29 / 40%);
+  --highlight: #e3f6ee;
+  --highlight-foreground: #0a6b4b;
   /* Cards float a hair above the canvas; floating layers (menus, dialogs, drag overlays) lift further. */
-  --elevation-card: 0 1px 2px rgb(16 24 40 / 4%), 0 1px 3px rgb(16 24 40 / 3%);
-  --elevation-lift: 0 16px 40px -12px rgb(16 24 40 / 22%), 0 2px 6px rgb(16 24 40 / 6%);
-  --chart-1: #4f46e5;
+  --elevation-card: 0 1px 2px rgb(22 27 29 / 5%), 0 2px 8px -2px rgb(22 27 29 / 5%);
+  --elevation-lift: 0 18px 40px -14px rgb(22 27 29 / 22%), 0 2px 6px rgb(22 27 29 / 6%);
+  --chart-1: #0e875f;
   --chart-2: #2a78d6;
   --chart-3: #0d9488;
   --chart-4: #7c3aed;
   --chart-5: #c2670a;
-  /* The sidebar is a light panel; the active item is an indigo tint. */
+  /* The sidebar is a light panel; the active item is a mint tint. */
   --sidebar: #ffffff;
-  --sidebar-foreground: #3d4254;
-  --sidebar-primary: #eef0ff;
-  --sidebar-primary-foreground: #3730a3;
-  --sidebar-accent: #f1f2f6;
-  --sidebar-accent-foreground: #0f1222;
-  --sidebar-border: #e4e6ec;
-  --sidebar-ring: #4f46e5;
-  /* Brand gradient for the logo tile and hero surfaces. */
-  --brand-from: #6366f1;
-  --brand-to: #8b5cf6;
+  --sidebar-foreground: #384347;
+  --sidebar-primary: #e3f6ee;
+  --sidebar-primary-foreground: #0a6b4b;
+  --sidebar-accent: #f1f4f9;
+  --sidebar-accent-foreground: #161b1d;
+  --sidebar-border: #e1e6ef;
+  --sidebar-ring: #6141c0;
+  /* Page titles: slate into violet. The lightest stop keeps 3:1 for large text. */
+  --title-from: #384347;
+  --title-via: #6141c0;
+  --title-to: #8271e3;
+  --wash: #e9edf5;
+  --wash-violet: #ece8fb;
+  /* Brand gradient for the logo tile. */
+  --brand-from: #2dc08d;
+  --brand-to: #14a37f;
   /* Status colours: dot, soft badge background, badge text, Kanban column tint. */
   --tone-slate: #64748b;
   --tone-slate-soft: #eceff4;
@@ -189,49 +198,54 @@
 }
 
 .dark {
-  --background: #0b0d14;
-  --foreground: #e8eaf2;
-  --card: #12151f;
-  --card-foreground: #e8eaf2;
-  --popover: #171b27;
-  --popover-foreground: #e8eaf2;
-  --primary: #818cf8;
-  --primary-hover: #a5b4fc;
-  --primary-foreground: #0b0d14;
-  --secondary: #1b1f2c;
-  --secondary-foreground: #d7dbe8;
-  --muted: #171a25;
-  --muted-foreground: #9aa0b4;
-  --accent: #1e2240;
-  --accent-foreground: #c7d2fe;
-  --link: #a5b4fc;
+  --background: #0d1117;
+  --foreground: #e7ebf0;
+  --card: #141a21;
+  --card-foreground: #e7ebf0;
+  --popover: #19202a;
+  --popover-foreground: #e7ebf0;
+  --primary: #34d399;
+  --primary-hover: #6ee7b7;
+  --primary-foreground: #0b1f17;
+  --secondary: #1c2430;
+  --secondary-foreground: #d6dde6;
+  --muted: #18202a;
+  --muted-foreground: #9ba7b4;
+  --accent: #231d42;
+  --accent-foreground: #cfc4ff;
+  --link: #b4a5ff;
   --destructive: #ff8d9b;
   --destructive-soft: #3a1722;
   --destructive-solid: #d02c4a;
-  --border: #232838;
-  --input: #5d6478;
-  --field: #0f121b;
-  --ring: #a5b4fc;
-  --overlay: rgb(3 4 8 / 65%);
-  --highlight: #1e2240;
-  --highlight-foreground: #c7d2fe;
+  --border: #242d39;
+  --input: #5f6b79;
+  --field: #10151c;
+  --ring: #b4a5ff;
+  --overlay: rgb(3 5 8 / 65%);
+  --highlight: #10342a;
+  --highlight-foreground: #8ef0c6;
   --elevation-card: 0 1px 2px rgb(0 0 0 / 30%);
   --elevation-lift: 0 18px 44px -12px rgb(0 0 0 / 65%), 0 2px 6px rgb(0 0 0 / 30%);
-  --chart-1: #818cf8;
+  --chart-1: #34d399;
   --chart-2: #3987e5;
   --chart-3: #2dd4bf;
   --chart-4: #a78bfa;
   --chart-5: #fbbf24;
-  --sidebar: #0e1119;
-  --sidebar-foreground: #b4b9ca;
-  --sidebar-primary: #1e2240;
-  --sidebar-primary-foreground: #c7d2fe;
-  --sidebar-accent: #181c29;
+  --sidebar: #10151c;
+  --sidebar-foreground: #b3bdc8;
+  --sidebar-primary: #10342a;
+  --sidebar-primary-foreground: #8ef0c6;
+  --sidebar-accent: #1a222d;
   --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: #1c2030;
-  --sidebar-ring: #a5b4fc;
-  --brand-from: #6366f1;
-  --brand-to: #8b5cf6;
+  --sidebar-border: #1e2630;
+  --sidebar-ring: #b4a5ff;
+  --title-from: #e7ebf0;
+  --title-via: #c4b8ff;
+  --title-to: #a99aff;
+  --wash: #121923;
+  --wash-violet: #19162b;
+  --brand-from: #2dc08d;
+  --brand-to: #14a37f;
   --tone-slate: #94a3b8;
   --tone-slate-soft: #232838;
   --tone-slate-fg: #c5cfde;
@@ -281,6 +295,9 @@
   }
   html {
     @apply font-sans;
+  }
+  /* Tabular figures only where columns of numbers line up; in Inter they also widen hyphens. */
+  table {
     font-variant-numeric: tabular-nums;
   }
   h1,
@@ -317,9 +334,19 @@
   animation: page-enter 220ms ease-out backwards;
 }
 
-/* A soft indigo wash behind the top of the workspace. Decorative only. */
+/* A soft blue-grey to lavender band behind the top of the workspace. Decorative only. */
 @utility app-glow {
-  background-image: radial-gradient(60rem 22rem at 30% -8rem, color-mix(in oklch, var(--primary) 9%, transparent), transparent 70%);
+  background-image: linear-gradient(to bottom, transparent 0%, var(--background) 100%), linear-gradient(115deg, var(--wash) 0%, var(--wash-violet) 100%);
+  background-size: 100% 22rem;
+  background-repeat: no-repeat;
+}
+
+/* Gradient title text, as in the reference: slate into violet. */
+@utility text-title-gradient {
+  background-image: linear-gradient(90deg, var(--title-from) 0%, var(--title-via) 55%, var(--title-to) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 /* Room for the phone tab bar and the home indicator. */

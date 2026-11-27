@@ -1,5 +1,8 @@
+import { Check } from "lucide-react";
 import { STATUS_META } from "@/lib/enums";
 import { cn } from "@/lib/utils";
+
+const POINTS = ["Jobs and research in one place", "Never miss a deadline or follow-up", "See every stage at a glance"];
 
 /** Invented sample data: no real company, university or person. */
 const PIPELINE = [
@@ -18,18 +21,30 @@ const ROWS = [
 export function ProductPreview() {
   const total = PIPELINE.reduce((sum, p) => sum + p.count, 0);
   return (
-    <aside className="relative hidden flex-col justify-center gap-8 overflow-hidden bg-linear-to-br from-indigo-600 via-indigo-700 to-violet-700 px-12 py-12 lg:flex xl:px-20">
-      {/* Decorative light blooms; white text keeps at least 5:1 on every part of the gradient. */}
-      <div aria-hidden="true" className="pointer-events-none absolute -top-32 -right-24 size-96 rounded-full bg-white/10 blur-3xl" />
-      <div aria-hidden="true" className="pointer-events-none absolute -bottom-40 -left-20 size-96 rounded-full bg-violet-400/20 blur-3xl" />
+    <aside className="relative hidden flex-col justify-center gap-8 overflow-hidden bg-linear-to-br from-wash to-wash-violet px-12 py-12 lg:flex xl:px-20">
+      {/* Decorative blooms of the brand green and violet. */}
+      <div aria-hidden="true" className="pointer-events-none absolute -top-32 -right-24 size-96 rounded-full bg-title-via/10 blur-3xl" />
+      <div aria-hidden="true" className="pointer-events-none absolute -bottom-40 -left-20 size-96 rounded-full bg-brand-from/15 blur-3xl" />
       <div className="relative max-w-md">
-        <h2 className="text-4xl leading-tight font-semibold tracking-tight text-balance text-white">Every application, one clear pipeline.</h2>
-        <p className="mt-3 text-base text-indigo-100">See what is next, what is due and where each opportunity stands.</p>
+        <h2 className="text-5xl leading-[1.1] font-medium tracking-tight text-balance">
+          <span className="text-title-gradient box-decoration-clone">Every application, one clear pipeline.</span>
+        </h2>
+        <p className="mt-4 text-lg text-foreground/85">See what is next, what is due and where each opportunity stands.</p>
+        <ul className="mt-6 space-y-3 text-base">
+          {POINTS.map((point) => (
+            <li key={point} className="flex items-center gap-3">
+              <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-highlight text-highlight-foreground">
+                <Check className="size-3.5" strokeWidth={2.5} aria-hidden="true" />
+              </span>
+              {point}
+            </li>
+          ))}
+        </ul>
       </div>
       <div
         role="img"
         aria-label="Preview of CareerLab with invented sample data: a pipeline bar and three applications."
-        className="relative w-full max-w-md rounded-2xl bg-card p-5 text-card-foreground shadow-2xl ring-1 ring-white/20"
+        className="relative w-full max-w-md rounded-2xl bg-card p-5 text-card-foreground shadow-lift ring-1 ring-border"
       >
         <p className="text-sm font-semibold tracking-tight">Job pipeline</p>
         <div className="mt-3 flex h-2.5 gap-0.5 overflow-hidden rounded-full">
@@ -65,7 +80,7 @@ export function ProductPreview() {
           })}
         </ul>
       </div>
-      <p className="relative text-xs text-indigo-100">Sample data. Every name here is invented.</p>
+      <p className="relative text-xs text-muted-foreground">Sample data. Every name here is invented.</p>
     </aside>
   );
 }
