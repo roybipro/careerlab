@@ -215,9 +215,10 @@ def create_project(db: Session, user: User, data: ProjectCreate, today: date) ->
     return _out(db, user, [project], today)[0]
 
 
-def update_project(
-    db: Session, user: User, project_id: uuid.UUID, data: ProjectUpdate, today: date
-) -> ProjectOut:
+def apply_project_update(
+    db: Session, user: User, project_id: uuid.UUID, data: ProjectUpdate
+) -> ResearchProject:
+    """Applies the changes and logs them, without committing."""
     project = get_project(db, user, project_id)
     # exclude_unset: omitted fields stay as stored, explicit nulls clear them.
     changes = {
@@ -238,16 +239,24 @@ def update_project(
                 old=old_stage.value,
                 new=project.stage.value,
             )
-        db.commit()
+    return project
+
+
+def update_project(
+    db: Session, user: User, project_id: uuid.UUID, data: ProjectUpdate, today: date
+) -> ProjectOut:
+    project = apply_project_update(db, user, project_id, data)
+    db.commit()
     return _out(db, user, [project], today)[0]
 
 
-def delete_project(db: Session, user: User, project_id: uuid.UUID) -> None:
+def delete_project(db: Session, user: User, project_id: uuid.UUID, *, commit: bool = True) -> None:
     project = get_project(db, user, project_id)
     log_activity(db, user, ENTITY, project.id, "deleted", project_label(project))
     delete_dependents(db, user, ENTITY, project.id)
     db.delete(project)
-    db.commit()
+    if commit:
+        db.commit()
 
 
 # --- Submissions and milestones -------------------------------------------------------------

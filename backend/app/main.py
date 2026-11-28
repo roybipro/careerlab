@@ -7,6 +7,7 @@ from app.core.config import get_settings
 from app.core.errors import register_error_handlers
 from app.modules.activity.router import router as activity_router
 from app.modules.auth.router import router as auth_router
+from app.modules.calendar.router import router as calendar_router
 from app.modules.contacts.router import router as contacts_router
 from app.modules.dashboard.router import router as dashboard_router
 from app.modules.jobs.router import router as jobs_router
@@ -80,6 +81,7 @@ def create_app() -> FastAPI:
     app.include_router(notes_router, prefix="/api/v1")
     app.include_router(activity_router, prefix="/api/v1")
     app.include_router(dashboard_router, prefix="/api/v1")
+    app.include_router(calendar_router, prefix="/api/v1")
 
     @app.get("/health")
     def health() -> dict[str, str]:

@@ -3,6 +3,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query
 
+from app.core.bulk import BulkDeleteIn, BulkUpdateIn, apply_all
 from app.core.deps import CurrentUser, DbSession, require_csrf
 from app.core.lists import ListQuery, Page
 from app.modules.jobs import service
@@ -22,6 +23,20 @@ def list_jobs(
 @router.post("", status_code=201, response_model=JobOut)
 def create_job(body: JobCreate, user: CurrentUser, db: DbSession) -> JobApplication:
     return service.create_job(db, user, body)
+
+
+@router.post("/bulk-update", status_code=204)
+def bulk_update_jobs(body: BulkUpdateIn[JobUpdate], user: CurrentUser, db: DbSession) -> None:
+    apply_all(
+        db,
+        body.ids,
+        lambda job_id: service.update_job(db, user, job_id, body.changes, commit=False),
+    )
+
+
+@router.post("/bulk-delete", status_code=204)
+def bulk_delete_jobs(body: BulkDeleteIn, user: CurrentUser, db: DbSession) -> None:
+    apply_all(db, body.ids, lambda job_id: service.delete_job(db, user, job_id, commit=False))
 
 
 @router.get("/{job_id}", response_model=JobOut)
