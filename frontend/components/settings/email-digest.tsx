@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Mail } from "lucide-react";
 import { useSearchParams } from "next/navigation";
+import { useState } from "react";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,6 +27,8 @@ export function EmailDigest() {
   const notice = NOTICE[useSearchParams().get("email") ?? ""];
   const query = useQuery({ queryKey: KEY, queryFn: () => api<EmailSettings>(ENDPOINT) });
 
+  // The switch moves at once; a failed save puts it back.
+  const [optimistic, setOptimistic] = useState<boolean | null>(null);
   const save = useMutation({
     mutationFn: (enabled: boolean) => api<EmailSettings>(ENDPOINT, { method: "PUT", body: { enabled } }),
     onSuccess: (data) => {
@@ -33,10 +36,11 @@ export function EmailDigest() {
       toast.success(data.enabled ? "Daily digest on" : "Daily digest off");
     },
     onError: (e) => toast.error(`Could not save. ${e instanceof ApiError ? e.message : "Something went wrong."}`),
+    onSettled: () => setOptimistic(null),
   });
 
   const data = query.data;
-  const checked = save.isPending ? (save.variables ?? false) : (data?.enabled ?? false);
+  const checked = optimistic ?? data?.enabled ?? false;
 
   return (
     <Card>
@@ -70,7 +74,11 @@ export function EmailDigest() {
               className="peer sr-only"
               checked={checked}
               disabled={save.isPending}
-              onChange={(e) => save.mutate(e.currentTarget.checked)}
+              onChange={(e) => {
+                const value = e.currentTarget.checked;
+                setOptimistic(value);
+                save.mutate(value);
+              }}
             />
             {/* A switch drawn over the real checkbox, which keeps keyboard and screen reader support. */}
             <span

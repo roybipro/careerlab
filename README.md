@@ -46,6 +46,11 @@ The screenshots in this repo use invented data from the demo seed script.
   contacted today.
 - An opt-in daily email digest (Settings) of overdue items, the next 7 days and follow-ups,
   with a one-click unsubscribe. See [Email digest setup](#email-digest-setup).
+- Interview rounds on each job: type, date and length, where, interviewers, outcome, a 1 to 5
+  rating of how it went, the questions asked and whether a thank-you note was sent. The next
+  round is marked, and scheduled rounds appear in the calendar feed.
+- Keyboard shortcuts: press `?` for the list. `g` then a letter goes to a page, `c` creates,
+  `f` focuses search, and `j`, `k`, `Enter` and `x` move through, open and tick table rows.
 - An activity timeline on each job, research opportunity, research project and contact.
 - Light and dark themes, and layouts for desktop, tablet and phone widths.
 - Every record belongs to one user. Another user's record returns `404`.

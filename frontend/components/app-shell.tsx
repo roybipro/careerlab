@@ -8,6 +8,7 @@ import { usePathname } from "next/navigation";
 import { useCallback, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { CommandPalette, useCommandPaletteShortcut } from "@/components/command-palette";
+import { KeyboardShortcuts } from "@/components/keyboard-shortcuts";
 import { LogoMark } from "@/components/logo";
 import { NAV_GROUPS, SETTINGS_ITEM, isActive, type NavItem } from "@/components/nav-items";
 import { CREATE_ITEMS, QuickCreateProvider, useQuickCreate } from "@/components/quick-create";
@@ -248,7 +249,7 @@ function Shell({ children }: { children: ReactNode }) {
             <div className="rounded-xl border bg-muted/50 p-3 text-xs text-muted-foreground">
               <p className="font-medium text-foreground">Tip</p>
               <p className="mt-0.5">
-                Press <kbd className="rounded border bg-card px-1 font-sans">⌘K</kbd> or <kbd className="rounded border bg-card px-1 font-sans">/</kbd> to search and create from anywhere.
+                Press <kbd className="rounded border bg-card px-1 font-sans">⌘K</kbd> or <kbd className="rounded border bg-card px-1 font-sans">/</kbd> to search and create from anywhere, and <kbd className="rounded border bg-card px-1 font-sans">?</kbd> for all shortcuts.
               </p>
             </div>
           </div>
@@ -294,6 +295,7 @@ function Shell({ children }: { children: ReactNode }) {
         </SheetContent>
       </Sheet>
       <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
+      <KeyboardShortcuts />
     </div>
   );
 }

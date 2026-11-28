@@ -114,13 +114,13 @@ export function ContactsList() {
                 </TableHeader>
                 <TableBody>
                   {data.items.map((c) => (
-                    <TableRow key={c.id}>
+                    <TableRow key={c.id} data-row tabIndex={-1}>
                       <TableCell className="font-medium">
                         <span className="flex items-center gap-2.5">
                           <Avatar size="sm" aria-hidden="true">
                             <AvatarFallback className="bg-accent font-medium text-accent-foreground">{initials(c.name)}</AvatarFallback>
                           </Avatar>
-                          <Link href={`/contacts/${c.id}`} className="underline-offset-4 hover:text-link hover:underline">
+                          <Link data-row-open href={`/contacts/${c.id}`} className="underline-offset-4 hover:text-link hover:underline">
                             {c.name}
                           </Link>
                         </span>
@@ -137,7 +137,7 @@ export function ContactsList() {
             <ul className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:hidden">
               {data.items.map((c) => (
                 <li key={c.id}>
-                  <Link href={`/contacts/${c.id}`} className="block h-full rounded-2xl border bg-card p-4 shadow-card transition-shadow hover:shadow-lift">
+                  <Link data-row-open href={`/contacts/${c.id}`} className="block h-full rounded-2xl border bg-card p-4 shadow-card transition-shadow hover:shadow-lift">
                     <p className="font-semibold break-words">{c.name}</p>
                     {subtitle(c) ? <p className="text-sm break-words text-muted-foreground">{subtitle(c)}</p> : null}
                     <div className="mt-3 flex flex-wrap items-center gap-2">

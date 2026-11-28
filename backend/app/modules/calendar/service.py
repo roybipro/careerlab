@@ -5,10 +5,10 @@ without the session cookie, so the URL itself carries a random secret. Only a SH
 secret is stored: the link is shown once when it is made, and resetting it makes a new one and
 stops the old one working.
 
-Only open work is listed: jobs and research opportunities that are still active, research
-projects that are not published or paused, submissions still being prepared, milestones not
-done and reminders not completed. Anything dated more than PAST_DAYS ago is left out so the
-feed stays small.
+Only open work is listed: jobs (with their interview rounds, unless cancelled) and research
+opportunities that are still active, research projects that are not published or paused,
+submissions still being prepared, milestones not done and reminders not completed. Anything
+dated more than PAST_DAYS ago is left out so the feed stays small.
 """
 
 import hashlib
@@ -22,6 +22,7 @@ from sqlalchemy.orm import Session
 from app.core.errors import not_found
 from app.modules.auth.models import User
 from app.modules.dashboard.service import INACTIVE_JOB_STATUSES, INACTIVE_RESEARCH_STATUSES
+from app.modules.interviews.models import InterviewOutcome, JobInterview
 from app.modules.jobs.models import JobApplication
 from app.modules.projects.models import (
     INACTIVE_STAGES,
@@ -81,13 +82,16 @@ def collect_events(db: Session, user: User, now: datetime | None = None) -> list
     since = now - timedelta(days=PAST_DAYS)
     events: list[Event] = []
 
-    jobs = db.scalars(
-        select(JobApplication).where(
-            JobApplication.user_id == user.id,
-            JobApplication.status.notin_(INACTIVE_JOB_STATUSES),
+    jobs = {
+        j.id: j
+        for j in db.scalars(
+            select(JobApplication).where(
+                JobApplication.user_id == user.id,
+                JobApplication.status.notin_(INACTIVE_JOB_STATUSES),
+            )
         )
-    )
-    for job in jobs:
+    }
+    for job in jobs.values():
         name = f"{job.company_name}: {job.position_title}"
         if job.deadline and job.deadline >= since_day:
             events.append(Event(f"job-deadline-{job.id}", f"Deadline: {name}", job.deadline))
@@ -103,6 +107,34 @@ def collect_events(db: Session, user: User, now: datetime | None = None) -> list
                     job.interview_at,
                     INTERVIEW_LENGTH,
                     job.location,
+                )
+            )
+
+    if jobs:
+        rounds = db.scalars(
+            select(JobInterview).where(
+                JobInterview.user_id == user.id,
+                JobInterview.job_id.in_(jobs),
+                JobInterview.scheduled_at >= since,
+                JobInterview.outcome != InterviewOutcome.cancelled,
+            )
+        )
+        for interview in rounds:
+            job = jobs[interview.job_id]
+            assert interview.scheduled_at is not None
+            length = (
+                timedelta(minutes=interview.duration_minutes)
+                if interview.duration_minutes
+                else INTERVIEW_LENGTH
+            )
+            details = [d for d in (interview.location, interview.interviewers) if d]
+            events.append(
+                Event(
+                    f"interview-{interview.id}",
+                    f"Interview: {interview.title} ({job.company_name}: {job.position_title})",
+                    interview.scheduled_at,
+                    length,
+                    "\n".join(details) or None,
                 )
             )
 

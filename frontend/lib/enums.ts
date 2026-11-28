@@ -95,6 +95,11 @@ export const STATUS_META: Record<string, StatusMeta> = {
   submitted: { label: "Submitted", icon: Send, ...tone.blue },
   under_review: { label: "Under review", icon: Hourglass, ...tone.amber },
   revisions_requested: { label: "Revisions requested", icon: FilePenLine, ...tone.violet },
+  // Interview round outcomes
+  pending: { label: "Pending", icon: Hourglass, ...tone.slate },
+  passed: { label: "Passed", icon: CircleCheck, ...tone.green },
+  not_passed: { label: "Not passed", icon: CircleX, ...tone.red },
+  cancelled: { label: "Cancelled", icon: Undo2, ...tone.stone },
 };
 
 /** Style and icon for a status. An unknown value gets the neutral tone. */
@@ -270,6 +275,20 @@ export const PROJECT_TYPES: Option[] = [
 ];
 
 export const SUBMISSION_STATUSES = options(["planned", "submitted", "under_review", "revisions_requested", "accepted", "rejected", "withdrawn"]);
+
+export const INTERVIEW_OUTCOMES = options(["pending", "passed", "not_passed", "cancelled"]);
+
+export const INTERVIEW_TYPES: Option[] = [
+  { value: "phone_screen", label: "Phone screen" },
+  { value: "video", label: "Video call" },
+  { value: "onsite", label: "Onsite" },
+  { value: "technical", label: "Technical" },
+  { value: "behavioral", label: "Behavioral" },
+  { value: "case_study", label: "Case study" },
+  { value: "take_home", label: "Take-home" },
+  { value: "panel", label: "Panel" },
+  { value: "other", label: "Other" },
+];
 
 export const VENUE_TYPES: Option[] = [
   { value: "conference", label: "Conference" },

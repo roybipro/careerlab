@@ -8,6 +8,7 @@ from app.core.db import Base
 from app.modules.activity import models as _activity_models  # noqa: F401  (registers tables)
 from app.modules.auth import models as _auth_models  # noqa: F401
 from app.modules.contacts import models as _contacts_models  # noqa: F401
+from app.modules.interviews import models as _interviews_models  # noqa: F401
 from app.modules.jobs import models as _jobs_models  # noqa: F401
 from app.modules.notes import models as _notes_models  # noqa: F401
 from app.modules.nudges import models as _nudges_models  # noqa: F401
