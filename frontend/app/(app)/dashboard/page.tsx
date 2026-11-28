@@ -25,6 +25,7 @@ import {
 import Link from "next/link";
 import { Fragment, useState, type ReactNode } from "react";
 import { DataState, EmptyState } from "@/components/data-state";
+import { NudgesCard } from "@/components/nudges-card";
 import { ActivityIcon, describeActivity } from "@/components/entity/activity-timeline";
 import { PageHeader } from "@/components/page-header";
 import { useQuickCreate } from "@/components/quick-create";
@@ -514,8 +515,8 @@ function RecentActivity({ onAddJob }: { onAddJob: () => void }) {
 
 // When the page is one column, what is due comes first. The order is in the DOM, not CSS `order`,
 // so tab order and screen readers follow what is on screen at every width.
-const DESKTOP_ORDER = ["pipelines", "overdue", "deadlines", "activity"] as const;
-const STACKED_ORDER = ["overdue", "deadlines", "pipelines", "activity"] as const;
+const DESKTOP_ORDER = ["pipelines", "overdue", "nudges", "deadlines", "activity"] as const;
+const STACKED_ORDER = ["overdue", "nudges", "deadlines", "pipelines", "activity"] as const;
 
 function greeting(): string {
   const hour = new Date().getHours();
@@ -529,6 +530,7 @@ export default function DashboardPage() {
   const sections: Record<(typeof DESKTOP_ORDER)[number], ReactNode> = {
     pipelines: <Pipelines />,
     overdue: <OverdueItems />,
+    nudges: <NudgesCard />,
     deadlines: <Deadlines />,
     activity: <RecentActivity onAddJob={() => setAdding("job")} />,
   };

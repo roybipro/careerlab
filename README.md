@@ -41,6 +41,11 @@ The screenshots in this repo use invented data from the demo seed script.
 - A private calendar subscription link (Settings) for Google Calendar, Apple Calendar or
   Outlook, with open deadlines, interviews, follow-ups, submission deadlines, milestones and
   reminders. Only a hash of the link is stored, so it is shown once and can be reset.
+- Follow-up nudges on the dashboard: applications waiting 14+ days for a reply, and contacts
+  on active work not reached in 60+ days. Snooze one for a week, or mark a contact as
+  contacted today.
+- An opt-in daily email digest (Settings) of overdue items, the next 7 days and follow-ups,
+  with a one-click unsubscribe. See [Email digest setup](#email-digest-setup).
 - An activity timeline on each job, research opportunity, research project and contact.
 - Light and dark themes, and layouts for desktop, tablet and phone widths.
 - Every record belongs to one user. Another user's record returns `404`.
@@ -181,6 +186,20 @@ npm run test:e2e
 - [Deployment guide](docs/deployment.md) (Neon, Render and Vercel)
 - [Contributing](CONTRIBUTING.md)
 
+## Email digest setup
+
+The digest is off until email is configured. Without it, Settings says email is not set up.
+
+1. Create a [Resend](https://resend.com) account, verify a sending domain, and create an API key.
+2. On the API (Render), set `RESEND_API_KEY` and `EMAIL_FROM`, for example
+   `CareerLab <digest@yourdomain.com>`. `render.yaml` also generates a `CRON_SECRET`.
+3. In the GitHub repository, add two Actions secrets: `DIGEST_URL`, which is the site URL such as
+   `https://careerlab-opal.vercel.app` with no trailing slash, and `CRON_SECRET`, with the same
+   value as on Render.
+4. `.github/workflows/digest.yml` then calls `POST /api/v1/internal/digests` every day at 07:00
+   UTC. Run it once from the Actions tab to check it. Each user gets at most one digest a day,
+   so a retry is safe.
+
 ## Known limits
 
 - The API may be hosted on a free tier that sleeps when idle, so the first request after a
@@ -193,7 +212,8 @@ npm run test:e2e
 - A stolen session cookie stays valid until it expires after 7 days or the password changes.
 - Registration is open and emails are not verified, so an address is not confirmed as real.
 - Deletes are permanent. There is no trash, soft delete or account deletion.
-- There are no email reminders or background jobs. Reminder alerts are calculated when a page
+- The email digest goes out once a day at 07:00 UTC for everyone, because the API has no user
+  time zone. Its dates are UTC dates. In-app reminder alerts are still calculated when a page
   asks for them.
 
 ## License

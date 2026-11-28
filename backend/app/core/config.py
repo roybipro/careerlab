@@ -42,6 +42,17 @@ class Settings(BaseSettings):
     MAX_CONCURRENT_HASHES: int = Field(default=4, ge=1)
     # OAuth Web client ID from Google Cloud Console. Empty turns Google sign-in off.
     GOOGLE_CLIENT_ID: str = ""
+    # The daily email digest. Sent with Resend (resend.com); both empty turns email off.
+    RESEND_API_KEY: str = ""
+    # The sender, on a domain verified in Resend, e.g. "CareerLab <digest@example.com>".
+    EMAIL_FROM: str = ""
+    # Shared secret for POST /internal/digests, called once a day by a scheduler (see
+    # .github/workflows/digest.yml). Empty turns the endpoint off.
+    CRON_SECRET: str = ""
+
+    @property
+    def email_enabled(self) -> bool:
+        return bool(self.RESEND_API_KEY and self.EMAIL_FROM)
 
     @field_validator("DATABASE_URL")
     @classmethod

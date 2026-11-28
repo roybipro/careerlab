@@ -1,0 +1,35 @@
+name: Daily email digest
+
+# Asks the API to send today's digests. The API sends each user at most one a day, so a
+# retry or a manual run is safe. Needs two repository secrets:
+#   DIGEST_URL   the site URL, e.g. https://careerlab-opal.vercel.app (no trailing slash)
+#   CRON_SECRET  the same value as the API's CRON_SECRET
+# Without them the job does nothing.
+
+on:
+  schedule:
+    # 07:00 UTC every day. GitHub may start scheduled runs a little late.
+    - cron: "0 7 * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Send digests
+        env:
+          DIGEST_URL: ${{ secrets.DIGEST_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$DIGEST_URL" ] || [ -z "$CRON_SECRET" ]; then
+            echo "DIGEST_URL or CRON_SECRET is not set; skipping."
+            exit 0
+          fi
+          # The free API plan sleeps when idle: retry while it wakes up.
+          curl --fail-with-body --silent --show-error \
+            --retry 6 --retry-delay 20 --retry-all-errors --max-time 120 \
+            -X POST "$DIGEST_URL/api/v1/internal/digests" \
+            -H "Authorization: Bearer $CRON_SECRET"

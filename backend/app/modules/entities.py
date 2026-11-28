@@ -15,6 +15,7 @@ from app.modules.contacts.models import Contact, ContactLink
 from app.modules.entity_types import EntityType
 from app.modules.jobs.models import JobApplication
 from app.modules.notes.models import Note
+from app.modules.nudges.models import NudgeSnooze
 from app.modules.projects.models import ResearchProject
 from app.modules.reminders.models import Reminder
 from app.modules.research.models import ResearchOpportunity
@@ -94,3 +95,10 @@ def delete_dependents(db: Session, user: User, entity_type: str, entity_id: uuid
     else:
         link_match = (ContactLink.entity_type == entity_type) & (ContactLink.entity_id == entity_id)
     db.execute(delete(ContactLink).where(ContactLink.user_id == user.id, link_match))
+    db.execute(
+        delete(NudgeSnooze).where(
+            NudgeSnooze.user_id == user.id,
+            NudgeSnooze.entity_type == entity_type,
+            NudgeSnooze.entity_id == entity_id,
+        )
+    )

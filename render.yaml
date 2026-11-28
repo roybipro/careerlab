@@ -25,6 +25,15 @@ services:
         generateValue: true
       - key: GOOGLE_CLIENT_ID
         sync: false
+      # Daily email digest (optional). A Resend API key and a sender on a domain verified in
+      # Resend, e.g. "CareerLab <digest@yourdomain.com>". Leave both empty to keep email off.
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      # Shared with the GitHub Actions secret of the same name (.github/workflows/digest.yml).
+      - key: CRON_SECRET
+        generateValue: true
       # The Vercel URL, with no trailing slash, for example https://careerlab.vercel.app
       - key: FRONTEND_ORIGIN
         sync: false
