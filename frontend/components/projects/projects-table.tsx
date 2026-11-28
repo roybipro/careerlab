@@ -72,12 +72,12 @@ export function ProjectsTable({ projects }: { projects: Project[] }) {
           </TableHeader>
           <TableBody>
             {projects.map((project) => (
-              <TableRow key={project.id} data-state={selection.isSelected(project.id) ? "selected" : undefined}>
+              <TableRow key={project.id} data-state={selection.isSelected(project.id) ? "selected" : undefined} data-row tabIndex={-1}>
                 <TableCell className="w-10 pr-0">
                   <RowCheckbox selection={selection} id={project.id} label={`Select ${project.title}`} />
                 </TableCell>
                 <TableCell className={`max-w-80 font-medium whitespace-normal ${WRAP}`}>
-                  <Link href={`/projects/${project.id}`} className="underline-offset-4 hover:text-link hover:underline">
+                  <Link data-row-open href={`/projects/${project.id}`} className="underline-offset-4 hover:text-link hover:underline">
                     {project.title}
                   </Link>
                   {subtitle(project) ? <p className="text-sm font-normal text-muted-foreground">{subtitle(project)}</p> : null}
@@ -113,7 +113,7 @@ export function ProjectsTable({ projects }: { projects: Project[] }) {
       <ul className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:hidden">
         {projects.map((project) => (
           <li key={project.id} className="min-w-0">
-            <Link href={`/projects/${project.id}`} className="block h-full rounded-2xl border bg-card p-4 shadow-card transition-shadow hover:shadow-lift">
+            <Link data-row-open href={`/projects/${project.id}`} className="block h-full rounded-2xl border bg-card p-4 shadow-card transition-shadow hover:shadow-lift">
               <p className={`font-semibold ${WRAP}`}>{project.title}</p>
               {subtitle(project) ? <p className={`text-sm text-muted-foreground ${WRAP}`}>{subtitle(project)}</p> : null}
               <div className="mt-3 flex flex-wrap items-center gap-2">

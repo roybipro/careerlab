@@ -8,6 +8,7 @@ import { EntityDetailPage } from "@/components/entity/entity-detail-page";
 import { LinkedContacts } from "@/components/entity/linked-contacts";
 import { NotesPanel } from "@/components/entity/notes-panel";
 import { RemindersPanel } from "@/components/entity/reminders-panel";
+import { InterviewsPanel } from "@/components/jobs/interviews-panel";
 import { JobFormDialog } from "@/components/jobs/job-form";
 import { PriorityBadge, StatusBadge } from "@/components/status-badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -81,6 +82,9 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <div className="lg:col-span-2">
             <JobDetails job={job} />
+          </div>
+          <div className="lg:col-span-2">
+            <InterviewsPanel jobId={job.id} />
           </div>
           <div className="space-y-6">
             <NotesPanel entityType="job" entityId={job.id} />

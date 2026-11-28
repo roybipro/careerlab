@@ -236,3 +236,23 @@ export type Nudge = {
   since: string;
   days: number;
 };
+
+/** One interview round of a job (GET /jobs/{id}/interviews). */
+export type JobInterview = {
+  id: string;
+  job_id: string;
+  title: string;
+  interview_type: string;
+  scheduled_at: string | null;
+  duration_minutes: number | null;
+  location: string | null;
+  interviewers: string | null;
+  outcome: string;
+  /** How it went, 1 to 5. */
+  rating: number | null;
+  questions: string | null;
+  notes: string | null;
+  thank_you_sent: boolean;
+  created_at: string;
+  updated_at: string;
+};

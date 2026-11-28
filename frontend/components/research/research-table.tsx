@@ -43,12 +43,12 @@ export function ResearchTable({ items }: { items: Research[] }) {
           </TableHeader>
           <TableBody>
             {items.map((item) => (
-              <TableRow key={item.id} data-state={selection.isSelected(item.id) ? "selected" : undefined}>
+              <TableRow key={item.id} data-state={selection.isSelected(item.id) ? "selected" : undefined} data-row tabIndex={-1}>
                 <TableCell className="w-10 pr-0">
                   <RowCheckbox selection={selection} id={item.id} label={`Select ${item.title}`} />
                 </TableCell>
                 <TableCell className="font-medium whitespace-normal">
-                  <Link href={`/research/${item.id}`} className="underline-offset-4 hover:text-link hover:underline">
+                  <Link data-row-open href={`/research/${item.id}`} className="underline-offset-4 hover:text-link hover:underline">
                     {item.title}
                   </Link>
                 </TableCell>
@@ -78,7 +78,7 @@ export function ResearchTable({ items }: { items: Research[] }) {
       <ul className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:hidden">
         {items.map((item) => (
           <li key={item.id}>
-            <Link href={`/research/${item.id}`} className="block h-full rounded-2xl border bg-card p-4 shadow-card transition-shadow hover:shadow-lift">
+            <Link data-row-open href={`/research/${item.id}`} className="block h-full rounded-2xl border bg-card p-4 shadow-card transition-shadow hover:shadow-lift">
               <p className="font-semibold break-words">{item.title}</p>
               <p className="text-sm break-words text-muted-foreground">{item.organization}</p>
               <div className="mt-3 flex flex-wrap items-center gap-2">

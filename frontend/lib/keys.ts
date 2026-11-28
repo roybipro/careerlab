@@ -9,6 +9,7 @@ import type { EntityType } from "@/lib/enums";
  *   ["research", "list", params]        ["research", "detail", id]
  *   ["projects", "list", params]        ["projects", "detail", id]   (list params include `today`)
  *   ["projects", "submissions", id]     ["projects", "milestones", id]
+ *   ["jobs", "interviews", id]
  *   ["notes", entityType, entityId]
  *   ["activity", entityType, entityId]
  *   ["contacts", "linked", entityType, entityId]   ["contacts", "options", search]
@@ -31,6 +32,8 @@ export const keys = {
   contactOptions: (search: string) => ["contacts", "options", search] as const,
   projectSubmissions: (id: string) => ["projects", "submissions", id] as const,
   projectMilestones: (id: string) => ["projects", "milestones", id] as const,
+  // Under ["jobs"], so changing or deleting a job refreshes its rounds too.
+  jobInterviews: (id: string) => ["jobs", "interviews", id] as const,
   reminders: (type: EntityType, id: string) => ["reminders", "related", type, id] as const,
   dashboard: ["dashboard"] as const,
   // `today` is part of the key for the date-sensitive parts, so a page left open across

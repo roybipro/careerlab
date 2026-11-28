@@ -53,7 +53,7 @@ export function SelectAllCheckbox({ selection, label }: { selection: Selection; 
 }
 
 export function RowCheckbox({ selection, id, label }: { selection: Selection; id: string; label: string }) {
-  return <input type="checkbox" className={BOX} aria-label={label} checked={selection.isSelected(id)} onChange={() => selection.toggle(id)} />;
+  return <input type="checkbox" data-row-select className={BOX} aria-label={label} checked={selection.isSelected(id)} onChange={() => selection.toggle(id)} />;
 }
 
 /** A menu in the bulk bar that sets one field (status, priority, stage) on every ticked row. */

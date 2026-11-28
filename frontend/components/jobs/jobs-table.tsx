@@ -43,12 +43,12 @@ export function JobsTable({ jobs }: { jobs: Job[] }) {
           </TableHeader>
           <TableBody>
             {jobs.map((job) => (
-              <TableRow key={job.id} data-state={selection.isSelected(job.id) ? "selected" : undefined}>
+              <TableRow key={job.id} data-state={selection.isSelected(job.id) ? "selected" : undefined} data-row tabIndex={-1}>
                 <TableCell className="w-10 pr-0">
                   <RowCheckbox selection={selection} id={job.id} label={`Select ${job.company_name}`} />
                 </TableCell>
                 <TableCell className="max-w-56 font-medium whitespace-normal break-words">
-                  <Link href={`/jobs/${job.id}`} className="underline-offset-4 hover:text-link hover:underline">
+                  <Link data-row-open href={`/jobs/${job.id}`} className="underline-offset-4 hover:text-link hover:underline">
                     {job.company_name}
                   </Link>
                 </TableCell>
@@ -89,7 +89,7 @@ export function JobsTable({ jobs }: { jobs: Job[] }) {
       <ul className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:hidden">
         {jobs.map((job) => (
           <li key={job.id}>
-            <Link href={`/jobs/${job.id}`} className="block h-full rounded-2xl border bg-card p-4 shadow-card transition-shadow hover:shadow-lift">
+            <Link data-row-open href={`/jobs/${job.id}`} className="block h-full rounded-2xl border bg-card p-4 shadow-card transition-shadow hover:shadow-lift">
               <p className="font-semibold break-words">{job.company_name}</p>
               <p className="text-sm break-words text-muted-foreground">{job.position_title}</p>
               <div className="mt-3 flex flex-wrap items-center gap-2">

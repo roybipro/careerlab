@@ -12,6 +12,7 @@ from app.modules.contacts.router import router as contacts_router
 from app.modules.dashboard.router import router as dashboard_router
 from app.modules.digest.router import public_router as digest_public_router
 from app.modules.digest.router import router as digest_router
+from app.modules.interviews.router import router as interviews_router
 from app.modules.jobs.router import router as jobs_router
 from app.modules.notes.router import router as notes_router
 from app.modules.nudges.router import router as nudges_router
@@ -77,6 +78,7 @@ def create_app() -> FastAPI:
     register_error_handlers(app)
     app.include_router(auth_router, prefix="/api/v1")
     app.include_router(jobs_router, prefix="/api/v1")
+    app.include_router(interviews_router, prefix="/api/v1")
     app.include_router(research_router, prefix="/api/v1")
     app.include_router(projects_router, prefix="/api/v1")
     app.include_router(contacts_router, prefix="/api/v1")
