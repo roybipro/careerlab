@@ -123,7 +123,9 @@ def create_job(db: Session, user: User, data: JobCreate) -> JobApplication:
     return job
 
 
-def update_job(db: Session, user: User, job_id: uuid.UUID, data: JobUpdate) -> JobApplication:
+def update_job(
+    db: Session, user: User, job_id: uuid.UUID, data: JobUpdate, *, commit: bool = True
+) -> JobApplication:
     job = get_job(db, user, job_id)
     # exclude_unset: omitted fields stay as stored, explicit nulls clear them.
     changes = {k: v for k, v in data.model_dump(exclude_unset=True).items() if getattr(job, k) != v}
@@ -164,13 +166,15 @@ def update_job(db: Session, user: User, job_id: uuid.UUID, data: JobUpdate) -> J
             label,
             interview_at=iso(job.interview_at),
         )
-    db.commit()
+    if commit:
+        db.commit()
     return job
 
 
-def delete_job(db: Session, user: User, job_id: uuid.UUID) -> None:
+def delete_job(db: Session, user: User, job_id: uuid.UUID, *, commit: bool = True) -> None:
     job = get_job(db, user, job_id)
     log_activity(db, user, "job", job.id, "deleted", job_label(job))
     delete_dependents(db, user, "job", job.id)
     db.delete(job)
-    db.commit()
+    if commit:
+        db.commit()

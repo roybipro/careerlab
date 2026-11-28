@@ -35,6 +35,12 @@ The screenshots in this repo use invented data from the demo seed script.
   computed from the database on each request. "Today" is the browser's local date.
 - An analytics page with status charts and monthly application counts.
 - Search, filters, sorting and pagination on every list. Filters live in the URL.
+- Edit status, priority, stage and dates right in the jobs, research and projects tables.
+- Bulk actions: tick rows in a table to change their status (or priority, or stage) or delete
+  them together. Each bulk change is all or nothing.
+- A private calendar subscription link (Settings) for Google Calendar, Apple Calendar or
+  Outlook, with open deadlines, interviews, follow-ups, submission deadlines, milestones and
+  reminders. Only a hash of the link is stored, so it is shown once and can be reset.
 - An activity timeline on each job, research opportunity, research project and contact.
 - Light and dark themes, and layouts for desktop, tablet and phone widths.
 - Every record belongs to one user. Another user's record returns `404`.

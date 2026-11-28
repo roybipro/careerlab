@@ -3,6 +3,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query
 
+from app.core.bulk import BulkDeleteIn, BulkUpdateIn, apply_all
 from app.core.deps import CurrentUser, DbSession, require_csrf
 from app.core.lists import ListQuery, Page
 from app.modules.research import service
@@ -30,6 +31,28 @@ def list_research(
 @router.post("", status_code=201, response_model=ResearchOut)
 def create_research(body: ResearchCreate, user: CurrentUser, db: DbSession) -> ResearchOpportunity:
     return service.create_research(db, user, body)
+
+
+@router.post("/bulk-update", status_code=204)
+def bulk_update_research(
+    body: BulkUpdateIn[ResearchUpdate], user: CurrentUser, db: DbSession
+) -> None:
+    apply_all(
+        db,
+        body.ids,
+        lambda research_id: service.update_research(
+            db, user, research_id, body.changes, commit=False
+        ),
+    )
+
+
+@router.post("/bulk-delete", status_code=204)
+def bulk_delete_research(body: BulkDeleteIn, user: CurrentUser, db: DbSession) -> None:
+    apply_all(
+        db,
+        body.ids,
+        lambda research_id: service.delete_research(db, user, research_id, commit=False),
+    )
 
 
 @router.get("/{research_id}", response_model=ResearchOut)

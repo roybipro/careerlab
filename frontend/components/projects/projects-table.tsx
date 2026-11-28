@@ -2,6 +2,7 @@
 
 import { TriangleAlert } from "lucide-react";
 import Link from "next/link";
+import { BulkBar, BulkPicker, RowCheckbox, SelectAllCheckbox, useSelection } from "@/components/bulk-actions";
 import { InlineDate, InlineSelect } from "@/components/inline-edit";
 import { MilestoneProgress } from "@/components/projects/milestone-progress";
 import { StatusBadge } from "@/components/status-badge";
@@ -9,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { PROJECT_STAGES, PROJECT_TYPES, optionLabel } from "@/lib/enums";
 import { formatDateOnly } from "@/lib/format";
 import type { Project } from "@/lib/types";
+import { useBulkActions } from "@/lib/use-bulk-actions";
 import { useInlineUpdate } from "@/lib/use-inline-update";
 
 // Titles are free text: a long one wraps, and a single long word breaks, instead of widening the card or column.
@@ -47,12 +49,19 @@ function TargetDate({ project }: { project: Project }) {
 export function ProjectsTable({ projects }: { projects: Project[] }) {
   const update = useInlineUpdate<Project>("project", "/projects", (project) => project.title);
   const save = (project: Project, field: string, value: string | null) => update.mutate({ item: project, changes: { [field]: value } });
+  const bulk = useBulkActions("project", "/projects", { one: "project", many: "projects" });
+  const selection = useSelection(projects.map((row) => row.id));
+  const bulkSet = (field: string) => (value: string) =>
+    bulk.update.mutate({ ids: selection.selected, changes: { [field]: value } }, { onSuccess: selection.clear });
   return (
     <>
       <div className="hidden lg:block">
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-10 pr-0">
+                <SelectAllCheckbox selection={selection} label="Select all projects on this page" />
+              </TableHead>
               <TableHead>Project</TableHead>
               <TableHead>Type</TableHead>
               <TableHead>Stage</TableHead>
@@ -63,7 +72,10 @@ export function ProjectsTable({ projects }: { projects: Project[] }) {
           </TableHeader>
           <TableBody>
             {projects.map((project) => (
-              <TableRow key={project.id}>
+              <TableRow key={project.id} data-state={selection.isSelected(project.id) ? "selected" : undefined}>
+                <TableCell className="w-10 pr-0">
+                  <RowCheckbox selection={selection} id={project.id} label={`Select ${project.title}`} />
+                </TableCell>
                 <TableCell className={`max-w-80 font-medium whitespace-normal ${WRAP}`}>
                   <Link href={`/projects/${project.id}`} className="underline-offset-4 hover:text-link hover:underline">
                     {project.title}
@@ -94,6 +106,9 @@ export function ProjectsTable({ projects }: { projects: Project[] }) {
             ))}
           </TableBody>
         </Table>
+        <BulkBar selection={selection} noun={{ one: "project", many: "projects" }} pending={bulk.remove.isPending} onDelete={(ids) => bulk.remove.mutateAsync({ ids }).then(selection.clear, () => undefined)}>
+          <BulkPicker label="Stage" options={PROJECT_STAGES} disabled={bulk.update.isPending} onPick={bulkSet("stage")} renderValue={(v) => <StatusBadge status={v} />} />
+        </BulkBar>
       </div>
       <ul className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:hidden">
         {projects.map((project) => (

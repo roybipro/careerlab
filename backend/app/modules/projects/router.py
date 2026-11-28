@@ -3,6 +3,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query
 
+from app.core.bulk import BulkDeleteIn, BulkUpdateIn, apply_all
 from app.core.deps import ClientToday, CurrentUser, DbSession, require_csrf
 from app.core.lists import ListQuery, Page
 from app.modules.projects import service
@@ -39,6 +40,26 @@ def create_project(
     body: ProjectCreate, user: CurrentUser, db: DbSession, today: ClientToday
 ) -> ProjectOut:
     return service.create_project(db, user, body, today)
+
+
+@router.post("/bulk-update", status_code=204)
+def bulk_update_projects(
+    body: BulkUpdateIn[ProjectUpdate], user: CurrentUser, db: DbSession
+) -> None:
+    apply_all(
+        db,
+        body.ids,
+        lambda project_id: service.apply_project_update(db, user, project_id, body.changes),
+    )
+
+
+@router.post("/bulk-delete", status_code=204)
+def bulk_delete_projects(body: BulkDeleteIn, user: CurrentUser, db: DbSession) -> None:
+    apply_all(
+        db,
+        body.ids,
+        lambda project_id: service.delete_project(db, user, project_id, commit=False),
+    )
 
 
 @router.get("/{project_id}", response_model=ProjectOut)

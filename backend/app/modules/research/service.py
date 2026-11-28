@@ -74,7 +74,7 @@ def create_research(db: Session, user: User, data: ResearchCreate) -> ResearchOp
 
 
 def update_research(
-    db: Session, user: User, research_id: uuid.UUID, data: ResearchUpdate
+    db: Session, user: User, research_id: uuid.UUID, data: ResearchUpdate, *, commit: bool = True
 ) -> ResearchOpportunity:
     item = get_research(db, user, research_id)
     # exclude_unset: omitted fields stay as stored, explicit nulls clear them.
@@ -106,13 +106,17 @@ def update_research(
             old=iso(old["deadline"]),
             new=iso(item.deadline),
         )
-    db.commit()
+    if commit:
+        db.commit()
     return item
 
 
-def delete_research(db: Session, user: User, research_id: uuid.UUID) -> None:
+def delete_research(
+    db: Session, user: User, research_id: uuid.UUID, *, commit: bool = True
+) -> None:
     item = get_research(db, user, research_id)
     log_activity(db, user, ENTITY, item.id, "deleted", research_label(item))
     delete_dependents(db, user, ENTITY, item.id)
     db.delete(item)
-    db.commit()
+    if commit:
+        db.commit()

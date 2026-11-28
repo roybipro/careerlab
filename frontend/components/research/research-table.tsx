@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { BulkBar, BulkPicker, RowCheckbox, SelectAllCheckbox, useSelection } from "@/components/bulk-actions";
 import { InlineDate, InlineSelect } from "@/components/inline-edit";
 import { StatusBadge } from "@/components/status-badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { OPPORTUNITY_TYPES, RESEARCH_STATUSES, optionLabel } from "@/lib/enums";
 import { formatDateOnly } from "@/lib/format";
 import type { Research } from "@/lib/types";
+import { useBulkActions } from "@/lib/use-bulk-actions";
 import { useInlineUpdate } from "@/lib/use-inline-update";
 
 function ResearchMeta({ item }: { item: Research }) {
@@ -18,12 +20,19 @@ function ResearchMeta({ item }: { item: Research }) {
 export function ResearchTable({ items }: { items: Research[] }) {
   const update = useInlineUpdate<Research>("research", "/research", (item) => item.title);
   const save = (item: Research, field: string, value: string | null) => update.mutate({ item, changes: { [field]: value } });
+  const bulk = useBulkActions("research", "/research", { one: "opportunity", many: "opportunities" });
+  const selection = useSelection(items.map((row) => row.id));
+  const bulkSet = (field: string) => (value: string) =>
+    bulk.update.mutate({ ids: selection.selected, changes: { [field]: value } }, { onSuccess: selection.clear });
   return (
     <>
       <div className="hidden lg:block">
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-10 pr-0">
+                <SelectAllCheckbox selection={selection} label="Select all opportunities on this page" />
+              </TableHead>
               <TableHead>Title</TableHead>
               <TableHead>Organization</TableHead>
               <TableHead>Type</TableHead>
@@ -34,7 +43,10 @@ export function ResearchTable({ items }: { items: Research[] }) {
           </TableHeader>
           <TableBody>
             {items.map((item) => (
-              <TableRow key={item.id}>
+              <TableRow key={item.id} data-state={selection.isSelected(item.id) ? "selected" : undefined}>
+                <TableCell className="w-10 pr-0">
+                  <RowCheckbox selection={selection} id={item.id} label={`Select ${item.title}`} />
+                </TableCell>
                 <TableCell className="font-medium whitespace-normal">
                   <Link href={`/research/${item.id}`} className="underline-offset-4 hover:text-link hover:underline">
                     {item.title}
@@ -59,6 +71,9 @@ export function ResearchTable({ items }: { items: Research[] }) {
             ))}
           </TableBody>
         </Table>
+        <BulkBar selection={selection} noun={{ one: "opportunity", many: "opportunities" }} pending={bulk.remove.isPending} onDelete={(ids) => bulk.remove.mutateAsync({ ids }).then(selection.clear, () => undefined)}>
+          <BulkPicker label="Status" options={RESEARCH_STATUSES} disabled={bulk.update.isPending} onPick={bulkSet("status")} renderValue={(v) => <StatusBadge status={v} />} />
+        </BulkBar>
       </div>
       <ul className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:hidden">
         {items.map((item) => (
