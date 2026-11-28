@@ -225,3 +225,14 @@ export type ProjectMilestone = {
   created_at: string;
   updated_at: string;
 };
+
+/** Open work that has gone quiet (GET /nudges). */
+export type Nudge = {
+  kind: "job" | "research" | "contact";
+  id: string;
+  title: string;
+  /** no_reply: an application waiting on an answer; quiet_contact: a contact not reached in a while. */
+  reason: "no_reply" | "quiet_contact";
+  since: string;
+  days: number;
+};

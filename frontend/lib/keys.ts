@@ -15,7 +15,7 @@ import type { EntityType } from "@/lib/enums";
  *   ["reminders", "related", relatedType, relatedId]
  *   ["contacts", "list", params]                   ["contacts", "detail", id]
  *   ["reminders", "list", params]                  ["reminders", "bell"]
- *   ["dashboard", "summary" | "deadlines" | "overdue-research", today]  ["dashboard", "overdue" | "activity" | "analytics"]
+ *   ["dashboard", "summary" | "deadlines" | "overdue-research" | "nudges", today]  ["dashboard", "overdue" | "activity" | "analytics"]
  *   ["link-options", kind, search]                 (job and research pickers, see invalidateEntity)
  */
 const RESOURCE: Record<EntityType, string> = { job: "jobs", research: "research", contact: "contacts", project: "projects" };
@@ -35,7 +35,7 @@ export const keys = {
   dashboard: ["dashboard"] as const,
   // `today` is part of the key for the date-sensitive parts, so a page left open across
   // midnight asks again (with the new date) the next time it renders.
-  dashboardPart: (part: "summary" | "deadlines" | "activity" | "analytics" | "overdue" | "overdue-research", today?: string) =>
+  dashboardPart: (part: "summary" | "deadlines" | "activity" | "analytics" | "overdue" | "overdue-research" | "nudges", today?: string) =>
     (today ? (["dashboard", part, today] as const) : (["dashboard", part] as const)),
   reminderBell: ["reminders", "bell"] as const,
   reminderList: (params: unknown) => ["reminders", "list", params] as const,
